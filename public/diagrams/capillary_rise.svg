@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Liquid Container -->
+  <rect x="50" y="200" width="300" height="150" fill="#e0f7fa" stroke="none" />
+  <line x1="50" y1="200" x2="50" y2="350" stroke="#333" stroke-width="2" />
+  <line x1="50" y1="350" x2="350" y2="350" stroke="#333" stroke-width="2" />
+  <line x1="350" y1="350" x2="350" y2="200" stroke="#333" stroke-width="2" />
+  
+  <!-- Liquid Surface Level -->
+  <line x1="50" y1="200" x2="350" y2="200" stroke="#0288d1" stroke-width="1" />
+
+  <!-- Capillary Tube -->
+  <line x1="180" y1="100" x2="180" y2="300" stroke="#333" stroke-width="2" />
+  <line x1="220" y1="100" x2="220" y2="300" stroke="#333" stroke-width="2" />
+  
+  <!-- Liquid Inside Tube (Rising) -->
+  <!-- From y=200 up to y=150 -->
+  <rect x="180" y="150" width="40" height="50" fill="#e0f7fa" stroke="none" />
+  
+  <!-- Meniscus (Concave) -->
+  <path d="M 180,150 Q 200,165 220,150" stroke="#0288d1" stroke-width="2" fill="#e0f7fa" />
+  
+  <!-- Height Label (h) -->
+  <!-- Line from surface to meniscus bottom approx -->
+  <line x1="230" y1="200" x2="260" y2="200" stroke="#333" stroke-width="1" stroke-dasharray="2,2" /> <!-- Surface ref -->
+  <line x1="230" y1="150" x2="260" y2="150" stroke="#333" stroke-width="1" stroke-dasharray="2,2" /> <!-- Meniscus ref -->
+  
+  <line x1="245" y1="200" x2="245" y2="150" stroke="#333" stroke-width="1" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)" />
+  <text x="255" y="180" font-family="Arial, sans-serif" font-style="italic" font-size="20">h</text>
+  
+  <!-- Contact Angle Theta -->
+  <!-- Tangent to meniscus at edge -->
+  <line x1="180" y1="150" x2="190" y2="135" stroke="#d32f2f" stroke-width="1" />
+  <!-- Vertical wall ref -->
+  <line x1="180" y1="150" x2="180" y2="130" stroke="#666" stroke-width="1" stroke-dasharray="2,2" />
+  
+  <text x="185" y="130" font-family="Arial, sans-serif" font-style="italic" font-size="16">θ</text>
+
+</svg>

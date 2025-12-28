@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="blue" />
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="red" />
+    </marker>
+  </defs>
+
+  <!-- Rain (Vertical Down) -->
+  <line x1="100" y1="20" x2="100" y2="100" stroke="blue" stroke-width="2" marker-end="url(#arrow)" />
+  <text x="110" y="60" font-family="sans-serif" font-size="14px">Vr (Rain)</text>
+  
+  <!-- Man (Horizontal Right) - usually we construct V_rm = V_r - V_m -->
+  <!-- So V_m is pointing Right. -V_m is pointing Left. -->
+  <!-- V_r + (-V_m) = V_rm -->
+  
+  <line x1="100" y1="100" x2="40" y2="100" stroke="blue" stroke-width="2" marker-end="url(#arrow)" /> <!-- -Vm -->
+  <text x="50" y="120" font-family="sans-serif" font-size="14px">-Vm</text>
+  
+  <!-- Resultant V_rm -->
+  <line x1="100" y1="20" x2="40" y2="100" stroke="red" stroke-width="2" marker-end="url(#arrow-red)" />
+  <text x="30" y="50" font-family="sans-serif" font-size="14px">Vrm</text>
+  
+  <text x="80" y="180" font-family="sans-serif" font-size="14px">Umbrella Angle</text>
+</svg>

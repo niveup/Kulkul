@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Earth -->
+  <circle cx="250" cy="200" r="50" fill="#e3f2fd" stroke="#0288d1" stroke-width="2" />
+  <text x="235" y="205" font-family="Arial" font-weight="bold" font-size="14" fill="#0277bd">Earth</text>
+  <text x="245" y="165" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#0277bd">M</text>
+
+  <!-- Orbit Path -->
+  <circle cx="250" cy="200" r="140" stroke="#999" stroke-width="1" fill="none" stroke-dasharray="5,5" />
+
+  <!-- Satellite -->
+  <g transform="translate(390, 200)">
+      <circle r="10" fill="#555" />
+      <text x="15" y="-10" font-family="Arial, sans-serif" font-style="italic" font-size="18">m</text>
+      
+      <!-- Velocity Vector (Tangential - Up) -->
+      <line x1="0" y1="0" x2="0" y2="-60" stroke="#388e3c" stroke-width="2" marker-end="url(#arrowhead)" />
+      <!-- Label v (Right of arrow) -->
+      <text x="10" y="-30" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#388e3c">v<tspan baseline-shift="sub" font-size="14" font-style="normal">0</tspan></text>
+      
+      <!-- Gravitation Force (Radial - Left) -->
+      <line x1="0" y1="0" x2="-60" y2="0" stroke="#d32f2f" stroke-width="2" marker-end="url(#arrowhead)" />
+      <!-- Label Fg (Above arrow) -->
+      <text x="-40" y="-10" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#d32f2f">F<tspan baseline-shift="sub" font-size="14" font-style="normal">g</tspan></text>
+  </g>
+
+  <!-- Radius Label -->
+  <line x1="250" y1="200" x2="350" y2="280" stroke="#333" stroke-width="1" />
+  <!-- Label r (Midpoint offset) -->
+  <text x="310" y="235" font-family="Arial, sans-serif" font-style="italic" font-size="20">r</text>
+
+</svg>

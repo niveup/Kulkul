@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<defs>
+
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+        </marker>
+        <marker id="arrowhead_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#d32f2f" />
+        </marker>
+        <marker id="arrowhead_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#1976D2" />
+        </marker>
+        
+</defs>
+<rect width="100%" height="100%" fill="#fff" />
+<circle cx="250" cy="250" r="20" fill="white" stroke="red" stroke-width="2" />
+<text x="250" y="255" font-family="Arial, sans-serif" font-size="20" fill="red" text-anchor="middle" font-weight="bold" >+q1</text>
+<circle cx="550" cy="250" r="20" fill="white" stroke="red" stroke-width="2" />
+<text x="550" y="255" font-family="Arial, sans-serif" font-size="20" fill="red" text-anchor="middle" font-weight="bold" >+q2</text>
+<line x1="270" y1="250" x2="530" y2="250" stroke="#333" stroke-width="2" stroke-dasharray="5,5"  />
+<text x="400" y="240" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >r</text>
+<line x1="230" y1="250" x2="180" y2="250" stroke="red" stroke-width="2"  marker-end="url(#arrowhead_red)" />
+<text x="180" y="230" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >F21</text>
+<line x1="570" y1="250" x2="620" y2="250" stroke="red" stroke-width="2"  marker-end="url(#arrowhead_red)" />
+<text x="620" y="230" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >F12</text>
+</svg>

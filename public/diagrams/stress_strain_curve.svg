@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Axes -->
+  <!-- Y axis (Stress) -->
+  <line x1="50" y1="300" x2="50" y2="50" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="20" y="40" font-family="Arial, sans-serif" font-size="20">Stress (σ)</text>
+
+  <!-- X axis (Strain) -->
+  <line x1="50" y1="300" x2="450" y2="300" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="440" y="320" font-family="Arial, sans-serif" font-size="20">Strain (ε)</text>
+
+  <!-- Curve -->
+  <!-- O (50,300) -> A (100, 150) Linear -->
+  <!-- A -> B (120, 130) Curve start -->
+  <!-- B -> D (300, 50) Max/UTS -->
+  <!-- D -> E (350, 100) Fracture -->
+
+  <!-- Linear Region -->
+  <line x1="50" y1="300" x2="100" y2="150" stroke="#d32f2f" stroke-width="3" />
+  <text x="80" y="140" font-family="Arial, sans-serif" font-size="16">A</text> <!-- Proportional Limit -->
+
+  <!-- Yield / Plastic Region -->
+  <path d="M 100,150 Q 110,130 120,130 Q 250,50 300,50 Q 320,50 350,80" stroke="#d32f2f" stroke-width="3" fill="none" />
+  
+  <text x="125" y="125" font-family="Arial, sans-serif" font-size="16">B</text> <!-- Yield Point -->
+  <circle cx="120" cy="130" r="3" fill="#333" />
+
+  <text x="300" y="40" font-family="Arial, sans-serif" font-size="16">D</text> <!-- UTS -->
+  <circle cx="300" cy="50" r="3" fill="#333" />
+
+  <text x="360" y="85" font-family="Arial, sans-serif" font-size="16">E</text> <!-- Fracture -->
+  <circle cx="350" cy="80" r="3" fill="#333" /> <!-- Fracture Point -->
+
+  <!-- Dashed lines -->
+  <line x1="300" y1="50" x2="300" y2="300" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+  <line x1="120" y1="130" x2="120" y2="300" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+
+  <!-- Labels -->
+  <text x="60" y="250" font-family="Arial, sans-serif" font-size="14" fill="#555">Elastic Region</text>
+  <text x="180" y="250" font-family="Arial, sans-serif" font-size="14" fill="#555">Plastic Region</text>
+  
+  <text x="310" y="40" font-family="Arial, sans-serif" font-size="14" fill="#333">Ultimate Strength</text>
+  <text x="360" y="100" font-family="Arial, sans-serif" font-size="14" fill="#333">Fracture</text>
+
+</svg>

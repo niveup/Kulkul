@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" width="300" height="150">
+  <defs>
+    <marker id="arrow_blk" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="black" />
+    </marker>
+    <marker id="arrow_red" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="red" />
+    </marker>
+    <marker id="arrow_blue" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="blue" />
+    </marker>
+</defs>
+  <!-- Source -->
+  <circle cx="50" cy="75" r="10" fill="red" />
+  <text x="40" y="55" font-family="sans-serif" font-size="12px" fill="red">Source (S)</text>
+  <line x1="60" y1="75" x2="90" y2="75" stroke="red" width="2" marker-end="url(#arrow_red)" />
+  <text x="70" y="95" font-family="sans-serif" font-size="12px">Vs</text>
+  
+  <!-- Observer -->
+  <circle cx="250" cy="75" r="10" fill="blue" />
+  <text x="240" y="55" font-family="sans-serif" font-size="12px" fill="blue">Observer (O)</text>
+  <line x1="240" y1="75" x2="210" y2="75" stroke="blue" width="2" marker-end="url(#arrow_blue)" />
+  <text x="220" y="95" font-family="sans-serif" font-size="12px">Vo</text>
+  
+  <!-- Sound Waves -->
+  <circle cx="50" cy="75" r="20" fill="none" stroke="gray" />
+  <circle cx="65" cy="75" r="30" fill="none" stroke="gray" />
+  <circle cx="80" cy="75" r="40" fill="none" stroke="gray" />
+  <text x="130" y="40" font-family="sans-serif" font-size="12px">Sound Speed (v)</text>
+  
+  <text x="80" y="130" font-family="sans-serif" font-size="12px">f' = f (v ± vo) / (v ∓ vs)</text>
+</svg>

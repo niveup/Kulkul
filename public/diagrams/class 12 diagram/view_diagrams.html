@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Class 12 Physics Diagrams</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .card img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+
+        .card h3 {
+            font-size: 14px;
+            margin: 0;
+            color: #333;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Class 12 Physics Diagram Gallery (121 Diagrams)</h1>
+    <div class="gallery" id="gallery"></div>
+    <script>
+        const diagrams = [
+            "ac_elements.svg", "ac_power.svg", "ac_resonance.svg", "ac_values.svg", "ammeter_conversion.svg", "ampere_law.svg", "apparent_depth.svg", "b_circular_loop.svg", "b_straight_wire.svg", "bar_magnet_field.svg", "basic_logic_gates.svg", "biot_savart.svg", "brewsters_law.svg", "capacitor_combination.svg", "capacitor_energy.svg", "capacitors_types.svg", "ce_amplifier.svg", "cell_combination.svg", "cell_emf.svg", "charge_flown.svg", "charge_sharing.svg", "compass_oscillation.svg", "compound_microscope.svg", "concentric_shells.svg", "conductor_properties.svg", "connecting_conductors.svg", "coulombs_law.svg", "curies_law.svg", "current_parameters.svg", "dielectric_slab.svg", "diffraction_circular.svg", "diffraction_single_slit.svg", "dipole_axial.svg", "dipole_equatorial.svg", "disc_field.svg", "dispersion.svg", "displacement_current.svg", "displacement_method.svg", "earthing.svg", "earths_magnetism.svg", "em_wave_intensity.svg", "em_wave_properties.svg", "em_wave_vectors.svg", "exclusive_gates.svg", "eye_defects.svg", "faraday_lenz.svg", "flux_cube.svg", "force_conductor.svg", "force_dipole_nonuniform.svg", "force_moving_charge.svg", "fringe_width.svg", "galvanometer_sensitivity.svg", "helical_motion.svg", "hysteresis.svg", "inductor_energy.svg", "interference_intensity.svg", "kirchhoffs_laws.svg", "lc_oscillations.svg", "lcr_series.svg", "lens_combination.svg", "lens_formula.svg", "lens_makers.svg", "line_charge.svg", "logic_gates_circuits.svg", "longitudinal_magnification.svg", "lr_circuit.svg", "magnetic_deviation.svg", "magnetic_intensity.svg", "magnetic_materials.svg", "magnetic_moment.svg", "magnetic_torque.svg", "malus_law.svg", "max_power.svg", "maxwells_equations.svg", "meter_bridge.svg", "mirror_velocity.svg", "motional_emf.svg", "motional_emf_rotating.svg", "multiple_dielectrics.svg", "mutual_induction.svg", "parallel_wires.svg", "plane_mirror.svg", "plate_force.svg", "pn_junction.svg", "polarization_basics.svg", "potential_sphere.svg", "potentiometer.svg", "prism_formula.svg", "q_factor.svg", "rail_problems.svg", "rc_transient.svg", "reflection_vector.svg", "resistor_color.svg", "resolving_power.svg", "ring_field.svg", "rotating_coil.svg", "self_energy.svg", "self_induction.svg", "simple_microscope.svg", "slab_shift.svg", "snells_law.svg", "solenoid_toroid.svg", "sphere_field.svg", "spherical_mirror.svg", "spherical_refraction.svg", "telescope.svg", "temp_resistance.svg", "thermal_effect.svg", "thin_film_interference.svg", "tir.svg", "transformer.svg", "transistor_basics.svg", "unbalanced_bridge.svg", "universal_gates.svg", "variable_k.svg", "velocity_selector.svg", "voltmeter_conversion.svg", "wheatstone_cap.svg", "ydse_conditions.svg", "ydse_thin_film.svg", "zener_diode.svg"
+        ];
+
+        const gallery = document.getElementById('gallery');
+        diagrams.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <img src="${name}" alt="${name}" loading="lazy">
+                <h3>${name}</h3>
+            `;
+            gallery.appendChild(div);
+        });
+    </script>
+</body>
+
+</html>

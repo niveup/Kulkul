@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<defs>
+
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+        </marker>
+        <marker id="arrowhead_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#d32f2f" />
+        </marker>
+        <marker id="arrowhead_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#1976D2" />
+        </marker>
+        
+</defs>
+<rect width="100%" height="100%" fill="#fff" />
+<line x1="200" y1="230" x2="220" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="220" y1="230" x2="200" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="280" y1="230" x2="300" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="300" y1="230" x2="280" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="360" y1="230" x2="380" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="380" y1="230" x2="360" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="440" y1="230" x2="460" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="460" y1="230" x2="440" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="520" y1="230" x2="540" y2="270" stroke="#333" stroke-width="2"   />
+<line x1="540" y1="230" x2="520" y2="270" stroke="#333" stroke-width="2"   />
+<text x="400" y="120" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="bold" >Uniform B Field</text>
+<circle cx="400" cy="250" r="10" fill="red" stroke="#333" stroke-width="2" />
+<line x1="400" y1="250" x2="500" y2="250" stroke="green" stroke-width="3"  marker-end="url(#arrowhead)" />
+<text x="500" y="230" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >v</text>
+<line x1="400" y1="250" x2="400" y2="150" stroke="black" stroke-width="3"  marker-end="url(#arrowhead)" />
+<text x="380" y="140" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >F</text>
+</svg>

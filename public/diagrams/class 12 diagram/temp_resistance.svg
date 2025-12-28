@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<defs>
+
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+        </marker>
+        <marker id="arrowhead_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#d32f2f" />
+        </marker>
+        <marker id="arrowhead_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#1976D2" />
+        </marker>
+        
+</defs>
+<rect width="100%" height="100%" fill="#fff" />
+<path d="M 200 250 L 280.0 250.0 L 304.0 260.0 L 328.0 240.0 L 352.0 260.0 L 376.0 240.0 L 400.0 260.0 L 424.0 240.0 L 448.0 260.0 L 472.0 240.0 L 496.0 260.0 L 520.0 240.0 L 600 250" fill="none" stroke="#333" stroke-width="2" />
+<text x="400.0" y="230.0" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="normal" >R</text>
+</svg>

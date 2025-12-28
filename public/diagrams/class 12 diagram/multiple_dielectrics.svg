@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<defs>
+
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+        </marker>
+        <marker id="arrowhead_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#d32f2f" />
+        </marker>
+        <marker id="arrowhead_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#1976D2" />
+        </marker>
+        
+</defs>
+<rect width="100%" height="100%" fill="#fff" />
+<circle cx="400" cy="250" r="20" fill="white" stroke="red" stroke-width="2" />
+<text x="400" y="255" font-family="Arial, sans-serif" font-size="20" fill="red" text-anchor="middle" font-weight="bold" >Q</text>
+<line x1="430.0" y1="250.0" x2="500.0" y2="250.0" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="421.2132034355964" y1="271.2132034355964" x2="470.71067811865476" y2="320.71067811865476" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="400.0" y1="280.0" x2="400.0" y2="350.0" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="378.7867965644036" y1="271.2132034355964" x2="329.28932188134524" y2="320.71067811865476" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="370.0" y1="250.0" x2="300.0" y2="250.0" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="378.7867965644036" y1="228.78679656440357" x2="329.28932188134524" y2="179.28932188134524" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="400.0" y1="220.0" x2="400.0" y2="150.0" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+<line x1="421.2132034355964" y1="228.78679656440357" x2="470.71067811865476" y2="179.28932188134524" stroke="#1976D2" stroke-width="2"  marker-end="url(#arrowhead_blue)" />
+</svg>

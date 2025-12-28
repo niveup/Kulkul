@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Ground Horizontal (Dashed) -->
+  <line x1="50" y1="300" x2="450" y2="300" stroke="#999" stroke-width="1" stroke-dasharray="5,5" />
+
+  <!-- Incline Plane (Angle approx 20 deg)  tan(20) ~ 0.36. dx=400, dy=144 -->
+  <line x1="50" y1="300" x2="450" y2="156" stroke="#333" stroke-width="3" />
+  
+  <!-- Incline Angle Beta -->
+  <path d="M 120,300 A 70,70 0 0 0 115,276" stroke="#388e3c" fill="none" />
+  <text x="130" y="290" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#388e3c">β</text>
+
+  <!-- Initial Velocity Vector limit -->
+  <!-- Start at bottom (50,300). Angle relative to incline is Alpha. Say Alpha = 45. Incline = 20. Total = 65. -->
+  <line x1="50" y1="300" x2="100" y2="193" stroke="#0288d1" stroke-width="3" marker-end="url(#arrowhead)" />
+  <text x="80" y="190" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#0288d1">u</text>
+
+  <!-- Projectile Path (Parabola) -->
+  <!-- Starts (50,300), Lands at approx (350, 192) -->
+  <!-- Control point needs to be high. -->
+  <path d="M 50,300 Q 150,50 350,192" stroke="#d32f2f" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+
+  <!-- Projectile Angle Alpha (Relative to Incline) -->
+  <!-- Incline is at -20 deg. vector at -65 deg. Arc between them. -->
+  <!-- We need a reference line for the incline direction just to draw the arc nicely if not overlapping. -->
+  <!-- Actually, let's draw the arc from the incline line up to the vector. -->
+  <!-- Incline vector (directive): (1, -0.36). Velocity vector: (0.42, -0.9). -->
+  <path d="M 85,287 A 60,60 0 0 0 72,252" stroke="#d32f2f" fill="none" />
+  <text x="90" y="265" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#d32f2f">α</text>
+
+  <!-- Range R (Along the Incline) -->
+  <!-- Mark point (350, 192) as landing. Distance from (50,300). -->
+  <!-- Brace or line below incline. -->
+  <!-- Offset line: start (55, 310) end (355, 202) -->
+  <line x1="50" y1="315" x2="350" y2="207" stroke="#333" stroke-width="1" />
+  <line x1="50" y1="305" x2="50" y2="320" stroke="#333" stroke-width="1" /> <!-- Tick start -->
+  <line x1="350" y1="197" x2="350" y2="212" stroke="#333" stroke-width="1" /> <!-- Tick end -->
+  <text x="210" y="275" font-family="Arial, sans-serif" font-style="italic" font-size="20" transform="rotate(-20 210,275)">R</text>
+
+  <!-- Max Height H (Perpendicular to Incline) -->
+  <!-- Find peak of parabola relative to incline. Approx midpoint x=200. -->
+  <!-- Incline y at x=200 is 300 - 150*0.36 = 246. -->
+  <!-- Parabola y at x=200 is approx 130. -->
+  <!-- Line from (200, 246) to (200, 130) is NOT perp. Perp distance is needed. -->
+  <!-- Let's just draw a line from peak to incline perpendicular to incline. -->
+  <!-- Peak approx (180, 130). Incline point below it. -->
+  <line x1="200" y1="140" x2="160" y2="260" stroke="#333" stroke-width="1" stroke-dasharray="2,2" /> <!-- Visual approx of H -->
+  <!-- Label H -->
+  <text x="190" y="210" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#333">H</text>
+
+</svg>

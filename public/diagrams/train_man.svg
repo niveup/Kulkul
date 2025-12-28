@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 300">
+  <defs>
+    <marker id="arrowhead_blue" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#0288d1" />
+    </marker>
+    <marker id="arrowhead_red" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#d32f2f" />
+    </marker>
+    <marker id="arrowhead_black" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Ground -->
+  <line x1="20" y1="250" x2="480" y2="250" stroke="#333" stroke-width="2" />
+  <text x="230" y="270" font-family="Arial, sans-serif" font-size="16" fill="#333">Ground (Rest Frame)</text>
+
+  <!-- Train (Moving Frame) -->
+  <rect x="100" y="150" width="300" height="80" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" />
+  <line x1="150" y1="230" x2="150" y2="250" stroke="#01579b" stroke-width="2" stroke-dasharray="2,2" /> <!-- Wheel axle? -->
+  <circle cx="130" cy="250" r="15" fill="#333" />
+  <circle cx="370" cy="250" r="15" fill="#333" />
+  
+  <text x="250" y="200" font-family="Arial, sans-serif" font-size="24" fill="#01579b" opacity="0.2" text-anchor="middle">TRAIN</text>
+
+  <!-- Train Velocity Vector (Vt) -->
+  <line x1="410" y1="190" x2="480" y2="190" stroke="#0288d1" stroke-width="3" marker-end="url(#arrowhead_blue)" />
+  <text x="430" y="180" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#0288d1">v<!-- --><tspan baseline-shift="sub" font-size="70%">t</tspan></text>
+
+  <!-- Man (Object) -->
+  <circle cx="200" cy="130" r="10" fill="#d32f2f" />
+  <line x1="200" y1="130" x2="200" y2="150" stroke="#d32f2f" stroke-width="2" /> <!-- Body -->
+  <line x1="200" y1="150" x2="190" y2="170" stroke="#d32f2f" stroke-width="2" /> <!-- Leg -->
+  <line x1="200" y1="150" x2="210" y2="170" stroke="#d32f2f" stroke-width="2" /> <!-- Leg -->
+
+  <!-- Man Relative Velocity Vector (Vmt) -->
+  <line x1="210" y1="130" x2="270" y2="130" stroke="#d32f2f" stroke-width="3" marker-end="url(#arrowhead_red)" />
+  <text x="220" y="120" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#d32f2f">v<!-- --><tspan baseline-shift="sub" font-size="70%">m,t</tspan></text>
+
+  <!-- Resultant Ground Velocity Equation Visual -->
+  <text x="100" y="50" font-family="Arial, sans-serif" font-size="20">
+      v<tspan baseline-shift="sub" font-size="70%">m</tspan> (Ground) = v<tspan baseline-shift="sub" font-size="70%">t</tspan> + v<tspan baseline-shift="sub" font-size="70%">m,t</tspan>
+  </text>
+  
+  <!-- Combined Vector Visual -->
+  <g transform="translate(100, 80)">
+      <!-- Vt -->
+      <line x1="0" y1="0" x2="100" y2="0" stroke="#0288d1" stroke-width="2" marker-end="url(#arrowhead_blue)" />
+      <!-- Vmt added -->
+      <line x1="100" y1="0" x2="160" y2="0" stroke="#d32f2f" stroke-width="2" marker-end="url(#arrowhead_red)" />
+      <!-- Total Vm -->
+      <line x1="0" y1="10" x2="160" y2="10" stroke="#333" stroke-width="2" marker-end="url(#arrowhead_black)" />
+      <text x="70" y="30" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#333">v<!-- --><tspan baseline-shift="sub" font-size="70%">m</tspan></text>
+  </g>
+
+</svg>

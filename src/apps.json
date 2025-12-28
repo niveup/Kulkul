@@ -1,0 +1,30 @@
+[
+    {
+        "id": "1",
+        "name": "Physics Wallah",
+        "url": "https://pw.live",
+        "icon": "BookOpen",
+        "description": "Exam Preparation"
+    },
+    {
+        "id": "2",
+        "name": "NTA Website",
+        "url": "https://jeemain.nta.nic.in",
+        "icon": "Globe",
+        "description": "Official Updates"
+    },
+    {
+        "id": "3",
+        "name": "Calculator",
+        "url": "https://www.desmos.com/scientific",
+        "icon": "Calculator",
+        "description": "Scientific Calculator"
+    },
+    {
+        "id": "4",
+        "name": "YouTube",
+        "url": "https://youtube.com",
+        "icon": "Youtube",
+        "description": "Lectures & Tutorials"
+    }
+]

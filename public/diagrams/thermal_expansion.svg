@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 250">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Initial State (Cold) -->
+  <text x="50" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="bold">At Temperature T</text>
+  <rect x="50" y="50" width="300" height="30" fill="#e0e0e0" stroke="#333" stroke-width="2" />
+  
+  <!-- Length L0 -->
+  <line x1="50" y1="90" x2="350" y2="90" stroke="#333" stroke-width="1" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)" />
+  <text x="200" y="110" font-family="Arial, sans-serif" font-style="italic" font-size="18">L<tspan baseline-shift="sub" font-size="70%">0</tspan></text>
+
+  <!-- Final State (Hot) -->
+  <text x="50" y="160" font-family="Arial, sans-serif" font-size="16" font-weight="bold">At Temperature T + ΔT</text>
+  
+  <!-- Original part -->
+  <rect x="50" y="170" width="300" height="30" fill="#ffccbc" stroke="#333" stroke-width="2" stroke-dasharray="2,2" />
+  <!-- Expanded part -->
+  <rect x="350" y="170" width="50" height="30" fill="#ffab91" stroke="#d32f2f" stroke-width="2" />
+  <!-- Full Outline -->
+  <rect x="50" y="170" width="350" height="30" fill="none" stroke="#333" stroke-width="2" />
+
+  <!-- Length L -->
+  <line x1="50" y1="220" x2="400" y2="220" stroke="#333" stroke-width="1" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)" />
+  <text x="200" y="240" font-family="Arial, sans-serif" font-style="italic" font-size="18">L</text>
+
+  <!-- Expansion dL -->
+  <line x1="350" y1="210" x2="400" y2="210" stroke="#d32f2f" stroke-width="1" marker-start="url(#arrowhead)" marker-end="url(#arrowhead)" />
+  <text x="360" y="235" font-family="Arial, sans-serif" font-style="italic" font-size="18" fill="#d32f2f">ΔL</text>
+
+  <!-- Dashed drop lines -->
+  <line x1="350" y1="80" x2="350" y2="220" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+  <line x1="50" y1="80" x2="50" y2="220" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+
+</svg>

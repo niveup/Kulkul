@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 350">
+  <defs>
+    <marker id="arrowhead_blue" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#0288d1" />
+    </marker>
+    <marker id="arrowhead_red" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#d32f2f" />
+    </marker>
+    <marker id="arrowhead_green" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#388e3c" />
+    </marker>
+  </defs>
+
+  <!-- Origin -->
+  <!-- Center top slightly -->
+  <g transform="translate(200, 50)">
+      
+      <!-- Vector Vr (Rain, Actual) - Falling Vertical -->
+      <line x1="0" y1="0" x2="0" y2="150" stroke="#0288d1" stroke-width="3" marker-end="url(#arrowhead_blue)" />
+      <text x="10" y="80" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#0288d1">v<!-- --><tspan baseline-shift="sub" font-size="70%">r</tspan></text>
+
+      <!-- Vector Vm (Man) - Moving Right -->
+      <!-- We need -Vm for the addition triangle. Rel Vel = Vr - Vm = Vr + (-Vm) -->
+      <!-- So draw -Vm to the left. -->
+      <line x1="0" y1="150" x2="-100" y2="150" stroke="#d32f2f" stroke-width="3" marker-end="url(#arrowhead_red)" />
+      <text x="-60" y="175" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#d32f2f">-v<!-- --><tspan baseline-shift="sub" font-size="70%">m</tspan></text>
+
+      <!-- Vector Vrm (Resultant) - Diagonal -->
+      <line x1="0" y1="0" x2="-97" y2="147" stroke="#388e3c" stroke-width="3" marker-end="url(#arrowhead_green)" />
+      <!-- Label Vrm -->
+      <text x="-80" y="70" font-family="Arial, sans-serif" font-style="italic" font-size="20" fill="#388e3c">v<!-- --><tspan baseline-shift="sub" font-size="70%">rm</tspan></text>
+
+      <!-- Vertical Line for Angle Reference -->
+      <line x1="0" y1="0" x2="0" y2="80" stroke="#999" stroke-width="1" stroke-dasharray="4,4" />
+
+      <!-- Umbrella Angle Theta -->
+      <!-- Between Vertical and Vrm -->
+      <path d="M 0,40 A 40,40 0 0 1 -22,34" stroke="#333" fill="none" />
+      <text x="-15" y="55" font-family="Arial, sans-serif" font-style="italic" font-size="18">θ</text>
+      
+      <!-- Umbrella sketch (rotated) -->
+      <g transform="rotate(33.7)"> <!-- atan(100/150) approx 33.7 deg -->
+         <path d="M -30,0 Q 0,-20 30,0" stroke="#333" stroke-width="2" fill="none" />
+         <line x1="0" y1="-10" x2="0" y2="30" stroke="#333" stroke-width="2" /> <!-- handle -->
+      </g>
+  </g>
+  
+  <!-- Actual Man Moving visual (optional schematic at bottom) -->
+  <line x1="50" y1="300" x2="350" y2="300" stroke="#333" stroke-width="2" />
+  <text x="280" y="330" font-family="Arial, sans-serif" font-size="16">Man moving with v<tspan baseline-shift="sub" font-size="70%">m</tspan></text>
+
+</svg>

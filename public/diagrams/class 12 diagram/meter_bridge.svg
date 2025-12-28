@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+<defs>
+
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+        </marker>
+        <marker id="arrowhead_red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#d32f2f" />
+        </marker>
+        <marker id="arrowhead_blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#1976D2" />
+        </marker>
+        
+</defs>
+<rect width="100%" height="100%" fill="#fff" />
+<path d="M 400 100 L 370.0 130.0 L 353.9289321881345 131.92893218813452 L 359.0710678118655 155.07106781186548 L 335.9289321881345 149.92893218813452 L 341.0710678118655 173.07106781186548 L 317.9289321881345 167.92893218813452 L 323.0710678118655 191.07106781186548 L 299.9289321881345 185.92893218813452 L 305.0710678118655 209.07106781186548 L 281.9289321881345 203.92893218813452 L 287.0710678118655 227.07106781186548 L 250 250" fill="none" stroke="#333" stroke-width="2" />
+<text x="325.0" y="155.0" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="normal" >P</text>
+<path d="M 550 250 L 520.0 280.0 L 503.9289321881345 281.9289321881345 L 509.0710678118655 305.0710678118655 L 485.9289321881345 299.9289321881345 L 491.0710678118655 323.0710678118655 L 467.9289321881345 317.9289321881345 L 473.0710678118655 341.0710678118655 L 449.9289321881345 335.9289321881345 L 455.0710678118655 359.0710678118655 L 431.9289321881345 353.9289321881345 L 437.0710678118655 377.0710678118655 L 400 400" fill="none" stroke="#333" stroke-width="2" />
+<text x="475.0" y="305.0" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="normal" >Q</text>
+<path d="M 400 400 L 370.0 370.0 L 368.0710678118655 353.9289321881345 L 344.9289321881345 359.0710678118655 L 350.0710678118655 335.9289321881345 L 326.9289321881345 341.0710678118655 L 332.0710678118655 317.9289321881345 L 308.9289321881345 323.0710678118655 L 314.0710678118655 299.9289321881345 L 290.9289321881345 305.0710678118655 L 296.0710678118655 281.9289321881345 L 272.9289321881345 287.0710678118655 L 250 250" fill="none" stroke="#333" stroke-width="2" />
+<text x="325.0" y="305.0" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="normal" >S</text>
+<path d="M 250 250 L 280.0 220.0 L 296.0710678118655 218.07106781186548 L 290.9289321881345 194.92893218813452 L 314.0710678118655 200.07106781186548 L 308.9289321881345 176.92893218813452 L 332.0710678118655 182.07106781186548 L 326.9289321881345 158.92893218813452 L 350.0710678118655 164.07106781186548 L 344.9289321881345 140.92893218813452 L 368.0710678118655 146.07106781186548 L 362.9289321881345 122.92893218813452 L 400 100" fill="none" stroke="#333" stroke-width="2" />
+<text x="325.0" y="155.0" font-family="Arial, sans-serif" font-size="18" fill="#333" text-anchor="middle" font-weight="normal" >R</text>
+<line x1="250" y1="250" x2="150" y2="250" stroke="#333" stroke-width="2"   />
+<line x1="550" y1="250" x2="650" y2="250" stroke="#333" stroke-width="2"   />
+<line x1="400" y1="430" x2="400" y2="445" stroke="#333" stroke-width="2"   />
+<line x1="385" y1="445" x2="415" y2="445" stroke="#333" stroke-width="3"   />
+<line x1="393" y1="455" x2="407" y2="455" stroke="#333" stroke-width="3"   />
+<line x1="400" y1="455" x2="400" y2="470" stroke="#333" stroke-width="2"   />
+<text x="425" y="450" font-family="Arial, sans-serif" font-size="16" fill="#333" text-anchor="middle" font-weight="normal" >E</text>
+<circle cx="400" cy="250" r="20" fill="none" stroke="#333" stroke-width="2" />
+<text x="400" y="255" font-family="Arial, sans-serif" font-size="20" fill="#333" text-anchor="middle" font-weight="normal" >G</text>
+<line x1="400" y1="100" x2="400" y2="230" stroke="#333" stroke-width="2"   />
+<line x1="400" y1="270" x2="400" y2="400" stroke="#333" stroke-width="2"   />
+</svg>

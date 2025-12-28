@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150">
+  <!-- Cone -->
+  <!-- Tip at (20, 75). Base ellipse at x=140 -->
+  <line x1="20" y1="75" x2="140" y2="35" stroke="black" stroke-width="2" />
+  <line x1="20" y1="75" x2="140" y2="115" stroke="black" stroke-width="2" />
+  
+  <!-- Cap (Ellipse) - simplified as path or ellipse -->
+  <ellipse cx="140" cy="75" rx="10" ry="40" stroke="black" stroke-width="2" fill="none" />
+  
+  <!-- Internal arc for Omega -->
+  <path d="M 40 68 Q 45 75 40 82" stroke="black" stroke-width="2" fill="none"/>
+
+  <!-- Labels -->
+  <text x="50" y="70" font-family="sans-serif" font-size="14px">Ω</text>
+  <text x="80" y="60" font-family="sans-serif" font-size="14px">r</text>
+  <text x="160" y="80" font-family="sans-serif" font-size="14px">A</text>
+  
+  <!-- Formula -->
+  <text x="80" y="140" font-family="sans-serif" font-size="14px">Ω = A/r²</text>
+</svg>

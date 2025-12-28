@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Axes -->
+  <!-- Y axis (Field g) -->
+  <line x1="50" y1="300" x2="50" y2="50" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="20" y="40" font-family="Arial, sans-serif" font-style="italic" font-size="20">g</text>
+
+  <!-- X axis (Distance r) -->
+  <line x1="50" y1="300" x2="450" y2="300" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+  <text x="460" y="305" font-family="Arial, sans-serif" font-style="italic" font-size="20">r</text>
+
+  <!-- Surface Radius R -->
+  <line x1="200" y1="300" x2="200" y2="310" stroke="#333" stroke-width="2" />
+  <text x="195" y="330" font-family="Arial, sans-serif" font-style="italic" font-size="20">R</text>
+
+  <!-- Curve Inside (r < R): Linear -->
+  <line x1="50" y1="300" x2="200" y2="100" stroke="#d32f2f" stroke-width="3" />
+  <text x="100" y="200" font-family="Arial, sans-serif" font-size="16" fill="#d32f2f">g ∝ r</text>
+
+  <!-- Curve Outside (r > R): Hyperbolic (1/r^2) -->
+  <!-- Start (200, 100), End (450, near zero) -->
+  <path d="M 200,100 Q 250,250 450,280" stroke="#d32f2f" stroke-width="3" fill="none" />
+  <text x="300" y="200" font-family="Arial, sans-serif" font-size="16" fill="#d32f2f">g ∝ 1/r²</text>
+
+  <!-- Max Point Lines -->
+  <line x1="200" y1="300" x2="200" y2="100" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+  <line x1="50" y1="100" x2="200" y2="100" stroke="#999" stroke-width="1" stroke-dasharray="2,2" />
+  <text x="60" y="90" font-family="Arial, sans-serif" font-size="16">g<tspan baseline-shift="sub" font-size="70%">max</tspan> = GM/R²</text>
+
+</svg>

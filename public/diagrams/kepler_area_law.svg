@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 350">
+  <defs>
+    <marker id="arrowhead" markerWidth="13" markerHeight="9" refX="12" refY="4.5" orient="auto">
+      <polygon points="0 0, 13 4.5, 0 9" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Elliptical Orbit -->
+  <!-- Center (250, 175) -->
+  <ellipse cx="250" cy="175" rx="180" ry="120" stroke="#999" stroke-width="2" fill="none" stroke-dasharray="8,4" />
+
+  <!-- Sun at Focus -->
+  <!-- Focus c = sqrt(a^2 - b^2) = sqrt(180^2 - 120^2) approx 134 -->
+  <!-- Position = 250 - 134 = 116 -->
+  <circle cx="120" cy="175" r="15" fill="#ffa000" stroke="#e65100" stroke-width="2" />
+  <text x="110" y="210" font-family="Arial, sans-serif" font-weight="bold" font-size="16">Sun</text>
+
+  <!-- Sector 1 (Perehelion - close to sun) -->
+  <!-- Left vertex is at 250-180 = 70. -->
+  <!-- Points P1 (70, 175) is vertex. Let's pick angle -15 and +15 deg from Sun? -->
+  <!-- Let's manually pick points on ellipse for P1, P2 close to left vertex. -->
+  <path d="M 120,175 L 75,150 A 180,120 0 0 0 75,200 Z" fill="#b3e5fc" stroke="#0277bd" stroke-width="1" opacity="0.6" />
+  
+  <text x="50" y="175" font-family="Arial, sans-serif" font-style="italic" font-size="16">Area A1</text>
+  <text x="30" y="140" font-family="Arial, sans-serif" font-size="14" fill="#666">Eq. Time t</text>
+
+  <!-- Sector 2 (Aphelion - far from sun) -->
+  <!-- Right vertex is at 250+180 = 430. -->
+  <!-- Points P3, P4. Needs to cover larger arc length? No, smaller arc length, same area. -->
+  <!-- Actually velocity is slower, so smaller arc length. -->
+  <!-- Points near (420, 140) and (420, 210)? -->
+  <path d="M 120,175 L 400,240 A 180,120 0 0 0 400,110 Z" fill="#b3e5fc" stroke="#0277bd" stroke-width="1" opacity="0.6" />
+  
+  <text x="350" y="175" font-family="Arial, sans-serif" font-style="italic" font-size="16">Area A2</text>
+  <text x="430" y="140" font-family="Arial, sans-serif" font-size="14" fill="#666">Eq. Time t</text>
+
+  <!-- Planet P1 -->
+  <circle cx="75" cy="150" r="6" fill="#0277bd" />
+  <!-- Planet P2 -->
+  <circle cx="75" cy="200" r="6" fill="#0277bd" />
+  
+  <!-- Planet P3 -->
+  <circle cx="400" cy="110" r="6" fill="#0277bd" />
+  <!-- Planet P4 -->
+  <circle cx="400" cy="240" r="6" fill="#0277bd" />
+
+  <!-- Formula -->
+  <text x="200" y="330" font-family="Arial, sans-serif" font-size="20">dA/dt = constant</text>
+  <text x="200" y="300" font-family="Arial, sans-serif" font-size="18">Area A1 = Area A2</text>
+
+</svg>

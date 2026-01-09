@@ -1,0 +1,433 @@
+/* =============================================================================
+   StudyHub Design System - Premium Design Tokens
+   Version: 2.0.0 (Project Aether)
+   
+   A comprehensive design system for enterprise-grade UI consistency.
+   Based on 8-point grid system with carefully crafted color palettes.
+   ============================================================================= */
+
+/* =============================================================================
+   COLOR PALETTE - PROJECT AETHER
+   Inspired by Linear.app, Vercel, and Apple visionOS
+   ============================================================================= */
+
+:root {
+    /* -------------------------------------------------------------------------
+     PRIMARY COLORS - Brand Identity
+     Cyan/Teal palette for trust, clarity, and modernity (Linear-inspired)
+     ------------------------------------------------------------------------- */
+    --color-primary-50: #ecfeff;
+    --color-primary-100: #cffafe;
+    --color-primary-200: #a5f3fc;
+    --color-primary-300: #67e8f9;
+    --color-primary-400: #22d3ee;
+    --color-primary-500: #06b6d4;
+    --color-primary-600: #0891b2;
+    --color-primary-700: #0e7490;
+    --color-primary-800: #155e75;
+    --color-primary-900: #164e63;
+    --color-primary-950: #083344;
+
+    /* -------------------------------------------------------------------------
+     SECONDARY COLORS - Accent & Highlights
+     Amber/Gold gradient for premium, warm accents
+     ------------------------------------------------------------------------- */
+    --color-secondary-50: #fffbeb;
+    --color-secondary-100: #fef3c7;
+    --color-secondary-200: #fde68a;
+    --color-secondary-300: #fcd34d;
+    --color-secondary-400: #fbbf24;
+    --color-secondary-500: #f59e0b;
+    --color-secondary-600: #d97706;
+    --color-secondary-700: #b45309;
+    --color-secondary-800: #92400e;
+    --color-secondary-900: #78350f;
+    --color-secondary-950: #451a03;
+
+    /* -------------------------------------------------------------------------
+     SEMANTIC COLORS - Status & Feedback
+     ------------------------------------------------------------------------- */
+    /* Success - Emerald */
+    --color-success-50: #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-300: #6ee7b7;
+    --color-success-400: #34d399;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+    --color-success-900: #064e3b;
+
+    /* Warning - Orange */
+    --color-warning-50: #fff7ed;
+    --color-warning-100: #ffedd5;
+    --color-warning-200: #fed7aa;
+    --color-warning-300: #fdba74;
+    --color-warning-400: #fb923c;
+    --color-warning-500: #f97316;
+    --color-warning-600: #ea580c;
+    --color-warning-700: #c2410c;
+    --color-warning-800: #9a3412;
+    --color-warning-900: #7c2d12;
+
+    /* Error - Rose */
+    --color-error-50: #fff1f2;
+    --color-error-100: #ffe4e6;
+    --color-error-200: #fecdd3;
+    --color-error-300: #fda4af;
+    --color-error-400: #fb7185;
+    --color-error-500: #f43f5e;
+    --color-error-600: #e11d48;
+    --color-error-700: #be123c;
+    --color-error-800: #9f1239;
+    --color-error-900: #881337;
+
+    /* Info - Sky */
+    --color-info-50: #f0f9ff;
+    --color-info-100: #e0f2fe;
+    --color-info-200: #bae6fd;
+    --color-info-300: #7dd3fc;
+    --color-info-400: #38bdf8;
+    --color-info-500: #0ea5e9;
+    --color-info-600: #0284c7;
+    --color-info-700: #0369a1;
+    --color-info-800: #075985;
+    --color-info-900: #0c4a6e;
+
+    /* -------------------------------------------------------------------------
+     NEUTRAL COLORS - Slate palette for text and backgrounds
+     ------------------------------------------------------------------------- */
+    --color-neutral-0: #ffffff;
+    --color-neutral-50: #f8fafc;
+    --color-neutral-100: #f1f5f9;
+    --color-neutral-200: #e2e8f0;
+    --color-neutral-300: #cbd5e1;
+    --color-neutral-400: #94a3b8;
+    --color-neutral-500: #64748b;
+    --color-neutral-600: #475569;
+    --color-neutral-700: #334155;
+    --color-neutral-800: #1e293b;
+    --color-neutral-900: #0f172a;
+    --color-neutral-950: #020617;
+
+    /* -------------------------------------------------------------------------
+     SUBJECT COLORS - For Physics, Chemistry, Math
+     ------------------------------------------------------------------------- */
+    --color-physics: #3b82f6;
+    /* Blue */
+    --color-physics-light: #dbeafe;
+    --color-chemistry: #10b981;
+    /* Emerald */
+    --color-chemistry-light: #d1fae5;
+    --color-math: #f59e0b;
+    /* Amber */
+    --color-math-light: #fef3c7;
+
+    /* -------------------------------------------------------------------------
+     GRADIENT PRESETS - Aether
+     ------------------------------------------------------------------------- */
+    --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+    --gradient-primary-subtle: linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-primary-200) 100%);
+    --gradient-premium: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-secondary-500) 100%);
+    --gradient-dark: linear-gradient(135deg, var(--color-neutral-900) 0%, var(--color-neutral-950) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    --gradient-success: linear-gradient(135deg, var(--color-success-400) 0%, var(--color-success-600) 100%);
+    --gradient-warning: linear-gradient(135deg, var(--color-warning-400) 0%, var(--color-warning-600) 100%);
+    --gradient-error: linear-gradient(135deg, var(--color-error-400) 0%, var(--color-error-600) 100%);
+
+    /* Mesh gradients for premium backgrounds - AETHER EDITION */
+    --gradient-mesh-light:
+        radial-gradient(at 0% 0%, var(--color-primary-100) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, var(--color-secondary-100) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, var(--color-success-100) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, var(--color-info-100) 0px, transparent 50%);
+
+    --gradient-mesh-dark:
+        radial-gradient(ellipse 80% 50% at 20% -20%, rgba(6, 182, 212, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(245, 158, 11, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 60% at 0% 100%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 50% at 100% 80%, rgba(14, 165, 233, 0.1) 0%, transparent 50%);
+
+    /* -------------------------------------------------------------------------
+     TYPOGRAPHY
+     Modern, readable font stack with proper scale
+     ------------------------------------------------------------------------- */
+    --font-sans: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+    --font-display: 'Cal Sans', 'Inter', sans-serif;
+
+    /* Font Sizes - Based on 1.25 ratio (Major Third) */
+    --text-xs: 0.75rem;
+    /* 12px */
+    --text-sm: 0.875rem;
+    /* 14px */
+    --text-base: 1rem;
+    /* 16px */
+    --text-lg: 1.125rem;
+    /* 18px */
+    --text-xl: 1.25rem;
+    /* 20px */
+    --text-2xl: 1.5rem;
+    /* 24px */
+    --text-3xl: 1.875rem;
+    /* 30px */
+    --text-4xl: 2.25rem;
+    /* 36px */
+    --text-5xl: 3rem;
+    /* 48px */
+    --text-6xl: 3.75rem;
+    /* 60px */
+
+    /* Font Weights */
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+    --font-black: 900;
+
+    /* Line Heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+
+    /* Letter Spacing */
+    --tracking-tighter: -0.05em;
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
+
+    /* -------------------------------------------------------------------------
+     SPACING - 8-point grid system
+     ------------------------------------------------------------------------- */
+    --space-0: 0;
+    --space-px: 1px;
+    --space-0-5: 0.125rem;
+    /* 2px */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-1-5: 0.375rem;
+    /* 6px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-2-5: 0.625rem;
+    /* 10px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-3-5: 0.875rem;
+    /* 14px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-5: 1.25rem;
+    /* 20px */
+    --space-6: 1.5rem;
+    /* 24px */
+    --space-7: 1.75rem;
+    /* 28px */
+    --space-8: 2rem;
+    /* 32px */
+    --space-9: 2.25rem;
+    /* 36px */
+    --space-10: 2.5rem;
+    /* 40px */
+    --space-11: 2.75rem;
+    /* 44px */
+    --space-12: 3rem;
+    /* 48px */
+    --space-14: 3.5rem;
+    /* 56px */
+    --space-16: 4rem;
+    /* 64px */
+    --space-20: 5rem;
+    /* 80px */
+    --space-24: 6rem;
+    /* 96px */
+    --space-28: 7rem;
+    /* 112px */
+    --space-32: 8rem;
+    /* 128px */
+    --space-36: 9rem;
+    /* 144px */
+    --space-40: 10rem;
+    /* 160px */
+    --space-44: 11rem;
+    /* 176px */
+    --space-48: 12rem;
+    /* 192px */
+    --space-52: 13rem;
+    /* 208px */
+    --space-56: 14rem;
+    /* 224px */
+    --space-60: 15rem;
+    /* 240px */
+    --space-64: 16rem;
+    /* 256px */
+
+    /* -------------------------------------------------------------------------
+     BORDER RADIUS
+     ------------------------------------------------------------------------- */
+    --radius-none: 0;
+    --radius-sm: 0.25rem;
+    /* 4px */
+    --radius-md: 0.375rem;
+    /* 6px */
+    --radius-lg: 0.5rem;
+    /* 8px */
+    --radius-xl: 0.75rem;
+    /* 12px */
+    --radius-2xl: 1rem;
+    /* 16px */
+    --radius-3xl: 1.5rem;
+    /* 24px */
+    --radius-4xl: 2rem;
+    /* 32px */
+    --radius-full: 9999px;
+
+    /* -------------------------------------------------------------------------
+     SHADOWS - Layered for depth
+     ------------------------------------------------------------------------- */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+
+    /* Colored shadows for depth on branded elements */
+    --shadow-primary: 0 10px 40px -10px rgba(99, 102, 241, 0.4);
+    --shadow-primary-lg: 0 20px 60px -15px rgba(99, 102, 241, 0.5);
+    --shadow-success: 0 10px 40px -10px rgba(16, 185, 129, 0.4);
+    --shadow-error: 0 10px 40px -10px rgba(244, 63, 94, 0.4);
+    --shadow-warning: 0 10px 40px -10px rgba(245, 158, 11, 0.4);
+
+    /* Glass effect shadows */
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --shadow-glass-dark: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+    /* -------------------------------------------------------------------------
+     Z-INDEX SCALE
+     ------------------------------------------------------------------------- */
+    --z-negative: -1;
+    --z-0: 0;
+    --z-10: 10;
+    --z-20: 20;
+    --z-30: 30;
+    --z-40: 40;
+    --z-50: 50;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-overlay: 300;
+    --z-modal: 400;
+    --z-popover: 500;
+    --z-tooltip: 600;
+    --z-toast: 700;
+    --z-max: 9999;
+
+    /* -------------------------------------------------------------------------
+     TRANSITIONS & ANIMATIONS
+     ------------------------------------------------------------------------- */
+    --transition-fast: 150ms;
+    --transition-normal: 250ms;
+    --transition-slow: 350ms;
+    --transition-slower: 500ms;
+
+    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* -------------------------------------------------------------------------
+     BLUR VALUES (for glassmorphism)
+     ------------------------------------------------------------------------- */
+    --blur-none: 0;
+    --blur-sm: 4px;
+    --blur-md: 8px;
+    --blur-lg: 12px;
+    --blur-xl: 16px;
+    --blur-2xl: 24px;
+    --blur-3xl: 40px;
+
+    /* -------------------------------------------------------------------------
+     COMPONENT-SPECIFIC TOKENS
+     ------------------------------------------------------------------------- */
+    /* Sidebar */
+    --sidebar-width-collapsed: 4rem;
+    /* 64px */
+    --sidebar-width-expanded: 16rem;
+    /* 256px */
+
+    /* Cards */
+    --card-padding: var(--space-6);
+    --card-radius: var(--radius-2xl);
+    --card-shadow: var(--shadow-lg);
+
+    /* Buttons */
+    --button-height-sm: 2rem;
+    /* 32px */
+    --button-height-md: 2.5rem;
+    /* 40px */
+    --button-height-lg: 3rem;
+    /* 48px */
+    --button-radius: var(--radius-xl);
+
+    /* Inputs */
+    --input-height: 2.75rem;
+    /* 44px */
+    --input-radius: var(--radius-xl);
+    --input-border-width: 1px;
+
+    /* Modal */
+    --modal-backdrop-blur: var(--blur-md);
+    --modal-radius: var(--radius-3xl);
+}
+
+/* =============================================================================
+   DARK MODE OVERRIDES
+   ============================================================================= */
+
+.dark {
+    /* Override semantic tokens for dark mode */
+    --color-bg-primary: var(--color-neutral-950);
+    --color-bg-secondary: var(--color-neutral-900);
+    --color-bg-tertiary: var(--color-neutral-800);
+
+    --color-text-primary: var(--color-neutral-50);
+    --color-text-secondary: var(--color-neutral-300);
+    --color-text-tertiary: var(--color-neutral-400);
+    --color-text-muted: var(--color-neutral-500);
+
+    --color-border-primary: rgba(255, 255, 255, 0.1);
+    --color-border-secondary: rgba(255, 255, 255, 0.05);
+
+    /* Dark mode shadows */
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* Light mode defaults */
+:root {
+    --color-bg-primary: var(--color-neutral-0);
+    --color-bg-secondary: var(--color-neutral-50);
+    --color-bg-tertiary: var(--color-neutral-100);
+
+    --color-text-primary: var(--color-neutral-900);
+    --color-text-secondary: var(--color-neutral-700);
+    --color-text-tertiary: var(--color-neutral-600);
+    --color-text-muted: var(--color-neutral-500);
+
+    --color-border-primary: var(--color-neutral-200);
+    --color-border-secondary: var(--color-neutral-100);
+}

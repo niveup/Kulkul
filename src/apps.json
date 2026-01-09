@@ -4,6 +4,7 @@
         "name": "Physics Wallah",
         "url": "https://pw.live",
         "icon": "BookOpen",
+        "image": "/images/apps/pw_logo.png",
         "description": "Exam Preparation"
     },
     {
@@ -11,6 +12,7 @@
         "name": "NTA Website",
         "url": "https://jeemain.nta.nic.in",
         "icon": "Globe",
+        "image": "/images/apps/nta_logo.png",
         "description": "Official Updates"
     },
     {
@@ -25,6 +27,7 @@
         "name": "YouTube",
         "url": "https://youtube.com",
         "icon": "Youtube",
+        "image": "/images/apps/youtube_logo.png",
         "description": "Lectures & Tutorials"
     }
 ]

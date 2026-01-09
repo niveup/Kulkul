@@ -1,167 +1,230 @@
 import React, { useRef } from 'react';
-import { Play, Pause, RotateCcw, AlertTriangle, Hammer, Trophy } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertTriangle, Hammer, Trophy, Timer, Building2, ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
 
-const PomodoroTimer = ({ state, onAction }) => {
-    const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
+// Memoized Background Component to prevent repaints
+const TimerBackground = React.memo(() => (
+    <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950/50 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-600/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+    </div>
+));
 
-    // Determine current building based on the *set duration* (not time left)
-    const currentBuilding = getBuildingConfig(Math.floor(initialTime / 60));
+// Memoized Building/Timer Display
+const TimerDisplay = React.memo(({ state, currentBuilding, handleDurationChange }) => {
+    const { timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
+    const [showHours, setShowHours] = React.useState(false);
+
+    // Calculate Progress
+    const progress = 1 - (timeLeft / initialTime);
+    const buildingHeight = Math.min(Math.max(progress * 100, 0), 100);
+
     const CurrentIcon = currentBuilding.icon;
 
     const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+        if (showHours) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+        }
     };
 
-    // Calculate Progress for "Building" animation
-    const progress = 1 - (timeLeft / initialTime);
-    const buildingHeight = Math.min(Math.max(progress * 100, 0), 100);
+    return (
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-8">
+            {/* Construction Zone */}
+            <div className="relative w-64 h-64 flex items-center justify-center mb-6">
+                {/* Ring Glow */}
+                <div className="absolute inset-0 rounded-full border border-white/5 bg-white/1"></div>
+                <AnimatePresence>
+                    {isFailed && (
+                        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} className="absolute z-40 flex flex-col items-center">
+                            <AlertTriangle size={64} className="text-rose-500 mb-2 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]" />
+                            <span className="text-rose-400 font-bold uppercase tracking-widest text-sm">Failed</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                {!isFailed && (
+                    <div className="relative w-40 h-40 flex items-end justify-center">
+                        <div className="absolute inset-0 flex items-end justify-center opacity-10 blur-[1px]">
+                            <CurrentIcon size={140} className="text-white" strokeWidth={1} />
+                        </div>
+                        <div className="absolute bottom-0 left-0 w-full flex items-end justify-center overflow-hidden transition-all duration-700 ease-in-out" style={{ height: `${isCompleted ? 100 : buildingHeight}%` }}>
+                            <div className="w-40 h-40 flex items-end justify-center relative">
+                                <CurrentIcon size={140} className={`${currentBuilding.color} drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] filter brightness-110`} strokeWidth={2} fill="currentColor" fillOpacity={0.2} />
+                            </div>
+                            {!isCompleted && isActive && (
+                                <div className="absolute top-0 w-full h-[2px] bg-cyan-400 shadow-[0_0_10px_cyan] z-20 animate-pulse"></div>
+                            )}
+                        </div>
+                        {!isCompleted && isActive && (
+                            <div
+                                className="absolute -right-4 top-1/2 z-30 text-slate-400 animate-hammer"
+                                style={{
+                                    animation: 'hammer 0.5s ease-in-out infinite',
+                                }}
+                            >
+                                <Hammer size={24} fill="currentColor" />
+                            </div>
+                        )}
+                        <style>{`
+                            @keyframes hammer {
+                                0%, 100% { transform: rotate(-10deg) translateX(0); }
+                                50% { transform: rotate(20deg) translateX(5px); }
+                            }
+                        `}</style>
+
+                    </div>
+                )}
+            </div>
+
+            {/* TIMER DISPLAY CONTROL GROUP */}
+            <div className="relative group px-4 py-2 flex items-center justify-center gap-4 -mt-4">
+
+                {/* Left Arrow (Decrement) - VERY SLIM */}
+                {!isActive && !isCompleted && !isFailed && (
+                    <motion.button
+                        onClick={() => handleDurationChange(-5)}
+                        className="flex items-center justify-center h-24 w-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                        whileHover={{ x: -2, scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        <ChevronLeft size={16} />
+                    </motion.button>
+                )}
+
+                <div className="flex flex-col items-center">
+                    {/* Digits */}
+                    <div
+                        className={`${showHours && timeLeft >= 3600 ? 'text-4xl lg:text-5xl' : 'text-5xl lg:text-6xl'} font-bold tracking-tighter text-white drop-shadow-2xl tabular-nums leading-none cursor-default z-10 text-center transition-all duration-300 min-w-[200px]`}
+                        style={{ fontFamily: '"Outfit", sans-serif' }}
+                    >
+                        {formatTime(timeLeft)}
+                    </div>
+
+                    {/* Min/Hrs Toggle Switch (Layout Animation) */}
+                    <div className="flex items-center bg-white/5 p-1 rounded-full mt-4 border border-white/10 relative isolate">
+                        <button
+                            onClick={() => setShowHours(false)}
+                            className={`relative z-10 px-4 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full transition-colors ${!showHours ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                            {!showHours && (
+                                <motion.div
+                                    layoutId="activePill"
+                                    className="absolute inset-0 bg-white/10 rounded-full -z-10"
+                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                            Mins
+                        </button>
+                        <button
+                            onClick={() => setShowHours(true)}
+                            className={`relative z-10 px-4 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full transition-colors ${showHours ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                        >
+                            {showHours && (
+                                <motion.div
+                                    layoutId="activePill"
+                                    className="absolute inset-0 bg-white/10 rounded-full -z-10"
+                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                            )}
+                            Hours
+                        </button>
+                    </div>
+
+                    <p className="text-indigo-200/50 text-xs font-medium uppercase tracking-[0.2em] mt-4">
+                        {isActive ? 'Keep Focusing' : isCompleted ? 'Session Complete' : 'Ready'}
+                    </p>
+                </div>
+
+                {/* Right Arrow (Increment) - VERY SLIM */}
+                {!isActive && !isCompleted && !isFailed && (
+                    <motion.button
+                        onClick={() => handleDurationChange(5)}
+                        className="flex items-center justify-center h-24 w-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                        whileHover={{ x: 2, scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        <ChevronRight size={16} />
+                    </motion.button>
+                )}
+            </div>
+
+        </div>
+    );
+});
+
+const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
+    const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
+
+    // Use duration specifically for determining colors while sliding for instant feedback
+    const activeTimeBytes = isActive ? Math.floor(initialTime / 60) : duration;
+    const currentBuilding = getBuildingConfig(activeTimeBytes);
+    const CurrentIcon = currentBuilding.icon;
+
+    // Helper to clamp duration
+    const handleDurationChange = (change) => {
+        const newDuration = Math.max(5, Math.min(995, duration + change));
+        onAction('SET_DURATION', newDuration);
+    };
 
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="group relative shadow-2xl rounded-[2.5rem] overflow-hidden aspect-[4/5] flex flex-col justify-end border border-white/60 bg-white"
+            className="group relative shadow-2xl rounded-[2.5rem] overflow-hidden h-full min-h-[500px] flex flex-col justify-between border border-white/10 bg-slate-900 isolate"
         >
-            {/* ------------------------------------------------------ */}
-            {/* IMMERSIVE BACKGROUND SCENE (Construction Site) */}
-            {/* ------------------------------------------------------ */}
-            <div className={`absolute inset-0 bg-gradient-to-b ${currentBuilding.sky} to-white transition-colors duration-1000 z-0`}>
+            <TimerBackground />
 
-                {/* Floating Clouds */}
-                <div className="absolute inset-0 overflow-hidden opacity-40 pointer-events-none">
-                    <motion.div animate={{ x: ["-10%", "10%"] }} transition={{ duration: 20, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }} className="absolute top-10 left-10 text-slate-300">
-                        <div className="w-24 h-12 bg-current rounded-full blur-xl" />
-                    </motion.div>
-                    <motion.div animate={{ x: ["5%", "-5%"] }} transition={{ duration: 25, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }} className="absolute top-20 right-10 text-slate-200">
-                        <div className="w-32 h-16 bg-current rounded-full blur-xl" />
-                    </motion.div>
-                </div>
-
-                {/* THE BUILDING (Centerpiece) */}
-                <div className="absolute inset-x-0 bottom-[42%] flex justify-center items-end h-[50%] z-10 pointer-events-none">
-                    {/* FAILED STATE */}
-                    <AnimatePresence>
-                        {isFailed && (
-                            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }} className="absolute z-40 flex flex-col items-center justify-center top-0 text-red-500 drop-shadow-sm">
-                                <AlertTriangle size={64} strokeWidth={2} />
-                                <span className="text-sm font-bold uppercase tracking-widest mt-2 bg-white/90 px-3 py-1 rounded-full shadow-sm text-red-500">Construction Halted</span>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* COMPLETED STATE */}
-                    <AnimatePresence>
-                        {isCompleted && !isFailed && (
-                            <motion.div initial={{ scale: 0.8, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ opacity: 0 }} className={`absolute z-40 mb-4 drop-shadow-2xl ${currentBuilding.color}`}>
-                                <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className={`absolute -inset-8 opacity-20 blur-xl rounded-full bg-current`} />
-                                <CurrentIcon size={140} strokeWidth={1.5} />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* BUILDING PROGRESS (Active/Paused) */}
-                    {!isFailed && !isCompleted && (
-                        <div className="relative w-48 h-48 flex items-end justify-center">
-                            {/* Blueprint/Ghost */}
-                            <div className="absolute inset-0 flex items-end justify-center opacity-30 grayscale filter mix-blend-multiply">
-                                <CurrentIcon size={160} />
-                            </div>
-
-                            {/* Constructed Part (Masked) */}
-                            <div className="absolute bottom-0 left-0 w-full flex items-end justify-center overflow-hidden transition-all duration-1000 ease-linear" style={{ height: `${buildingHeight}%` }}>
-                                <div className="w-48 h-48 flex items-end justify-center relative">
-                                    <CurrentIcon size={160} className={`${currentBuilding.color} drop-shadow-2xl [&_path]:stroke-none`} strokeWidth={2} fill="currentColor" fillOpacity={0.15} />
-                                    {/* Texture */}
-                                    <div className="absolute inset-0 mix-blend-overlay opacity-30 bg-gradient-to-tr from-black/10 to-transparent" />
-                                </div>
-                                {/* Laser Line */}
-                                <div className="absolute top-0 w-full h-[2px] bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,1)] z-20" />
-                            </div>
-
-                            {/* Hammer Animation */}
-                            {isActive && (
-                                <motion.div
-                                    className="absolute z-30 text-slate-700 drop-shadow-lg"
-                                    style={{ bottom: `${buildingHeight}%`, right: '-10%' }}
-                                    animate={{ x: [-10, 0, -10], rotate: [-15, 0, -15] }}
-                                    transition={{ duration: 0.6, repeat: Infinity }}
-                                >
-                                    <Hammer size={28} fill="currentColor" className="origin-bottom-left" />
-                                </motion.div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Ground */}
-                <div className="absolute bottom-0 inset-x-0 h-[35%] bg-gradient-to-t from-white via-white/90 to-transparent z-10" />
+            {/* HEADER (Building Badge) */}
+            <div className="relative z-20 pt-8 flex justify-center">
+                {!isFailed && (
+                    <div className={`flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 shadow-lg ${currentBuilding.color}`}>
+                        <CurrentIcon size={18} strokeWidth={2} />
+                        <span className={`text-xs font-bold uppercase tracking-wider ${currentBuilding.color} drop-shadow-sm`}>
+                            {currentBuilding.label}
+                        </span>
+                    </div>
+                )}
             </div>
 
-
-            {/* ------------------------------------------------------ */}
-            {/* UI OVERLAY (Foreground) */}
-            {/* ------------------------------------------------------ */}
-            {/* ------------------------------------------------------ */}
-            {/* STATIC HEADER (Pinned to Top) */}
-            {/* ------------------------------------------------------ */}
-            <div className="absolute top-6 left-0 right-0 flex justify-center z-50 pointer-events-none">
-                <div className="flex flex-col items-center">
-                    {!isFailed && (
-                        <div className={`flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 backdrop-blur-md shadow-sm border border-white/60 ${currentBuilding.color}`}>
-                            <CurrentIcon size={16} strokeWidth={2.5} />
-                            <span className="text-sm font-bold uppercase tracking-wide whitespace-nowrap">
-                                {currentBuilding.label}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* ------------------------------------------------------ */}
-            {/* CENTERED TIMER (Fixed Position) */}
-            {/* ------------------------------------------------------ */}
-            <div className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center group">
-                {/* Time */}
-                <div className="text-7xl font-light tracking-tighter text-slate-800 tabular-nums leading-none select-none drop-shadow-sm transition-all duration-300" style={{ fontFamily: '"SF Pro Display", "Inter", sans-serif' }}>
-                    {formatTime(timeLeft)}
-                </div>
-
-                {/* Hidden Time Slider Removed from here */}
-            </div>
-
-            {/* ------------------------------------------------------ */}
-            {/* UI OVERLAY (Foreground) */}
-            {/* ------------------------------------------------------ */}
-            <div className="relative z-20 w-full px-8 pb-8 pt-4 flex flex-col items-center gap-6 bg-gradient-to-t from-white/80 to-transparent">
-
-                {/* Spacer to push timer down if needed, though absolute header handles it. */}
-                <div className="h-2" />
+            <TimerDisplay state={state} currentBuilding={currentBuilding} handleDurationChange={handleDurationChange} />
 
 
+            {/* ------------------------------------------------------ */}
+            {/* CONTROLS (Bottom) */}
+            {/* ------------------------------------------------------ */}
+            <div className="relative z-20 w-full px-8 pb-10 bg-gradient-to-t from-slate-900/90 to-transparent pt-10">
 
-                {/* Controls */}
-                <div className="w-full grid grid-cols-2 gap-4">
+                {/* Control Buttons */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
                     {!isActive ? (
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={() => onAction('START')}
-                            className="col-span-1 h-14 rounded-2xl flex items-center justify-center gap-2 bg-slate-900 text-white shadow-xl shadow-slate-300 hover:bg-slate-800 transition-all z-20"
+                            className={`col-span-1 h-12 rounded-xl flex items-center justify-center gap-2 text-white shadow-lg transition-all ${currentBuilding.bg.replace('bg-', 'bg-gradient-to-r from-').replace('500', '500')} ${currentBuilding.bg.replace('bg-', 'to-').replace('500', '600')} shadow-${currentBuilding.bg.replace('bg-', '')}/25 hover:shadow-${currentBuilding.bg.replace('bg-', '')}/40`}
                         >
-                            <Play size={20} fill="currentColor" />
-                            <span className="text-base font-semibold">{isCompleted || isFailed ? 'Restart' : 'Build'}</span>
+                            <Play size={18} fill="currentColor" />
+                            <span className="text-sm font-bold">{isCompleted || isFailed ? 'Restart Build' : 'Start Build'}</span>
                         </motion.button>
                     ) : (
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={() => onAction('PAUSE')}
-                            className="col-span-1 h-14 rounded-2xl flex items-center justify-center gap-2 bg-amber-100 text-amber-900 border border-amber-200 hover:bg-amber-200 transition-all z-20"
+                            className="col-span-1 h-12 rounded-xl flex items-center justify-center gap-2 bg-slate-800 text-amber-400 border border-slate-700 hover:bg-slate-750 transition-all"
                         >
-                            <Pause size={20} fill="currentColor" />
-                            <span className="text-base font-semibold">Pause</span>
+                            <Pause size={18} fill="currentColor" />
+                            <span className="text-sm font-bold">Pause</span>
                         </motion.button>
                     )}
 
@@ -169,44 +232,22 @@ const PomodoroTimer = ({ state, onAction }) => {
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={() => onAction('GIVE_UP')}
-                            className="col-span-1 h-14 rounded-2xl flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-all z-20"
+                            className="col-span-1 h-12 rounded-xl flex items-center justify-center gap-2 bg-slate-800 text-rose-400 border border-slate-700 hover:bg-slate-750 transition-all"
                         >
-                            <AlertTriangle size={20} />
-                            <span className="text-base font-semibold">Give Up</span>
+                            <AlertTriangle size={18} />
+                            <span className="text-sm font-bold">Give Up</span>
                         </motion.button>
                     ) : (
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={() => onAction('RESET')}
-                            className="col-span-1 h-14 rounded-2xl flex items-center justify-center gap-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all shadow-sm z-20"
+                            className="col-span-1 h-12 rounded-xl flex items-center justify-center gap-2 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-750 transition-all"
                         >
-                            <RotateCcw size={20} />
-                            <span className="text-base font-semibold">Reset</span>
+                            <RotateCcw size={18} />
+                            <span className="text-sm font-bold">Reset</span>
                         </motion.button>
                     )}
                 </div>
-
-                {/* Time Slider - Below Buttons */}
-                {!isActive && !isCompleted && !isFailed && (
-                    <div className="w-full flex flex-col items-center mt-2 px-4">
-                        <div className="w-full flex justify-between text-xs text-slate-500 font-bold mb-2 tracking-wide">
-                            <span>DURATION</span>
-                            <span className="text-indigo-600">{duration} MIN</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="1"
-                            max="120"
-                            value={duration}
-                            onChange={(e) => onAction('SET_DURATION', e.target.value)}
-                            className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:bg-slate-300 transition-colors"
-                        />
-                        <div className="flex justify-between w-full text-[10px] text-slate-400 font-bold mt-1">
-                            <span>1m</span>
-                            <span>2h</span>
-                        </div>
-                    </div>
-                )}
             </div>
         </motion.div>
     );

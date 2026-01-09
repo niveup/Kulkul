@@ -132,6 +132,58 @@ export async function initDatabase() {
             )
         `);
 
+        // Auth sessions table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS auth_sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token VARCHAR(64) NOT NULL UNIQUE,
+                ip_address VARCHAR(45) NOT NULL,
+                user_agent_hash VARCHAR(64),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                expires_at TIMESTAMP NOT NULL,
+                INDEX idx_token (token),
+                INDEX idx_expires (expires_at)
+            )
+        `);
+
+        // Auth config table (for session kill feature)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS auth_config (
+                id INT PRIMARY KEY DEFAULT 1,
+                kill_sessions_before TIMESTAMP DEFAULT '1970-01-01 00:00:01'
+            )
+        `);
+        // Ensure auth_config has initial row
+        await connection.execute(`
+            INSERT IGNORE INTO auth_config (id, kill_sessions_before) VALUES (1, '1970-01-01 00:00:01')
+        `);
+
+        // Security audit log
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS security_audit_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                event_type VARCHAR(50) NOT NULL,
+                ip_address VARCHAR(45),
+                user_agent TEXT,
+                details TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_event_type (event_type),
+                INDEX idx_created_at (created_at)
+            )
+        `);
+
+        // Rate limits table
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS rate_limits (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                ip_address VARCHAR(45) NOT NULL,
+                endpoint VARCHAR(100) NOT NULL,
+                request_count INT DEFAULT 1,
+                window_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_ip_endpoint (ip_address, endpoint)
+            )
+        `);
+
         isDbInitialized = true;
     } finally {
         connection.release();

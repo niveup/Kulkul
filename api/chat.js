@@ -142,19 +142,36 @@ Guidelines:
 // Main Handler
 // =============================================================================
 
+import { requireAuth } from './authMiddleware.js';
+
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+    'https://personal-dashboard-alpha-gilt.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
 export default async function handler(req, res) {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // CORS headers - restrict to allowed origins
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        return res.status(204).end();
     }
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // Require authentication for AI access
+    const authResult = await requireAuth(req, res);
+    if (authResult !== true) return; // Already sent 401/429
 
     try {
         const { messages, provider: providerName = 'cerebras', model: modelName } = req.body;

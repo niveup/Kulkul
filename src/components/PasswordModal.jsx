@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ArrowRight, Clock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { cn } from '../../lib/utils';
+import { cn } from '../lib/utils';
 
 const PasswordModal = () => {
-    const { isAuthenticated, isGuest, login, enterGuestMode } = useAuth();
+    const { isAuthenticated, isGuest, login, enterGuestMode, error: authError } = useAuth();
     const [password, setPassword] = useState('');
     const [error, setError] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // If authenticated or guest mode chosen, don't show modal (unless we want to support switching back)
     // For this modal, we hide it when one of those states is active.
@@ -17,17 +18,22 @@ const PasswordModal = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
         setError(false);
+        setIsSubmitting(true);
 
-        // Simulate API delay for dramatic effect
-        await new Promise(r => setTimeout(r, 600));
-
-        const isValid = login(password);
-        if (isValid) {
-            setSuccess(true);
-        } else {
+        try {
+            const isValid = await login(password);
+            if (isValid) {
+                setSuccess(true);
+            } else {
+                setError(true);
+            }
+        } catch (err) {
             setError(true);
-            // Shake animation triggers via state
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

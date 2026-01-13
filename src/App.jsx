@@ -750,7 +750,7 @@ function App() {
         <main className={cn(
           'flex-1 transition-all duration-300',
           'ml-0 w-full',
-          'pl-[112px] pr-8 py-8' // Global content padding (Sidebar: 88px + Gap: 24px)
+          'pl-[120px] pr-8 py-8' // Global content padding (Sidebar: 88px + Gap: 24px)
           // Window scrolling enabled
         )}>
           {/* Animated Page Content */}

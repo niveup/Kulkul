@@ -1,483 +1,231 @@
-/**
- * Premium Sidebar Component
- * 
- * Features:
- * - Glassmorphism design
- * - Dynamic Expansion on Hover (Apple-style)
- * - Smooth Spring Animations
- * - Keyboard navigation
- * - Accessibility compliant
- */
-
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useMotionValue, useMotionTemplate } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    LayoutGrid,       // Safer than LayoutTemplate
-    BookOpen,         // Replacing Brain for "Study Tools"
+    LayoutGrid,
+    BookOpen,
     TrendingUp,
     Layers,
-    MessageSquare,    // Safer than MessageSquareStar
-    ShieldCheck,      // Safer than Fingerprint
+    MessageSquare,
+    ShieldCheck,
     Settings,
-    Moon,
     Sun,
-} from 'lucide-react';
+    Monitor,
+    UserCircle2
+} from 'lucide-react'; // Using standard Lucide icons
 import { cn } from '../lib/utils';
-import { useTheme, useNavigation } from '../store';
+import { useAppStore } from '../store';
 import { useHotkey } from '../hooks';
 
 // =============================================================================
-// Menu Configuration
+// Designer Configuration
 // =============================================================================
-
-// "Product Manager" Note:
-// We are moving away from generic icons to "Identity-First" icons.
-// Each section represents a distinct "mode" of the user's brain.
-// - Overview -> Structure (Blue)
-// - study-tools -> Processing/Brain (Amber)
-// - Progress -> Growth (Emerald)
-// - Resources -> Depth/Layers (Rose)
-// - AI -> Magic (Violet)
-// - Admin -> Identity/Security (Slate)
-
+// "Human" touches: distinct names, thinner confident strokes
 const MENU_ITEMS = [
-    {
-        id: 'overview',
-        icon: LayoutGrid,
-        label: 'Overview',
-        shortcut: '1',
-        color: 'text-blue-500',
-        gradient: 'from-blue-500/20 to-cyan-500/20',
-        activeBorder: 'border-blue-500/20'
-    },
-    {
-        id: 'study-tools',
-        icon: BookOpen,
-        label: 'Study Tools',
-        shortcut: '2',
-        color: 'text-amber-500',
-        gradient: 'from-amber-500/20 to-orange-500/20',
-        activeBorder: 'border-amber-500/20'
-    },
-    {
-        id: 'progress',
-        icon: TrendingUp,
-        label: 'Progress',
-        shortcut: '3',
-        color: 'text-emerald-500',
-        gradient: 'from-emerald-500/20 to-teal-500/20',
-        activeBorder: 'border-emerald-500/20'
-    },
-    {
-        id: 'resources',
-        icon: Layers,
-        label: 'Resources',
-        shortcut: '4',
-        color: 'text-pink-500',
-        gradient: 'from-pink-500/20 to-rose-500/20',
-        activeBorder: 'border-pink-500/20'
-    },
-    {
-        id: 'ai-assistant',
-        icon: MessageSquare,
-        label: 'AI Assistant',
-        shortcut: '5',
-        color: 'text-violet-500',
-        gradient: 'from-violet-500/20 to-purple-500/20',
-        activeBorder: 'border-violet-500/20'
-    },
-    {
-        id: 'admin',
-        icon: ShieldCheck,
-        label: 'Admin',
-        shortcut: '6',
-        badge: '⚠️',
-        color: 'text-slate-500',
-        gradient: 'from-slate-500/20 to-gray-500/20',
-        activeBorder: 'border-slate-500/20'
-    },
+    { id: 'overview', icon: LayoutGrid, label: 'Overview', shortcut: '1' },
+    { id: 'study-tools', icon: BookOpen, label: 'Workstation', shortcut: '2' }, // Renamed for "Pro" feel
+    { id: 'progress', icon: TrendingUp, label: 'Analytics', shortcut: '3' },
+    { id: 'resources', icon: Layers, label: 'Library', shortcut: '4' },
+    { id: 'ai-assistant', icon: MessageSquare, label: 'Neural Link', shortcut: '5' }, // "Personal" naming
+    { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '6' },
 ];
 
-// =============================================================================
-// NavItem Component
-// =============================================================================
-
-// =============================================================================
-// NavItem Component
-// =============================================================================
-
-// =============================================================================
-// NavItem Component
-// =============================================================================
-
-const NavItem = ({
-    item,
-    isActive,
-    isExpanded,
-    onSelect,
-    index,
-    isFocused
-}) => {
-    const Icon = item.icon;
-    const itemRef = useRef(null);
-
-    useEffect(() => {
-        if (isFocused && itemRef.current) {
-            itemRef.current.focus();
-        }
-    }, [isFocused]);
-
-    // Enhanced color logic for active states
-    const activeColorClass = item.color || 'text-indigo-500';
-    const bgClass = activeColorClass.replace('text-', 'bg-');
-
-    return (
-        <motion.button
-            ref={itemRef}
-            layout="position"
-            onClick={() => onSelect(item.id)}
-            className={cn(
-                'group relative flex items-center gap-4 rounded-[18px]', // Slightly softer radius
-                isExpanded
-                    ? 'w-full px-4 py-3.5 justify-start'
-                    : 'w-12 h-12 mx-auto justify-center p-0',
-                'transition-all duration-300 outline-none select-none',
-                'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-                isActive
-                    ? 'shadow-md shadow-black/5 dark:shadow-none' // Depth for active item
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100'
-            )}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{
-                layout: { duration: 0.2, ease: "easeOut" }
-            }}
-        >
-            {/* Active Background - The "Pill" */}
-            {isActive && (
-                <motion.div
-                    layoutId="activeGlow"
-                    className={cn(
-                        "absolute inset-0 rounded-[18px] border border-white/50 dark:border-white/5",
-                        "bg-white dark:bg-white/10", // Glassy background
-                        "shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
-                    )}
-                    initial={false}
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                >
-                    {/* Subtle Gradient Overlay respective to the item color */}
-                    <div className={cn(
-                        "absolute inset-0 opacity-20 dark:opacity-30 rounded-[18px] bg-gradient-to-r",
-                        item.gradient
-                    )} />
-                </motion.div>
-            )}
-
-            {/* Icon Container */}
-            <div className="relative z-10 flex-shrink-0 flex items-center justify-center">
-                <Icon
-                    size={22} // Slightly smaller for elegance
-                    className={cn(
-                        'transition-colors duration-300',
-                        isActive
-                            ? activeColorClass
-                            : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
-                    )}
-                />
-
-                {/* Active "Breathing" Glow behind Icon */}
-                {isActive && (
-                    <motion.div
-                        className={cn(
-                            "absolute -inset-3 rounded-full blur-xl opacity-40",
-                            bgClass
-                        )}
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{
-                            opacity: [0.3, 0.5, 0.3],
-                            scale: [1, 1.2, 1]
-                        }}
-                        transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
-                    />
-                )}
-            </div>
-
-            {/* Text Label - Expanding Reveal */}
-            <AnimatePresence mode="popLayout">
-                {isExpanded && (
-                    <motion.div
-                        initial={{ opacity: 0, x: -8, filter: 'blur(4px)' }}
-                        animate={{
-                            opacity: 1,
-                            x: 0,
-                            filter: 'blur(0px)',
-                            transition: {
-                                delay: 0.1, // Stagger text slightly
-                                duration: 0.3,
-                                ease: "easeOut"
-                            }
-                        }}
-                        exit={{ opacity: 0, x: -8, filter: 'blur(4px)', transition: { duration: 0.15 } }}
-                        className="flex-1 overflow-hidden whitespace-nowrap text-left pl-1"
-                    >
-                        <span className={cn(
-                            "font-semibold text-[15px] block truncate tracking-wide",
-                            isActive ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-300"
-                        )}>
-                            {item.label}
-                        </span>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Shortcut Hint */}
-            <AnimatePresence>
-                {isExpanded && item.shortcut && (
-                    <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.4, transition: { delay: 0.3 } }}
-                        exit={{ opacity: 0 }}
-                        className="text-xs font-mono font-medium ml-auto mr-1"
-                    >
-                        {item.shortcut}
-                    </motion.span>
-                )}
-            </AnimatePresence>
-        </motion.button>
-    );
-};
-
-// =============================================================================
-// Main Sidebar Component
-// =============================================================================
-
-const Sidebar = () => {
-    const { isDarkMode, toggleTheme } = useTheme();
-    const { activeTab, setActiveTab } = useNavigation();
-    const [focusedIndex, setFocusedIndex] = React.useState(-1);
+export const Sidebar = () => {
+    const { activeTab, setActiveTab, toggleTheme } = useAppStore();
     const [isExpanded, setIsExpanded] = useState(false);
     const sidebarRef = useRef(null);
 
-    // Mouse Spotlight Logic - Optimized with useMotionTemplate and direct ref manipulation where possible
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
-
-    const handleMouseMove = useCallback(({ clientX, clientY, currentTarget }) => {
-        const { left, top } = currentTarget.getBoundingClientRect();
-        mouseX.set(clientX - left);
-        mouseY.set(clientY - top);
-    }, [mouseX, mouseY]);
-
-    // Number key shortcuts
-    MENU_ITEMS.forEach((item, index) => {
+    // Keyboard shortcuts
+    MENU_ITEMS.forEach((item) => {
         useHotkey(item.shortcut, () => setActiveTab(item.id), [setActiveTab]);
     });
 
-    // Arrow key navigation
-    const handleKeyDown = useCallback((e) => {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setFocusedIndex(prev => Math.min(prev + 1, MENU_ITEMS.length - 1));
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setFocusedIndex(prev => Math.max(prev - 1, 0));
-        } else if (e.key === 'Enter' && focusedIndex >= 0) {
-            setActiveTab(MENU_ITEMS[focusedIndex].id);
-        }
-    }, [focusedIndex, setActiveTab]);
+    // Spotlight & Mouse Tracking (Performance Optimized via CSS Vars)
+    useEffect(() => {
+        const sidebar = sidebarRef.current;
+        if (!sidebar) return;
 
+        const handleMouseMove = (e) => {
+            const rect = sidebar.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            sidebar.style.setProperty('--mouse-x', `${x}px`);
+            sidebar.style.setProperty('--mouse-y', `${y}px`);
+        };
+
+        sidebar.addEventListener('mousemove', handleMouseMove);
+        return () => sidebar.removeEventListener('mousemove', handleMouseMove);
+    }, []);
 
     return (
         <motion.aside
             ref={sidebarRef}
             initial={false}
-            animate={{
-                width: isExpanded ? 280 : 88, // Refined widths
-            }}
-            transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-                mass: 0.8
-            }}
-            onMouseMove={handleMouseMove}
+            animate={{ width: isExpanded ? 280 : 88 }}
+            transition={{ type: "spring", stiffness: 350, damping: 35, mass: 0.8 }} // Snappier, more "physical" feel
             onMouseEnter={() => setIsExpanded(true)}
             onMouseLeave={() => setIsExpanded(false)}
-            onKeyDown={handleKeyDown}
-            className={cn(
-                'fixed left-0 top-0 h-screen z-[9999]', // Full Height
-                'flex flex-col pb-6',
-                // Interior padding handle dynamically to avoid layout shifts
-                'bg-white/70 dark:bg-[#050510]/60 backdrop-blur-2xl', // Richer custom blur
-                'border-r border-white/20 dark:border-white/5',
-                'shadow-[4px_0_24px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_40px_-4px_rgba(0,0,0,0.2)]',
-                'overflow-hidden will-change-[width]',
-                'group/sidebar'
-            )}
-            role="navigation"
-            aria-label="Main navigation"
+            className="fixed top-4 left-4 h-[calc(100vh-2rem)] z-50 flex flex-col rounded-[24px] group/sidebar"
+            style={{
+                // "Porcelain" material
+                background: 'linear-gradient(180deg, rgba(20,20,22,0.85) 0%, rgba(10,10,12,0.95) 100%)',
+                backdropFilter: 'blur(40px) saturate(180%)',
+                boxShadow: '0 20px 50px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)'
+            }}
         >
-            {/* Dynamic Spotlight Effect - Subtle and Premium */}
-            <motion.div
-                className="pointer-events-none absolute -inset-px opacity-0 transition duration-500 group-hover/sidebar:opacity-100"
+            {/* Ambient Noise Texture (Subtle Human Imperfection) */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] rounded-[24px] z-[-1]" />
+
+            {/* Spotlight Layer (Interactive) */}
+            <div
+                className="absolute inset-0 rounded-[24px] z-[-1] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700 pointer-events-none"
                 style={{
-                    background: useMotionTemplate`
-                        radial-gradient(
-                            600px circle at ${mouseX}px ${mouseY}px,
-                            rgba(var(--color-primary-500-rgb), 0.06),
-                            transparent 80%
-                        )
-                    `
+                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.04), transparent 40%)`
                 }}
             />
 
-            {/* Logo Section - The "Crown Jewel" */}
-            <div className="flex items-center gap-4 mb-2 mt-6 px-5 relative z-10 h-16 shrink-0">
-                <motion.div
-                    className="relative cursor-pointer group/logo"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    {/* Refined Logo Container */}
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/10 relative overflow-hidden isolate">
-                        {/* Internal Gloss */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-60 mix-blend-overlay" />
-
-                        {/* Shimmer Effect Interval */}
-                        <div className="absolute inset-0 -translate-x-[150%] animate-[shimmer_3s_infinite_2s] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
-
-                        {/* Logo Icon */}
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 drop-shadow-md">
-                            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                            <path d="M6 12v5c3 3 9 3 12 0v-5" />
-                        </svg>
+            {/* Header: Personal Identity Card */}
+            <div className="h-28 flex items-center px-6 mb-2 relative">
+                <div className="flex items-center gap-4 w-full">
+                    {/* Unique "Fingerprint" / Avatar */}
+                    <div className="relative group/avatar cursor-pointer shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
+                            <Monitor size={18} strokeWidth={1.5} className="text-zinc-400 group-hover/avatar:text-white transition-colors" />
+                        </div>
+                        {/* Online Status Dot */}
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#09090b]" />
                     </div>
-                </motion.div>
 
-                <AnimatePresence mode="popLayout">
-                    {isExpanded && (
-                        <motion.div
-                            initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
-                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                            exit={{ opacity: 0, x: -4, filter: 'blur(4px)' }}
-                            transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="whitespace-nowrap flex flex-col justify-center"
-                        >
-                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                                StudyHub
-                            </h1>
-                            <span className="text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 tracking-[0.2em] uppercase opacity-90 pl-0.5 mt-1.5">
-                                Workspace
-                            </span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10, filter: 'blur(5px)' }}
+                                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, x: -10, filter: 'blur(5px)' }}
+                                transition={{ duration: 0.25 }}
+                                className="flex-1 overflow-hidden"
+                            >
+                                <h2 className="text-sm font-semibold text-white tracking-tight lead-none">Aspirant's Space</h2>
+                                <p className="text-[11px] text-zinc-500 font-medium tracking-wide mt-0.5 group-hover/sidebar:text-zinc-400 transition-colors">
+                                    Productive Flow
+                                </p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
-            {/* Navigation Menu */}
-            <nav className="flex-1 space-y-2 w-full relative z-10 px-3 py-4 overflow-y-auto scrollbar-hide">
-                {MENU_ITEMS.map((item, index) => (
-                    <NavItem
-                        key={item.id}
-                        item={item}
-                        isActive={activeTab === item.id}
-                        isExpanded={isExpanded}
-                        onSelect={setActiveTab}
-                        index={index}
-                        isFocused={focusedIndex === index}
-                    />
-                ))}
+            {/* Navigation List */}
+            <nav className="flex-1 px-4 space-y-1 overflow-y-auto scrollbar-hide relative z-10 pb-4">
+                {MENU_ITEMS.map((item) => {
+                    const isActive = activeTab === item.id;
+                    const Icon = item.icon;
+
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id)}
+                            className={cn(
+                                "relative w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group/item outline-none",
+                                isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200"
+                            )}
+                        >
+                            {/* Active Background - Subtle "Glass Inset" */}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeTabBg"
+                                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/10 to-transparent border-l-2 border-indigo-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+                                    initial={false}
+                                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                                />
+                            )}
+
+                            {/* Icon */}
+                            <div className="relative z-10 flex items-center justify-center">
+                                <Icon
+                                    size={20}
+                                    strokeWidth={isActive ? 2 : 1.5} // Thinner stroke = Premium feel
+                                    className={cn(
+                                        "shrink-0 transition-all duration-300",
+                                        isActive
+                                            ? "text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+                                            : "group-hover/item:text-white group-hover/item:scale-105"
+                                    )}
+                                />
+                            </div>
+
+                            {/* Label */}
+                            <AnimatePresence>
+                                {isExpanded && (
+                                    <motion.span
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -10 }}
+                                        className={cn(
+                                            "text-[13px] font-medium whitespace-nowrap flex-1 text-left transition-colors duration-300",
+                                            isActive ? "text-white" : "text-zinc-500 group-hover/item:text-zinc-300"
+                                        )}
+                                    >
+                                        {item.label}
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Keyboard Shortcut Hint (Shows on Hover) */}
+                            <AnimatePresence>
+                                {isExpanded && (
+                                    <div className="opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                                        <kbd className="hidden lg:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-zinc-400">
+                                            <span className="text-xs">⌘</span>{item.shortcut}
+                                        </kbd>
+                                    </div>
+                                )}
+                            </AnimatePresence>
+
+                        </button>
+                    );
+                })}
             </nav>
 
-            {/* Bottom Actions - Refined */}
-            <div className="mt-auto pt-4 px-3 pb-2 space-y-1 border-t border-slate-200/50 dark:border-white/5 w-full relative z-10">
-                {/* Theme Toggle */}
-                <motion.button
-                    onClick={toggleTheme}
-                    className={cn(
-                        'group flex items-center gap-3 rounded-2xl relative overflow-hidden',
-                        isExpanded ? 'w-full px-4 py-3.5' : 'w-12 h-12 justify-center mx-auto',
-                        'hover:bg-slate-100/50 dark:hover:bg-white/5',
-                        'transition-all duration-300'
-                    )}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                >
-                    <div className="relative z-10 shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-                        <AnimatePresence mode="wait" initial={false}>
-                            {isDarkMode ? (
+            {/* Footer / System Status */}
+            <div className="p-5 mt-auto relative z-10">
+                <div className="relative p-1 rounded-2xl overflow-hidden bg-white/5 border border-white/5 group/footer hover:bg-white/10 transition-colors duration-300">
+                    <button
+                        onClick={toggleTheme}
+                        className={cn(
+                            "w-full flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-300",
+                            !isExpanded && "justify-center"
+                        )}
+                    >
+                        <Sun size={18} strokeWidth={1.5} className="text-zinc-400 group-hover/footer:text-yellow-200 transition-colors" />
+                        <AnimatePresence>
+                            {isExpanded && (
                                 <motion.div
-                                    key="sun"
-                                    initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
-                                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                                    exit={{ rotate: 90, scale: 0.5, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
+                                    initial={{ opacity: 0, width: 0 }}
+                                    animate={{ opacity: 1, width: 'auto' }}
+                                    exit={{ opacity: 0, width: 0 }}
+                                    className="flex-1 flex justify-between items-center overflow-hidden whitespace-nowrap"
                                 >
-                                    <Sun size={20} />
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="moon"
-                                    initial={{ rotate: 90, scale: 0.5, opacity: 0 }}
-                                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                                    exit={{ rotate: -90, scale: 0.5, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <Moon size={20} />
+                                    <span className="text-xs font-medium text-zinc-400">Theme</span>
+                                    <div className="flex gap-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
+                    </button>
 
-                    <AnimatePresence>
-                        {isExpanded && (
-                            <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="font-medium text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap overflow-hidden"
-                            >
-                                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-                </motion.button>
-
-                {/* Settings */}
-                <motion.button
-                    className={cn(
-                        'group flex items-center gap-3 rounded-2xl relative overflow-hidden',
-                        isExpanded ? 'w-full px-4 py-3.5' : 'w-12 h-12 justify-center mx-auto',
-                        'hover:bg-slate-100/50 dark:hover:bg-white/5',
-                        'transition-all duration-300'
+                    {/* Settings - only show if expanded or extra space needed */}
+                    {isExpanded && (
+                        <button className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl text-zinc-400 hover:text-white transition-all text-left">
+                            <Settings size={18} strokeWidth={1.5} />
+                            <span className="text-xs font-medium">Preferences</span>
+                        </button>
                     )}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                >
-                    <div className="relative z-10 shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                        <Settings size={20} className="transform group-hover:rotate-90 transition-transform duration-500" />
-                    </div>
-
-                    <AnimatePresence>
-                        {isExpanded && (
-                            <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="font-medium text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap overflow-hidden"
-                            >
-                                Settings
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-                </motion.button>
+                </div>
             </div>
+
         </motion.aside>
     );
 };
-
 export default Sidebar;

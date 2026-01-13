@@ -213,15 +213,18 @@ export const LuminaOverview = ({
             <div ref={sentinelRef} className="absolute top-0 left-0 w-full h-px -translate-y-4 bg-transparent pointer-events-none" />
 
             {/* Premium Ambient Background - Optimized Performance */}
-            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#050510]">
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-void">
                 {/* Top Left: Purple Ambiance */}
-                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-purple-500/15 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-indigo-500/10 rounded-full blur-[120px] mix-blend-screen animate-pulse-glow" />
 
                 {/* Bottom Right: Blue Depth */}
-                <div className="absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-blue-500/15 rounded-full blur-[120px] mix-blend-screen" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen" />
 
-                {/* Top Center: Ambient Light Source (The "Light" user asked for) */}
-                <div className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] bg-indigo-500/10 rounded-full blur-[150px] mix-blend-screen" />
+                {/* Top Center: Ambient Light Source */}
+                <div className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] bg-violet-500/5 rounded-full blur-[150px] mix-blend-screen" />
+
+                {/* Noise Texture */}
+                <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
             </div>
 
             <div className="relative z-10 pb-32"> {/* Structure handled by App layout */}
@@ -233,12 +236,12 @@ export const LuminaOverview = ({
                         flex justify-between items-center
                         transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
                         ${isScrolled
-                            ? 'bg-black/60 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'
+                            ? 'bg-obsidian/60 backdrop-blur-xl border-b border-white/5 shadow-2xl'
                             : 'bg-transparent border-transparent'
                         }
                     `}
                 >
-                    {/* Animated Background Curtain for smooth entry */}
+                    {/* Animated Background Curtain */}
                     {isScrolled && (
                         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-50 pointer-events-none" />
                     )}
@@ -270,16 +273,16 @@ export const LuminaOverview = ({
                             <div className={`
                                 relative overflow-hidden rounded-2xl transition-all duration-300
                                 ${searchFocused
-                                    ? 'bg-black/80 shadow-[0_0_40px_-5px_rgba(59,130,246,0.3)] ring-1 ring-blue-500/30'
+                                    ? 'bg-obsidian shadow-[0_0_40px_-5px_rgba(99,102,241,0.3)] ring-1 ring-indigo-500/30'
                                     : isScrolled
-                                        ? 'bg-white/10 ring-1 ring-white/10 hover:bg-white/15'
+                                        ? 'bg-white/5 ring-1 ring-white/5 hover:bg-white/10'
                                         : 'bg-white/5 hover:bg-white/10 ring-1 ring-white/5 hover:ring-white/10'
                                 }
                             `}>
                                 {/* Input Container */}
                                 <div className="relative flex items-center">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Search size={18} className={`transition-colors duration-300 ${searchFocused ? 'text-blue-400' : 'text-white/40'}`} />
+                                        <Search size={18} className={`transition-colors duration-300 ${searchFocused ? 'text-indigo-400' : 'text-white/40'}`} />
                                     </div>
                                     <input
                                         type="text"

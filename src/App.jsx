@@ -32,6 +32,7 @@ import {
 const CityBuilder = React.lazy(() => import('./components/tools/CityBuilder'));
 const ProgressSection = React.lazy(() => import('./components/tools/ProgressSection'));
 const ResourceCanvas = React.lazy(() => import('./components/resources/ResourceCanvas'));
+const Workstation = React.lazy(() => import('./components/workstation/Workstation'));
 const AIChat = React.lazy(() => import('./components/tools/AIChat'));
 
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
@@ -750,7 +751,7 @@ function App() {
         <main className={cn(
           'flex-1 transition-all duration-300',
           'ml-0 w-full',
-          'pl-[120px] pr-8 py-8' // Global content padding (Sidebar: 88px + Gap: 24px)
+          'pl-[104px] pr-8 py-8' // Global content padding (Sidebar: 80px + Gap: 24px)
           // Window scrolling enabled
         )}>
           {/* Animated Page Content */}
@@ -798,26 +799,15 @@ function App() {
                 animate="animate"
                 exit="exit"
                 transition={pageTransition}
+                className="w-full h-full"
               >
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-1">
-                    <PomodoroTimer
-                      state={timerState}
-                      onAction={handleTimerAction}
-                      isDarkMode={isDarkMode}
-                      onToggleTheme={toggleTheme}
-                    />
-                  </div>
-                  <div className="h-[600px] lg:h-auto lg:col-span-2">
-                    <Suspense fallback={<CityBuilderLoadingSkeleton />}>
-                      <CityBuilder
-                        sessionHistory={sessions}
-                        isDarkMode={isDarkMode}
-                        onToggleTheme={toggleTheme}
-                      />
-                    </Suspense>
-                  </div>
-                </div>
+                <Workstation
+                  timerState={timerState}
+                  handleTimerAction={handleTimerAction}
+                  isDarkMode={isDarkMode}
+                  toggleTheme={toggleTheme}
+                  sessions={sessions}
+                />
               </motion.div>
             )}
 

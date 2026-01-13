@@ -11,7 +11,7 @@ import {
     Sun,
     Monitor,
     UserCircle2
-} from 'lucide-react'; // Using standard Lucide icons
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppStore } from '../store';
 import { useHotkey } from '../hooks';
@@ -19,13 +19,12 @@ import { useHotkey } from '../hooks';
 // =============================================================================
 // Designer Configuration
 // =============================================================================
-// "Human" touches: distinct names, thinner confident strokes
 const MENU_ITEMS = [
     { id: 'overview', icon: LayoutGrid, label: 'Overview', shortcut: '1' },
-    { id: 'study-tools', icon: BookOpen, label: 'Workstation', shortcut: '2' }, // Renamed for "Pro" feel
+    { id: 'study-tools', icon: BookOpen, label: 'Workstation', shortcut: '2' },
     { id: 'progress', icon: TrendingUp, label: 'Analytics', shortcut: '3' },
     { id: 'resources', icon: Layers, label: 'Library', shortcut: '4' },
-    { id: 'ai-assistant', icon: MessageSquare, label: 'Neural Link', shortcut: '5' }, // "Personal" naming
+    { id: 'ai-assistant', icon: MessageSquare, label: 'Neural Link', shortcut: '5' },
     { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '6' },
 ];
 
@@ -39,7 +38,7 @@ export const Sidebar = () => {
         useHotkey(item.shortcut, () => setActiveTab(item.id), [setActiveTab]);
     });
 
-    // Spotlight & Mouse Tracking (Performance Optimized via CSS Vars)
+    // Mouse Tracking for Spotlight
     useEffect(() => {
         const sidebar = sidebarRef.current;
         if (!sidebar) return;
@@ -60,171 +59,160 @@ export const Sidebar = () => {
         <motion.aside
             ref={sidebarRef}
             initial={false}
-            animate={{ width: isExpanded ? 280 : 88 }}
-            transition={{ type: "spring", stiffness: 350, damping: 35, mass: 0.8 }} // Snappier, more "physical" feel
+            animate={{ width: isExpanded ? 260 : 80 }}
+            transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 40,
+                mass: 1
+            }}
             onMouseEnter={() => setIsExpanded(true)}
             onMouseLeave={() => setIsExpanded(false)}
-            className="fixed top-4 left-4 h-[calc(100vh-2rem)] z-50 flex flex-col rounded-[24px] group/sidebar"
-            style={{
-                // "Porcelain" material
-                background: 'linear-gradient(180deg, rgba(20,20,22,0.85) 0%, rgba(10,10,12,0.95) 100%)',
-                backdropFilter: 'blur(40px) saturate(180%)',
-                boxShadow: '0 20px 50px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)'
-            }}
+            className="fixed top-4 left-4 h-[calc(100vh-2rem)] z-[100] flex flex-col rounded-[24px] group/sidebar"
         >
-            {/* Ambient Noise Texture (Subtle Human Imperfection) */}
-            <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] rounded-[24px] z-[-1]" />
+            {/* =================================================================
+               OBSIDIAN GLASS MATERIAL LAYER
+               ================================================================= */}
+            <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+                {/* 1. Base Blur Layer */}
+                <div className="absolute inset-0 bg-[#050508]/80 backdrop-blur-2xl" />
 
-            {/* Spotlight Layer (Interactive) */}
-            <div
-                className="absolute inset-0 rounded-[24px] z-[-1] opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700 pointer-events-none"
-                style={{
-                    background: `radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.04), transparent 40%)`
-                }}
-            />
+                {/* 2. Noise Texture overlay */}
+                <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-            {/* Header: Personal Identity Card */}
-            <div className="h-28 flex items-center px-6 mb-2 relative">
-                <div className="flex items-center gap-4 w-full">
-                    {/* Unique "Fingerprint" / Avatar */}
-                    <div className="relative group/avatar cursor-pointer shrink-0">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
-                            <Monitor size={18} strokeWidth={1.5} className="text-zinc-400 group-hover/avatar:text-white transition-colors" />
-                        </div>
-                        {/* Online Status Dot */}
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#09090b]" />
-                    </div>
+                {/* 3. Gradient Sheen */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
-                    <AnimatePresence>
-                        {isExpanded && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -10, filter: 'blur(5px)' }}
-                                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                exit={{ opacity: 0, x: -10, filter: 'blur(5px)' }}
-                                transition={{ duration: 0.25 }}
-                                className="flex-1 overflow-hidden"
-                            >
-                                <h2 className="text-sm font-semibold text-white tracking-tight lead-none">Aspirant's Space</h2>
-                                <p className="text-[11px] text-zinc-500 font-medium tracking-wide mt-0.5 group-hover/sidebar:text-zinc-400 transition-colors">
-                                    Productive Flow
-                                </p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                {/* 4. Glass Border (Inner) */}
+                <div className="absolute inset-0 rounded-[24px] border border-white/5 pointer-events-none" />
+
+                {/* 5. Spotlight Effect (Mouse driven) */}
+                <div
+                    className="absolute inset-0 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700 pointer-events-none"
+                    style={{
+                        background: `radial-gradient(400px circle at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.08), transparent 40%)`
+                    }}
+                />
             </div>
 
-            {/* Navigation List */}
-            <nav className="flex-1 px-4 space-y-1 overflow-y-auto scrollbar-hide relative z-10 pb-4">
-                {MENU_ITEMS.map((item) => {
-                    const isActive = activeTab === item.id;
-                    const Icon = item.icon;
+            {/* =================================================================
+               CONTENT LAYER
+               ================================================================= */}
+            <div className="relative z-10 flex flex-col h-full">
 
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={cn(
-                                "relative w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group/item outline-none",
-                                isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200"
-                            )}
-                        >
-                            {/* Active Background - Subtle "Glass Inset" */}
-                            {isActive && (
-                                <motion.div
-                                    layoutId="activeTabBg"
-                                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/10 to-transparent border-l-2 border-indigo-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-                                    initial={false}
-                                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                                />
-                            )}
-
-                            {/* Icon */}
-                            <div className="relative z-10 flex items-center justify-center">
-                                <Icon
-                                    size={20}
-                                    strokeWidth={isActive ? 2 : 1.5} // Thinner stroke = Premium feel
-                                    className={cn(
-                                        "shrink-0 transition-all duration-300",
-                                        isActive
-                                            ? "text-indigo-400 drop-shadow-[0_0_10px_rgba(99,102,241,0.4)]"
-                                            : "group-hover/item:text-white group-hover/item:scale-105"
-                                    )}
-                                />
+                {/* Header: Identity */}
+                <div className="h-24 flex items-center px-5 mb-2 relative">
+                    <div className="flex items-center gap-4 w-full overflow-hidden">
+                        {/* Avatar */}
+                        <div className="relative group/avatar cursor-pointer shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-lg transition-transform group-hover/avatar:scale-105">
+                                <Monitor size={18} className="text-indigo-400" />
                             </div>
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#050508] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        </div>
 
-                            {/* Label */}
-                            <AnimatePresence>
-                                {isExpanded && (
-                                    <motion.span
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -10 }}
+                        {/* Name Info */}
+                        <motion.div
+                            animate={{ opacity: isExpanded ? 1 : 0, x: isExpanded ? 0 : -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex flex-col min-w-0"
+                        >
+                            <span className="text-sm font-bold text-white tracking-tight">Aspirant's Space</span>
+                            <span className="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Pro Plan</span>
+                        </motion.div>
+                    </div>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-3 space-y-1.5 overflow-y-auto scrollbar-hide">
+                    {MENU_ITEMS.map((item) => {
+                        const isActive = activeTab === item.id;
+                        const Icon = item.icon;
+
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={cn(
+                                    "relative w-full flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300 outline-none group/item",
+                                    isActive ? "text-white" : "text-white/40 hover:text-white"
+                                )}
+                            >
+                                {/* Active State Background */}
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="activeTabBg"
+                                        className="absolute inset-0 rounded-xl bg-white/5 border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+                                        initial={false}
+                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    />
+                                )}
+
+                                {/* Hover State (Subtle) */}
+                                {!isActive && (
+                                    <div className="absolute inset-0 rounded-xl bg-white/0 group-hover/item:bg-white/[0.02] transition-colors duration-200" />
+                                )}
+
+                                {/* Icon */}
+                                <div className="relative z-10 flex items-center justify-center">
+                                    <Icon
+                                        size={20}
+                                        strokeWidth={1.5}
                                         className={cn(
-                                            "text-[13px] font-medium whitespace-nowrap flex-1 text-left transition-colors duration-300",
-                                            isActive ? "text-white" : "text-zinc-500 group-hover/item:text-zinc-300"
+                                            "shrink-0 transition-transform duration-300",
+                                            isActive ? "text-indigo-400 scale-100" : "group-hover/item:scale-110"
                                         )}
-                                    >
-                                        {item.label}
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
+                                    />
+                                </div>
 
-                            {/* Keyboard Shortcut Hint (Shows on Hover) */}
-                            <AnimatePresence>
+                                {/* Label */}
+                                <motion.span
+                                    animate={{ opacity: isExpanded ? 1 : 0, x: isExpanded ? 0 : -10 }}
+                                    className="text-[13px] font-medium whitespace-nowrap z-10"
+                                >
+                                    {item.label}
+                                </motion.span>
+
+                                {/* Shortcut Hint */}
                                 {isExpanded && (
-                                    <div className="opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
-                                        <kbd className="hidden lg:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-zinc-400">
-                                            <span className="text-xs">⌘</span>{item.shortcut}
-                                        </kbd>
-                                    </div>
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                    >
+                                        <span className="text-[10px] font-mono text-white/20 border border-white/10 rounded px-1 py-0.5">
+                                            {item.shortcut}
+                                        </span>
+                                    </motion.div>
                                 )}
-                            </AnimatePresence>
+                            </button>
+                        );
+                    })}
+                </nav>
 
-                        </button>
-                    );
-                })}
-            </nav>
-
-            {/* Footer / System Status */}
-            <div className="p-5 mt-auto relative z-10">
-                <div className="relative p-1 rounded-2xl overflow-hidden bg-white/5 border border-white/5 group/footer hover:bg-white/10 transition-colors duration-300">
+                {/* Footer Actions */}
+                <div className="p-3 mt-auto">
                     <button
                         onClick={toggleTheme}
                         className={cn(
-                            "w-full flex items-center gap-4 px-3 py-2.5 rounded-xl transition-all duration-300",
+                            "w-full flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300 group/footer hover:bg-white/5 border border-transparent hover:border-white/5",
                             !isExpanded && "justify-center"
                         )}
                     >
-                        <Sun size={18} strokeWidth={1.5} className="text-zinc-400 group-hover/footer:text-yellow-200 transition-colors" />
-                        <AnimatePresence>
-                            {isExpanded && (
-                                <motion.div
-                                    initial={{ opacity: 0, width: 0 }}
-                                    animate={{ opacity: 1, width: 'auto' }}
-                                    exit={{ opacity: 0, width: 0 }}
-                                    className="flex-1 flex justify-between items-center overflow-hidden whitespace-nowrap"
-                                >
-                                    <span className="text-xs font-medium text-zinc-400">Theme</span>
-                                    <div className="flex gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/50" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <Sun size={20} strokeWidth={1.5} className="text-white/40 group-hover/footer:text-amber-300 transition-colors" />
+
+                        <motion.div
+                            animate={{ opacity: isExpanded ? 1 : 0, width: isExpanded ? 'auto' : 0 }}
+                            className="flex-1 flex justify-between items-center overflow-hidden whitespace-nowrap"
+                        >
+                            <span className="text-[13px] font-medium text-white/60">Appearance</span>
+                        </motion.div>
                     </button>
 
-                    {/* Settings - only show if expanded or extra space needed */}
-                    {isExpanded && (
-                        <button className="w-full flex items-center gap-4 px-3 py-2.5 rounded-xl text-zinc-400 hover:text-white transition-all text-left">
-                            <Settings size={18} strokeWidth={1.5} />
-                            <span className="text-xs font-medium">Preferences</span>
-                        </button>
-                    )}
+                    {/* Spacer for bottom aesthetic */}
+                    <div className="h-2" />
                 </div>
             </div>
-
         </motion.aside>
     );
 };

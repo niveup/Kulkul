@@ -30,30 +30,31 @@ export const GlassCard = ({
             onMouseMove={handleMouseMove}
             className={`
                 relative overflow-hidden
-                bg-black/40 backdrop-blur-3xl 
+                bg-obsidian/60
+                backdrop-blur-2xl 
                 border-0
                 rounded-[2rem] 
-                shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]
-                transition-transform duration-500 ease-out
+                shadow-2xl
+                transition-all duration-500 ease-out
                 group isolate
-                ${hoverEffect ? 'hover:scale-[1.01] hover:shadow-[0_20px_40px_0_rgba(0,0,0,0.4)] cursor-pointer active:scale-[0.98]' : ''}
+                ${hoverEffect ? 'hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] cursor-pointer active:scale-[0.98]' : ''}
                 ${className}
             `}
         >
-            {/* Gradient Border (Simulated via an inset background) */}
-            <div className="absolute inset-0 rounded-[2rem] p-[1px] bg-gradient-to-b from-white/10 to-transparent -z-10 pointer-events-none">
-                <div className="absolute inset-0 rounded-[2rem] bg-black/40 backdrop-blur-3xl" />
+            {/* 1. Base Gradient Border (Simulated) */}
+            <div className="absolute inset-0 rounded-[2rem] p-[1px] bg-gradient-to-b from-white/10 to-white/0 -z-10 pointer-events-none">
+                <div className="absolute inset-0 rounded-[2rem] bg-obsidian/60" />
             </div>
 
-            {/* Spotlight Effect - GPU Accelerated */}
+            {/* 2. Spotlight Effect - GPU Accelerated */}
             {spotlight && (
                 <motion.div
                     className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     style={{
                         background: useMotionTemplate`
                             radial-gradient(
-                                800px circle at ${mouseX}px ${mouseY}px,
-                                rgba(255, 255, 255, 0.06),
+                                650px circle at ${mouseX}px ${mouseY}px,
+                                rgba(255, 255, 255, 0.04),
                                 transparent 40%
                             )
                         `
@@ -61,14 +62,14 @@ export const GlassCard = ({
                 />
             )}
 
-            {/* Top highlight for 3D glass edge - Enhanced */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-70" />
+            {/* 3. Top Highlight (Specular Reflection) */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
 
-            {/* Inner Ring for depth */}
+            {/* 4. Inner Ring (Depth) */}
             <div className="absolute inset-0 rounded-[2rem] border border-white/5 pointer-events-none" />
 
-            {/* Glossy reflection gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-100 pointer-events-none" />
+            {/* 5. Ambient Glow (Bottom) */}
+            <div className="absolute bottom-[-100px] left-1/2 -translate-x-1/2 w-[60%] h-[100px] bg-indigo-500/10 blur-[50px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
             {/* Content */}
             <div className="relative z-10 h-full">

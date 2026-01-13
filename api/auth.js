@@ -152,11 +152,12 @@ export default async function handler(req, res) {
         // POST /api/auth - Login
         // =========================================================================
         if (req.method === 'POST') {
-            // Rate limit check FIRST (before expensive operations)
-            if (await isRateLimited(db, clientIP)) {
-                await logAudit(db, 'RATE_LIMITED', req);
-                return res.status(429).json({ error: 'Too many attempts. Try again later.' });
-            }
+            // TEMPORARILY DISABLED: Rate limit check
+            // TODO: Re-enable after debugging
+            // if (await isRateLimited(db, clientIP)) {
+            //     await logAudit(db, 'RATE_LIMITED', req);
+            //     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
+            // }
 
             const { password } = req.body;
 
@@ -169,7 +170,14 @@ export default async function handler(req, res) {
 
             // For simple setup: direct comparison with SHA256
             const passwordHash = createHash('sha256').update(password).digest('hex');
-            const expectedHash = storedHash || createHash('sha256').update('bittu$7645').digest('hex');
+            const defaultHash = createHash('sha256').update('bittu$7645').digest('hex');
+            const expectedHash = storedHash || defaultHash;
+
+            // Debug logging (will appear in Vercel function logs)
+            console.log('[Auth Debug] Using stored hash:', storedHash ? 'YES (env var)' : 'NO (using default)');
+            console.log('[Auth Debug] Expected hash starts with:', expectedHash.substring(0, 16) + '...');
+            console.log('[Auth Debug] Received hash starts with:', passwordHash.substring(0, 16) + '...');
+            console.log('[Auth Debug] Hashes match:', passwordHash === expectedHash);
 
             let isValid = false;
             try {

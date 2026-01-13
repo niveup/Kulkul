@@ -25,7 +25,22 @@ export const useDashboardStore = create(
                     [widgetId]: !state.visibleWidgets[widgetId],
                 }
             })),
+            // APP Managment (the white board)
+            // -------------------------------------------------------------------------
+            apps: [], // sart empty we will load them later
 
+            setApps: (newApps) => set({ apps: newApps }),
+
+            addApp: (app) => set((state) => ({
+                apps: [...state.apps, app],
+            })),
+
+            updateApp: (updateApp) => set((state) => ({
+                apps: state.apps.map((app) => app.id === updateApp.id ? updateApp : app),
+            })),
+            removeApp: (appId) => set((state) => ({
+                apps: state.apps.filter((app) => app.id !== appId),
+            })),
             // -------------------------------------------------------------------------
             // Problem of the Day State
             // -------------------------------------------------------------------------

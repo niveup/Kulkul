@@ -1,450 +1,217 @@
 /**
- * Liquid Dock Component - Project Aether
+ * Dock Component - Apple-Style Magnification & Physics
  * 
- * A macOS-style floating dock with magnification physics.
  * Features:
- * - Gaussian curve magnification on hover
- * - Spring physics for smooth transitions
- * - Active indicator dot
- * - Bounce animation on click
- * - Collapsible to draggable corner circle
- * - Drag to any corner snapping
+ * - "Magnification Wave" effect using useMotionValue and useTransform
+ * - Smooth spring physics for all interactions
+ * - layout animations for fluid resizing
+ * - Premium glassmorphism and reduced z-fighting
  */
 
-import React, { useRef, useCallback, useState } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-    Command,
-    X,
-    LayoutGrid,
+    Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Sparkles, ChevronUp
 } from 'lucide-react';
-import CustomIcon from '../ui/CustomIcon';
-import { cn } from '../../lib/utils';
-import { springs } from '../../lib/motion';
+import {
+    motion,
+    useMotionValue,
+    useSpring,
+    useTransform,
+    AnimatePresence,
+    useMotionTemplate
+} from 'framer-motion';
 
-// Dock items configuration
+// Dock navigation items configuration
 const DOCK_ITEMS = [
-    { id: 'overview', customIcon: 'dashboard', label: 'Overview' },
-    { id: 'study-tools', customIcon: 'clock', label: 'Study Tools' },
-    { id: 'progress', customIcon: 'analytics', label: 'Progress' },
-    { id: 'resources', customIcon: 'study', label: 'Resources' },
-    { id: 'ai-assistant', customIcon: 'ai', label: 'AI Assistant' },
+    { id: 'overview', icon: Home, label: 'Overview', color: 'from-blue-500 to-cyan-400' },
+    { id: 'study-tools', icon: BookOpen, label: 'Study Tools', color: 'from-emerald-500 to-green-400' },
+    { id: 'progress', icon: PieChart, label: 'Progress', color: 'from-purple-500 to-violet-400' },
+    { id: 'resources', icon: LayoutGrid, label: 'Resources', color: 'from-orange-500 to-amber-400' },
+    { id: 'ai-assistant', icon: Bot, label: 'AI Assistant', color: 'from-pink-500 to-rose-400' },
+    { id: 'admin', icon: Shield, label: 'Admin', color: 'from-slate-600 to-slate-500' },
 ];
 
-// Corner positions for snapping
-const CORNERS = {
-    'bottom-center': { x: '50%', y: 'calc(100% - 80px)', translateX: '-50%', translateY: '0' },
-    'bottom-left': { x: '24px', y: 'calc(100% - 80px)', translateX: '0', translateY: '0' },
-    'bottom-right': { x: 'calc(100% - 80px)', y: 'calc(100% - 80px)', translateX: '0', translateY: '0' },
-    'top-left': { x: '24px', y: '80px', translateX: '0', translateY: '0' },
-    'top-right': { x: 'calc(100% - 80px)', y: '80px', translateX: '0', translateY: '0' },
-};
+const POSITION_KEY = 'dock_position';
+const BASE_WIDTH = 50; // Base size of icon
+const DISTANCE = 150; // Distance of influence for magnification
+const MAGNIFICATION = 1.6; // Scale factor at center
 
-// Get pixel position for a corner
-const getCornerPixels = (corner) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+// ============================================================================
+// DOCK ICON COMPONENT
+// ============================================================================
 
-    switch (corner) {
-        case 'bottom-center': return { x: vw / 2 - 28, y: vh - 80 };
-        case 'bottom-left': return { x: 24, y: vh - 80 };
-        case 'bottom-right': return { x: vw - 80, y: vh - 80 };
-        case 'top-left': return { x: 24, y: 80 };
-        case 'top-right': return { x: vw - 80, y: 80 };
-        default: return { x: vw / 2 - 28, y: vh - 80 };
-    }
-};
+const DockIcon = ({ item, mouseX, activeTab, onSelect }) => {
+    const ref = useRef(null);
 
-// Find nearest corner to a position
-const findNearestCorner = (x, y) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Define corner positions in pixels
-    const corners = [
-        { key: 'bottom-center', x: vw / 2, y: vh - 50 },
-        { key: 'bottom-left', x: 50, y: vh - 50 },
-        { key: 'bottom-right', x: vw - 50, y: vh - 50 },
-        { key: 'top-left', x: 50, y: 100 },
-        { key: 'top-right', x: vw - 50, y: 100 },
-    ];
-
-    let nearest = corners[0];
-    let minDist = Infinity;
-
-    corners.forEach(corner => {
-        const dist = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
-        if (dist < minDist) {
-            minDist = dist;
-            nearest = corner;
-        }
+    // Calculate distance from mouse pointer
+    const distance = useTransform(mouseX, val => {
+        const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+        return val - bounds.x - bounds.width / 2;
     });
 
-    return nearest.key;
-};
+    // Calculate width (scale) based on distance
+    const widthSync = useTransform(distance, [-DISTANCE, 0, DISTANCE], [BASE_WIDTH, BASE_WIDTH * MAGNIFICATION, BASE_WIDTH]);
 
-// Physics constants
-const BASE_SIZE = 48;
-const MAX_SIZE = 72;
-const MAGNIFICATION_DISTANCE = 150;
+    // Smooth out the width changes with a spring
+    const width = useSpring(widthSync, {
+        mass: 0.1,
+        stiffness: 150,
+        damping: 12
+    });
 
-// Gaussian function for smooth magnification falloff
-const gaussian = (x, sigma = 50) => {
-    return Math.exp(-(x * x) / (2 * sigma * sigma));
-};
-
-const DockItem = ({
-    item,
-    isActive,
-    mouseX,
-    index,
-    onSelect,
-    containerRef,
-}) => {
-    const ref = useRef(null);
+    const isActive = activeTab === item.id;
     const Icon = item.icon;
 
-    // Calculate distance from mouse to this item's center
-    const distance = useTransform(mouseX, (mx) => {
-        if (!ref.current || !containerRef.current || mx === null) return Infinity;
-
-        const itemRect = ref.current.getBoundingClientRect();
-        const itemCenterX = itemRect.left + itemRect.width / 2;
-        return Math.abs(mx - itemCenterX);
-    });
-
-    // Apply Gaussian magnification based on distance
-    const size = useTransform(distance, (d) => {
-        if (d === Infinity) return BASE_SIZE;
-        const scale = gaussian(d, MAGNIFICATION_DISTANCE / 2);
-        return BASE_SIZE + (MAX_SIZE - BASE_SIZE) * scale;
-    });
-
-    // Spring for smooth transitions
-    const springSize = useSpring(size, {
-        stiffness: 400,
-        damping: 25,
-        mass: 0.5,
-    });
-
-    // Handle click with bounce animation
-    const handleClick = useCallback(() => {
-        onSelect(item.id);
-    }, [item.id, onSelect]);
+    // Derived active/hover states
+    const activeDotScale = useSpring(isActive ? 1 : 0, { stiffness: 200, damping: 20 });
+    const opacity = useSpring(1, { stiffness: 300, damping: 30 });
 
     return (
-        <motion.button
+        <motion.div
             ref={ref}
-            onClick={handleClick}
-            className={cn(
-                'relative flex items-center justify-center',
-                'rounded-xl transition-colors duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500',
-                // Only show background for non-custom icons
-                !item.customIcon && (isActive
-                    ? 'bg-white/15 text-white'
-                    : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'),
-                // Custom icons get transparent background
-                item.customIcon && 'bg-transparent'
-            )}
-            style={{
-                width: springSize,
-                height: springSize,
-            }}
-            whileTap={{
-                scale: 0.9,
-                y: -8,
-            }}
-            transition={springs.snappy}
+            style={{ width }}
+            className="aspect-square relative flex items-center justify-center group"
         >
-            {/* Icon */}
-            <motion.div
-                style={{
-                    // Custom icons fill the entire button, regular icons stay at 50%
-                    width: item.customIcon ? springSize : useTransform(springSize, s => s * 0.5),
-                    height: item.customIcon ? springSize : useTransform(springSize, s => s * 0.5),
-                }}
-                className="flex items-center justify-center"
+            <motion.button
+                onClick={() => onSelect(item.id)}
+                style={{ width }} // Button size matches container size
+                className={`
+                    aspect-square rounded-2xl flex items-center justify-center
+                    bg-gradient-to-b ${item.color}
+                    shadow-[0_4px_12px_rgba(0,0,0,0.3)]
+                    border border-white/20
+                    absolute bottom-2
+                    origin-bottom
+                    overflow-hidden
+                `}
+                whileTap={{ scale: 0.9 }}
             >
-                {item.customIcon ? (
-                    <CustomIcon
-                        name={item.customIcon}
-                        size={72}
-                        className="w-full h-full object-cover rounded-xl"
-                    />
-                ) : (
-                    <Icon className="w-full h-full" />
-                )}
+                {/* Glossy Reflection */}
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+
+                {/* Icon */}
+                <Icon size={24} className="text-white drop-shadow-md relative z-10" strokeWidth={1.5} />
+            </motion.button>
+
+            {/* Label Tooltip */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                style={{ opacity: 0, y: 10 }} // Hide by default
+                className="absolute -top-12 bg-black/70 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+                <span className="text-xs font-semibold text-white">{item.label}</span>
+                <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-black/70 border-r border-b border-white/10" />
             </motion.div>
 
-            {/* Active indicator dot */}
-            {isActive && (
-                <motion.div
-                    layoutId="dockActiveIndicator"
-                    className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-cyan-400"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={springs.bouncy}
-                />
-            )}
-
-            {/* Tooltip */}
+            {/* Active Indicator */}
             <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                whileHover={{ opacity: 1, y: -8, scale: 1 }}
-                className={cn(
-                    'absolute -top-10 px-2.5 py-1.5 rounded-lg',
-                    'bg-slate-900/90 text-white text-xs font-medium',
-                    'backdrop-blur-md border border-white/10',
-                    'pointer-events-none whitespace-nowrap'
-                )}
-            >
-                {item.label}
-            </motion.div>
-        </motion.button>
+                style={{ scale: activeDotScale }}
+                className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"
+            />
+        </motion.div>
     );
 };
 
-const Dock = ({
-    activeTab,
-    onTabChange,
-    onOpenCommandPalette,
-    className,
-}) => {
-    const containerRef = useRef(null);
-    const mouseX = useMotionValue(null);
+// ============================================================================
+// MAIN DOCK COMPONENT
+// ============================================================================
+
+export const Dock = ({ activeTab, onTabChange }) => {
+    // Mouse X tracking for wave effect
+    const mouseX = useMotionValue(Infinity);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [currentCorner, setCurrentCorner] = useState('bottom-center');
-    const [isDragging, setIsDragging] = useState(false);
 
-    // Position for the collapsed circle
-    const circleX = useMotionValue(0);
-    const circleY = useMotionValue(0);
-
-    // Handle mouse movement over dock
-    const handleMouseMove = useCallback((e) => {
-        mouseX.set(e.clientX);
-    }, [mouseX]);
-
-    // Reset magnification and collapse dock when mouse leaves
-    const collapseTimeoutRef = useRef(null);
-
-    const handleMouseLeave = useCallback(() => {
-        mouseX.set(null);
-        // Collapse dock after a short delay
-        collapseTimeoutRef.current = setTimeout(() => {
-            setIsCollapsed(true);
-        }, 800); // 800ms delay to prevent accidental collapse
-    }, [mouseX]);
-
-    // Cancel collapse if mouse re-enters
-    const handleMouseEnterDock = useCallback(() => {
-        if (collapseTimeoutRef.current) {
-            clearTimeout(collapseTimeoutRef.current);
-            collapseTimeoutRef.current = null;
+    // Position state
+    const [position, setPosition] = useState(() => {
+        try {
+            const saved = localStorage.getItem(POSITION_KEY);
+            return saved ? JSON.parse(saved) : { x: window.innerWidth / 2, y: window.innerHeight - 40 };
+        } catch {
+            return { x: window.innerWidth / 2, y: window.innerHeight - 40 };
         }
+    });
+
+    // Save position
+    const savePosition = useCallback((pos) => {
+        try {
+            localStorage.setItem(POSITION_KEY, JSON.stringify(pos));
+        } catch { }
     }, []);
 
-    // Handle drag end - snap to nearest corner
-    const handleDragEnd = useCallback((event, info) => {
-        setIsDragging(false);
-
-        // Get the final position
-        const finalX = info.point.x;
-        const finalY = info.point.y;
-
-        // Find nearest corner
-        const nearestCorner = findNearestCorner(finalX, finalY);
-        setCurrentCorner(nearestCorner);
-
-        // Reset motion values (position will be handled by CSS)
-        circleX.set(0);
-        circleY.set(0);
-    }, [circleX, circleY]);
-
-    // Get position style for current corner
-    const getCornerStyle = () => {
-        switch (currentCorner) {
-            case 'bottom-center':
-                return { bottom: 24, left: '50%', transform: 'translateX(-50%)' };
-            case 'bottom-left':
-                return { bottom: 24, left: 24 };
-            case 'bottom-right':
-                return { bottom: 24, right: 24 };
-            case 'top-left':
-                return { top: 80, left: 24 };
-            case 'top-right':
-                return { top: 80, right: 24 };
-            default:
-                return { bottom: 24, left: '50%', transform: 'translateX(-50%)' };
-        }
-    };
+    // Draggable Logic for Collapsed State
+    const toggleCollapse = () => setIsCollapsed(prev => !prev);
 
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
             {isCollapsed ? (
-                /* ============ COLLAPSED DRAGGABLE CIRCLE ============ */
+                // COLLAPSED: Draggable Floating Action Button
                 <motion.div
                     key="collapsed-dock"
+                    initial={{ scale: 0, rotate: 180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0, rotate: -180 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     drag
                     dragMomentum={false}
-                    onDragStart={() => setIsDragging(true)}
-                    onDragEnd={handleDragEnd}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className="fixed z-50 cursor-grab active:cursor-grabbing"
-                    style={{
-                        ...getCornerStyle(),
-                        x: circleX,
-                        y: circleY,
+                    onDragEnd={(_, info) => {
+                        const newPos = { x: position.x + info.offset.x, y: position.y + info.offset.y };
+                        // Simplified saving logic for drag
                     }}
-                    whileDrag={{ scale: 1.1 }}
-                    onClick={() => !isDragging && setIsCollapsed(false)}
+                    className="fixed bottom-6 right-6 z-[9990]" // Force bottom right if collapsed
                 >
-                    <motion.button
-                        className={cn(
-                            'w-14 h-14 rounded-full flex items-center justify-center',
-                            'bg-slate-900/80 backdrop-blur-2xl',
-                            'border border-white/20',
-                            'shadow-2xl shadow-black/50',
-                            'group relative',
-                            'hover:border-cyan-400/50',
-                            isDragging && 'border-cyan-400/70'
-                        )}
+                    <button
+                        onClick={toggleCollapse}
+                        className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 
+                                   flex items-center justify-center shadow-[0_8px_32px_rgba(79,70,229,0.4)]
+                                   border-2 border-white/20 hover:scale-110 active:scale-90 transition-transform"
                     >
-                        {/* Animated pulsing ring */}
-                        {!isDragging && (
-                            <motion.div
-                                className="absolute inset-0 rounded-full"
-                                animate={{
-                                    boxShadow: [
-                                        '0 0 0 0px rgba(34, 211, 238, 0.4)',
-                                        '0 0 0 12px rgba(34, 211, 238, 0)',
-                                    ]
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: 'easeOut'
-                                }}
-                            />
-                        )}
-
-                        {/* Inner glow */}
-                        <div className="absolute inset-1 rounded-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20" />
-
-                        {/* Icon - Grid layout icon */}
-                        <LayoutGrid
-                            size={22}
-                            className={cn(
-                                'text-cyan-400 transition-transform relative z-10',
-                                !isDragging && 'group-hover:rotate-12'
-                            )}
-                        />
-
-                        {/* Drag hint dots */}
-                        {isDragging && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/50"
-                            />
-                        )}
-
-                        {/* Tooltip */}
-                        {!isDragging && (
-                            <motion.span
-                                initial={{ opacity: 0, y: 10 }}
-                                whileHover={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className={cn(
-                                    'absolute -top-10 left-1/2 -translate-x-1/2',
-                                    'px-2.5 py-1.5 rounded-lg',
-                                    'bg-slate-900/90 text-white text-xs font-medium',
-                                    'backdrop-blur-md border border-white/10',
-                                    'whitespace-nowrap pointer-events-none'
-                                )}
-                            >
-                                Drag to any corner
-                            </motion.span>
-                        )}
-                    </motion.button>
+                        <Sparkles className="text-white drop-shadow-md" />
+                    </button>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-white/40 whitespace-nowrap">Dock</span>
                 </motion.div>
             ) : (
-                /* ============ EXPANDED DOCK ============ */
+                // EXPANDED: Premium Apple-Style Dock
                 <motion.div
                     key="expanded-dock"
-                    ref={containerRef}
-                    initial={{ scale: 0.3, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.3, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className={cn(
-                        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-                        'flex items-end gap-2 px-3 py-2',
-                        'rounded-2xl',
-                        // Glass material
-                        'bg-slate-900/60 backdrop-blur-2xl',
-                        'border border-white/10',
-                        'shadow-2xl shadow-black/40',
-                        className
-                    )}
-                    onMouseMove={handleMouseMove}
-                    onMouseEnter={handleMouseEnterDock}
-                    onMouseLeave={handleMouseLeave}
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 100, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 250, damping: 20 }}
+                    className="fixed bottom-6 left-1/2 z-[9990] -translate-x-1/2" // High Z-Index but below Sidebar (9999)
                 >
-                    {/* Navigation Items */}
-                    {DOCK_ITEMS.map((item, index) => (
-                        <DockItem
-                            key={item.id}
-                            item={item}
-                            index={index}
-                            isActive={activeTab === item.id}
-                            mouseX={mouseX}
-                            containerRef={containerRef}
-                            onSelect={onTabChange}
-                        />
-                    ))}
-
-                    {/* Separator */}
-                    <div className="w-px h-8 bg-white/10 mx-1 self-center" />
-
-                    {/* Command Palette Button */}
-                    <motion.button
-                        onClick={onOpenCommandPalette}
-                        className={cn(
-                            'flex items-center justify-center',
-                            'w-12 h-12 rounded-xl',
-                            'bg-white/5 text-white/70',
-                            'hover:bg-white/10 hover:text-white',
-                            'transition-colors duration-200',
-                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500'
-                        )}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
+                    <motion.div
+                        onMouseMove={(e) => mouseX.set(e.pageX)}
+                        onMouseLeave={() => mouseX.set(Infinity)}
+                        className="flex items-end gap-3 px-4 py-3 pb-4
+                                   bg-black/40 backdrop-blur-2xl
+                                   rounded-[24px] border border-white/10
+                                   shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                     >
-                        <Command size={20} />
-                    </motion.button>
+                        {DOCK_ITEMS.map((item) => (
+                            <DockIcon
+                                key={item.id}
+                                item={item}
+                                mouseX={mouseX}
+                                activeTab={activeTab}
+                                onSelect={onTabChange}
+                            />
+                        ))}
 
-                    {/* Close/Collapse Button */}
-                    <motion.button
-                        onClick={() => setIsCollapsed(true)}
-                        className={cn(
-                            'flex items-center justify-center',
-                            'w-12 h-12 rounded-xl',
-                            'bg-white/5 text-white/50',
-                            'hover:bg-red-500/20 hover:text-red-400',
-                            'transition-colors duration-200',
-                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-                        )}
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.9 }}
-                        title="Minimize dock"
-                    >
-                        <X size={18} />
-                    </motion.button>
+                        {/* Divider */}
+                        <div className="w-px h-10 bg-white/10 mx-1 self-center" />
+
+                        {/* Minimize Button */}
+                        <motion.button
+                            whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.15)" }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={toggleCollapse}
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center 
+                                       bg-white/5 border border-white/10
+                                       transition-colors self-center mb-1.5"
+                        >
+                            <X size={18} className="text-white/60" />
+                        </motion.button>
+                    </motion.div>
                 </motion.div>
             )}
         </AnimatePresence>

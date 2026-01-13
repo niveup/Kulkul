@@ -3,48 +3,108 @@
  * 
  * Features:
  * - Glassmorphism design
- * - Smooth animations with Framer Motion
- * - Keyboard navigation (arrow keys)
- * - Accessibility compliant (ARIA)
- * - Radix UI Tooltip for collapsed state
- * - Active state with glow effects
+ * - Dynamic Expansion on Hover (Apple-style)
+ * - Smooth Spring Animations
+ * - Keyboard navigation
+ * - Accessibility compliant
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import * as Tooltip from '@radix-ui/react-tooltip';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence, useMotionValue, useMotionTemplate } from 'framer-motion';
 import {
-    Home,
-    BookOpen,
-    PieChart,
-    LayoutGrid,
-    Bot,
+    LayoutGrid,       // Safer than LayoutTemplate
+    BookOpen,         // Replacing Brain for "Study Tools"
+    TrendingUp,
+    Layers,
+    MessageSquare,    // Safer than MessageSquareStar
+    ShieldCheck,      // Safer than Fingerprint
     Settings,
     Moon,
     Sun,
-    ChevronLeft,
-    ChevronRight,
-    Sparkles,
-    LogOut,
-    User,
-    Shield
 } from 'lucide-react';
-import { cn, getGreeting } from '../lib/utils';
-import { useAppStore, useSidebar, useTheme, useNavigation } from '../store';
-import { useHotkey, useKeyPress } from '../hooks';
+import { cn } from '../lib/utils';
+import { useTheme, useNavigation } from '../store';
+import { useHotkey } from '../hooks';
 
 // =============================================================================
 // Menu Configuration
 // =============================================================================
 
+// "Product Manager" Note:
+// We are moving away from generic icons to "Identity-First" icons.
+// Each section represents a distinct "mode" of the user's brain.
+// - Overview -> Structure (Blue)
+// - study-tools -> Processing/Brain (Amber)
+// - Progress -> Growth (Emerald)
+// - Resources -> Depth/Layers (Rose)
+// - AI -> Magic (Violet)
+// - Admin -> Identity/Security (Slate)
+
 const MENU_ITEMS = [
-    { id: 'overview', icon: Home, label: 'Overview', shortcut: '1' },
-    { id: 'study-tools', icon: BookOpen, label: 'Study Tools', shortcut: '2' },
-    { id: 'progress', icon: PieChart, label: 'Progress', shortcut: '3' },
-    { id: 'resources', icon: LayoutGrid, label: 'Resources', shortcut: '4' },
-    { id: 'ai-assistant', icon: Bot, label: 'AI Assistant', shortcut: '5' },
-    { id: 'admin', icon: Shield, label: 'Admin', shortcut: '6', badge: '⚠️' },
+    {
+        id: 'overview',
+        icon: LayoutGrid,
+        label: 'Overview',
+        shortcut: '1',
+        color: 'text-blue-500',
+        gradient: 'from-blue-500/20 to-cyan-500/20',
+        activeBorder: 'border-blue-500/20'
+    },
+    {
+        id: 'study-tools',
+        icon: BookOpen,
+        label: 'Study Tools',
+        shortcut: '2',
+        color: 'text-amber-500',
+        gradient: 'from-amber-500/20 to-orange-500/20',
+        activeBorder: 'border-amber-500/20'
+    },
+    {
+        id: 'progress',
+        icon: TrendingUp,
+        label: 'Progress',
+        shortcut: '3',
+        color: 'text-emerald-500',
+        gradient: 'from-emerald-500/20 to-teal-500/20',
+        activeBorder: 'border-emerald-500/20'
+    },
+    {
+        id: 'resources',
+        icon: Layers,
+        label: 'Resources',
+        shortcut: '4',
+        color: 'text-pink-500',
+        gradient: 'from-pink-500/20 to-rose-500/20',
+        activeBorder: 'border-pink-500/20'
+    },
+    {
+        id: 'ai-assistant',
+        icon: MessageSquare,
+        label: 'AI Assistant',
+        shortcut: '5',
+        color: 'text-violet-500',
+        gradient: 'from-violet-500/20 to-purple-500/20',
+        activeBorder: 'border-violet-500/20'
+    },
+    {
+        id: 'admin',
+        icon: ShieldCheck,
+        label: 'Admin',
+        shortcut: '6',
+        badge: '⚠️',
+        color: 'text-slate-500',
+        gradient: 'from-slate-500/20 to-gray-500/20',
+        activeBorder: 'border-slate-500/20'
+    },
 ];
+
+// =============================================================================
+// NavItem Component
+// =============================================================================
+
+// =============================================================================
+// NavItem Component
+// =============================================================================
 
 // =============================================================================
 // NavItem Component
@@ -53,7 +113,7 @@ const MENU_ITEMS = [
 const NavItem = ({
     item,
     isActive,
-    isCollapsed,
+    isExpanded,
     onSelect,
     index,
     isFocused
@@ -67,116 +127,128 @@ const NavItem = ({
         }
     }, [isFocused]);
 
-    const content = (
+    // Enhanced color logic for active states
+    const activeColorClass = item.color || 'text-indigo-500';
+    const bgClass = activeColorClass.replace('text-', 'bg-');
+
+    return (
         <motion.button
             ref={itemRef}
+            layout="position"
             onClick={() => onSelect(item.id)}
             className={cn(
-                'group relative w-full flex items-center gap-3 px-3 py-3 rounded-xl',
-                'transition-all duration-200 outline-none',
+                'group relative flex items-center gap-4 rounded-[18px]', // Slightly softer radius
+                isExpanded
+                    ? 'w-full px-4 py-3.5 justify-start'
+                    : 'w-12 h-12 mx-auto justify-center p-0',
+                'transition-all duration-300 outline-none select-none',
                 'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-                isCollapsed ? 'justify-center' : '',
                 isActive
-                    ? 'bg-white dark:bg-white/10 text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100 dark:border-indigo-500/20'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/5 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'shadow-md shadow-black/5 dark:shadow-none' // Depth for active item
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-slate-100'
             )}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{
+                layout: { duration: 0.2, ease: "easeOut" }
+            }}
         >
-            {/* Active Indicator Glow */}
+            {/* Active Background - The "Pill" */}
             {isActive && (
                 <motion.div
                     layoutId="activeGlow"
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20"
+                    className={cn(
+                        "absolute inset-0 rounded-[18px] border border-white/50 dark:border-white/5",
+                        "bg-white dark:bg-white/10", // Glassy background
+                        "shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+                    )}
                     initial={false}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                >
+                    {/* Subtle Gradient Overlay respective to the item color */}
+                    <div className={cn(
+                        "absolute inset-0 opacity-20 dark:opacity-30 rounded-[18px] bg-gradient-to-r",
+                        item.gradient
+                    )} />
+                </motion.div>
             )}
 
-            {/* Icon */}
-            <div className="relative z-10">
+            {/* Icon Container */}
+            <div className="relative z-10 flex-shrink-0 flex items-center justify-center">
                 <Icon
-                    size={20}
+                    size={22} // Slightly smaller for elegance
                     className={cn(
-                        'transition-all duration-200',
+                        'transition-colors duration-300',
                         isActive
-                            ? 'text-indigo-500 dark:text-indigo-400'
-                            : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                            ? activeColorClass
+                            : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                     )}
                 />
+
+                {/* Active "Breathing" Glow behind Icon */}
                 {isActive && (
                     <motion.div
-                        className="absolute -inset-1 rounded-full bg-indigo-500/20 dark:bg-indigo-400/30 blur-sm"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        className={cn(
+                            "absolute -inset-3 rounded-full blur-xl opacity-40",
+                            bgClass
+                        )}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{
+                            opacity: [0.3, 0.5, 0.3],
+                            scale: [1, 1.2, 1]
+                        }}
+                        transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
                     />
                 )}
             </div>
 
-            {/* Label */}
-            <AnimatePresence mode="wait">
-                {!isCollapsed && (
-                    <motion.span
-                        className="relative z-10 font-medium truncate flex-1 text-left"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.15 }}
+            {/* Text Label - Expanding Reveal */}
+            <AnimatePresence mode="popLayout">
+                {isExpanded && (
+                    <motion.div
+                        initial={{ opacity: 0, x: -8, filter: 'blur(4px)' }}
+                        animate={{
+                            opacity: 1,
+                            x: 0,
+                            filter: 'blur(0px)',
+                            transition: {
+                                delay: 0.1, // Stagger text slightly
+                                duration: 0.3,
+                                ease: "easeOut"
+                            }
+                        }}
+                        exit={{ opacity: 0, x: -8, filter: 'blur(4px)', transition: { duration: 0.15 } }}
+                        className="flex-1 overflow-hidden whitespace-nowrap text-left pl-1"
                     >
-                        {item.label}
-                    </motion.span>
+                        <span className={cn(
+                            "font-semibold text-[15px] block truncate tracking-wide",
+                            isActive ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-300"
+                        )}>
+                            {item.label}
+                        </span>
+                    </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Badge */}
-            {!isCollapsed && item.badge && (
-                <motion.span
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="px-2 py-0.5 text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full"
-                >
-                    {item.badge}
-                </motion.span>
-            )}
-
-            {/* Keyboard Shortcut Hint */}
-            {!isCollapsed && (
-                <span className="text-xs text-slate-300 dark:text-slate-600 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                    {item.shortcut}
-                </span>
-            )}
+            {/* Shortcut Hint */}
+            <AnimatePresence>
+                {isExpanded && item.shortcut && (
+                    <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.4, transition: { delay: 0.3 } }}
+                        exit={{ opacity: 0 }}
+                        className="text-xs font-mono font-medium ml-auto mr-1"
+                    >
+                        {item.shortcut}
+                    </motion.span>
+                )}
+            </AnimatePresence>
         </motion.button>
     );
-
-    // Wrap in tooltip when collapsed
-    if (isCollapsed) {
-        return (
-            <Tooltip.Root delayDuration={100}>
-                <Tooltip.Trigger asChild>
-                    {content}
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                    <Tooltip.Content
-                        side="right"
-                        sideOffset={12}
-                        className={cn(
-                            'z-50 px-3 py-2 text-sm font-medium',
-                            'bg-slate-900 dark:bg-white text-white dark:text-slate-900',
-                            'rounded-lg shadow-lg',
-                            'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
-                            'data-[side=right]:slide-in-from-left-2'
-                        )}
-                    >
-                        {item.label}
-                        <Tooltip.Arrow className="fill-slate-900 dark:fill-white" />
-                    </Tooltip.Content>
-                </Tooltip.Portal>
-            </Tooltip.Root>
-        );
-    }
-
-    return content;
 };
 
 // =============================================================================
@@ -184,21 +256,28 @@ const NavItem = ({
 // =============================================================================
 
 const Sidebar = () => {
-    const { collapsed, toggle } = useSidebar();
     const { isDarkMode, toggleTheme } = useTheme();
     const { activeTab, setActiveTab } = useNavigation();
     const [focusedIndex, setFocusedIndex] = React.useState(-1);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const sidebarRef = useRef(null);
 
-    // Keyboard navigation shortcuts
-    useHotkey('ctrl+b', () => toggle(), [toggle]);
-    useHotkey('ctrl+\\', () => toggle(), [toggle]);
+    // Mouse Spotlight Logic - Optimized with useMotionTemplate and direct ref manipulation where possible
+    const mouseX = useMotionValue(0);
+    const mouseY = useMotionValue(0);
+
+    const handleMouseMove = useCallback(({ clientX, clientY, currentTarget }) => {
+        const { left, top } = currentTarget.getBoundingClientRect();
+        mouseX.set(clientX - left);
+        mouseY.set(clientY - top);
+    }, [mouseX, mouseY]);
 
     // Number key shortcuts
     MENU_ITEMS.forEach((item, index) => {
         useHotkey(item.shortcut, () => setActiveTab(item.id), [setActiveTab]);
     });
 
-    // Arrow key navigation when sidebar is focused
+    // Arrow key navigation
     const handleKeyDown = useCallback((e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -213,210 +292,191 @@ const Sidebar = () => {
 
 
     return (
-        <Tooltip.Provider>
-            <>
-                {/* Backdrop - visible when expanded on mobile */}
-                <AnimatePresence>
-                    {!collapsed && (
+        <motion.aside
+            ref={sidebarRef}
+            initial={false}
+            animate={{
+                width: isExpanded ? 280 : 88, // Refined widths
+            }}
+            transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                mass: 0.8
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={() => setIsExpanded(true)}
+            onMouseLeave={() => setIsExpanded(false)}
+            onKeyDown={handleKeyDown}
+            className={cn(
+                'fixed left-0 top-0 h-screen z-[9999]', // Full Height
+                'flex flex-col pb-6',
+                // Interior padding handle dynamically to avoid layout shifts
+                'bg-white/70 dark:bg-[#050510]/60 backdrop-blur-2xl', // Richer custom blur
+                'border-r border-white/20 dark:border-white/5',
+                'shadow-[4px_0_24px_-4px_rgba(0,0,0,0.05)] dark:shadow-[4px_0_40px_-4px_rgba(0,0,0,0.2)]',
+                'overflow-hidden will-change-[width]',
+                'group/sidebar'
+            )}
+            role="navigation"
+            aria-label="Main navigation"
+        >
+            {/* Dynamic Spotlight Effect - Subtle and Premium */}
+            <motion.div
+                className="pointer-events-none absolute -inset-px opacity-0 transition duration-500 group-hover/sidebar:opacity-100"
+                style={{
+                    background: useMotionTemplate`
+                        radial-gradient(
+                            600px circle at ${mouseX}px ${mouseY}px,
+                            rgba(var(--color-primary-500-rgb), 0.06),
+                            transparent 80%
+                        )
+                    `
+                }}
+            />
+
+            {/* Logo Section - The "Crown Jewel" */}
+            <div className="flex items-center gap-4 mb-2 mt-6 px-5 relative z-10 h-16 shrink-0">
+                <motion.div
+                    className="relative cursor-pointer group/logo"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    {/* Refined Logo Container */}
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-600 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/10 relative overflow-hidden isolate">
+                        {/* Internal Gloss */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-60 mix-blend-overlay" />
+
+                        {/* Shimmer Effect Interval */}
+                        <div className="absolute inset-0 -translate-x-[150%] animate-[shimmer_3s_infinite_2s] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
+
+                        {/* Logo Icon */}
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="relative z-10 drop-shadow-md">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                            <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                        </svg>
+                    </div>
+                </motion.div>
+
+                <AnimatePresence mode="popLayout">
+                    {isExpanded && (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-                            onClick={toggle}
-                        />
+                            initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
+                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, x: -4, filter: 'blur(4px)' }}
+                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                            className="whitespace-nowrap flex flex-col justify-center"
+                        >
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+                                StudyHub
+                            </h1>
+                            <span className="text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 tracking-[0.2em] uppercase opacity-90 pl-0.5 mt-1.5">
+                                Workspace
+                            </span>
+                        </motion.div>
                     )}
                 </AnimatePresence>
+            </div>
 
-                {/* Sidebar */}
-                <motion.aside
-                    initial={false}
-                    animate={{ width: collapsed ? 64 : 256 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            {/* Navigation Menu */}
+            <nav className="flex-1 space-y-2 w-full relative z-10 px-3 py-4 overflow-y-auto scrollbar-hide">
+                {MENU_ITEMS.map((item, index) => (
+                    <NavItem
+                        key={item.id}
+                        item={item}
+                        isActive={activeTab === item.id}
+                        isExpanded={isExpanded}
+                        onSelect={setActiveTab}
+                        index={index}
+                        isFocused={focusedIndex === index}
+                    />
+                ))}
+            </nav>
+
+            {/* Bottom Actions - Refined */}
+            <div className="mt-auto pt-4 px-3 pb-2 space-y-1 border-t border-slate-200/50 dark:border-white/5 w-full relative z-10">
+                {/* Theme Toggle */}
+                <motion.button
+                    onClick={toggleTheme}
                     className={cn(
-                        'fixed left-0 top-0 h-screen z-50',
-                        'flex flex-col p-3',
-                        'bg-white/80 dark:bg-slate-900/90',
-                        'backdrop-blur-xl',
-                        'border-r border-slate-200/50 dark:border-white/5',
-                        'shadow-xl shadow-slate-200/50 dark:shadow-none'
+                        'group flex items-center gap-3 rounded-2xl relative overflow-hidden',
+                        isExpanded ? 'w-full px-4 py-3.5' : 'w-12 h-12 justify-center mx-auto',
+                        'hover:bg-slate-100/50 dark:hover:bg-white/5',
+                        'transition-all duration-300'
                     )}
-                    onKeyDown={handleKeyDown}
-                    role="navigation"
-                    aria-label="Main navigation"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                 >
-                    {/* Logo Area */}
-                    <div className={cn(
-                        'flex items-center mb-8 mt-1',
-                        collapsed ? 'justify-center px-0' : 'gap-3 px-2'
-                    )}>
-                        <motion.div
-                            className="relative flex-shrink-0"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
-                                <Sparkles size={20} />
-                            </div>
-                            {/* Glow effect */}
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 blur-lg opacity-40 -z-10" />
-                        </motion.div>
-
-                        <AnimatePresence mode="wait">
-                            {!collapsed && (
+                    <div className="relative z-10 shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                        <AnimatePresence mode="wait" initial={false}>
+                            {isDarkMode ? (
                                 <motion.div
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="overflow-hidden"
+                                    key="sun"
+                                    initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
+                                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                                    exit={{ rotate: 90, scale: 0.5, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
                                 >
-                                    <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                                        StudyHub
-                                    </h1>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                                        v1.0.0 • Pro
-                                    </p>
+                                    <Sun size={20} />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="moon"
+                                    initial={{ rotate: 90, scale: 0.5, opacity: 0 }}
+                                    animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                                    exit={{ rotate: -90, scale: 0.5, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Moon size={20} />
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    {/* User Section (when expanded) */}
                     <AnimatePresence>
-                        {!collapsed && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="mb-6 px-2"
+                        {isExpanded && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="font-medium text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap overflow-hidden"
                             >
-                                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100/80 dark:bg-white/5">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-emerald-500/20">
-                                        U
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm text-slate-900 dark:text-white truncate">
-                                            {getGreeting()}!
-                                        </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            JEE 2026 Aspirant
-                                        </p>
-                                    </div>
-                                </div>
-                            </motion.div>
+                                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                            </motion.span>
                         )}
                     </AnimatePresence>
+                </motion.button>
 
-                    {/* Navigation Menu */}
-                    <nav className="flex-1 space-y-1">
-                        {MENU_ITEMS.map((item, index) => (
-                            <NavItem
-                                key={item.id}
-                                item={item}
-                                isActive={activeTab === item.id}
-                                isCollapsed={collapsed}
-                                onSelect={setActiveTab}
-                                index={index}
-                                isFocused={focusedIndex === index}
-                            />
-                        ))}
-                    </nav>
-
-                    {/* Bottom Actions */}
-                    <div className="pt-4 space-y-1 border-t border-slate-200/50 dark:border-white/5">
-                        {/* Theme Toggle */}
-                        <motion.button
-                            onClick={toggleTheme}
-                            className={cn(
-                                'w-full flex items-center gap-3 px-3 py-3 rounded-xl',
-                                'text-slate-500 dark:text-slate-400',
-                                'hover:bg-white/60 dark:hover:bg-white/5',
-                                'hover:text-slate-700 dark:hover:text-slate-200',
-                                'transition-colors duration-200',
-                                collapsed ? 'justify-center' : ''
-                            )}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <AnimatePresence mode="wait">
-                                {isDarkMode ? (
-                                    <motion.div
-                                        key="sun"
-                                        initial={{ rotate: -90, opacity: 0 }}
-                                        animate={{ rotate: 0, opacity: 1 }}
-                                        exit={{ rotate: 90, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Sun size={20} />
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="moon"
-                                        initial={{ rotate: 90, opacity: 0 }}
-                                        animate={{ rotate: 0, opacity: 1 }}
-                                        exit={{ rotate: -90, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Moon size={20} />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                            {!collapsed && <span className="font-medium">
-                                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                            </span>}
-                        </motion.button>
-
-                        {/* Settings */}
-                        <motion.button
-                            className={cn(
-                                'w-full flex items-center gap-3 px-3 py-3 rounded-xl',
-                                'text-slate-500 dark:text-slate-400',
-                                'hover:bg-white/60 dark:hover:bg-white/5',
-                                'hover:text-slate-700 dark:hover:text-slate-200',
-                                'transition-colors duration-200',
-                                collapsed ? 'justify-center' : ''
-                            )}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                        >
-                            <Settings size={20} />
-                            {!collapsed && <span className="font-medium">Settings</span>}
-                        </motion.button>
+                {/* Settings */}
+                <motion.button
+                    className={cn(
+                        'group flex items-center gap-3 rounded-2xl relative overflow-hidden',
+                        isExpanded ? 'w-full px-4 py-3.5' : 'w-12 h-12 justify-center mx-auto',
+                        'hover:bg-slate-100/50 dark:hover:bg-white/5',
+                        'transition-all duration-300'
+                    )}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                >
+                    <div className="relative z-10 shrink-0 text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                        <Settings size={20} className="transform group-hover:rotate-90 transition-transform duration-500" />
                     </div>
 
-                    {/* Collapse Toggle */}
-                    <motion.button
-                        onClick={toggle}
-                        className={cn(
-                            'absolute -right-3 top-20',
-                            'w-6 h-6 rounded-full',
-                            'bg-white dark:bg-slate-800',
-                            'border border-slate-200 dark:border-slate-700',
-                            'shadow-sm',
-                            'flex items-center justify-center',
-                            'text-slate-400 dark:text-slate-500',
-                            'hover:text-indigo-600 dark:hover:text-indigo-400',
-                            'hover:border-indigo-300 dark:hover:border-indigo-700',
-                            'transition-colors duration-200',
-                            'z-50'
+                    <AnimatePresence>
+                        {isExpanded && (
+                            <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="font-medium text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap overflow-hidden"
+                            >
+                                Settings
+                            </motion.span>
                         )}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                    >
-                        <motion.div
-                            animate={{ rotate: collapsed ? 0 : 180 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <ChevronRight size={14} />
-                        </motion.div>
-                    </motion.button>
-                </motion.aside>
-            </>
-        </Tooltip.Provider>
+                    </AnimatePresence>
+                </motion.button>
+            </div>
+        </motion.aside>
     );
 };
 

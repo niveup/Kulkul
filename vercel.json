@@ -15,32 +15,52 @@
             "maxDuration": 60,
             "memory": 1024
         },
-        "api/active-timer.js": {
-            "maxDuration": 10,
-            "memory": 256
-        },
-        "api/todos/[[...slug]].js": {
-            "maxDuration": 10,
-            "memory": 256
-        },
-        "api/sessions/[[...slug]].js": {
-            "maxDuration": 10,
-            "memory": 256
-        },
-        "api/srs/[[...slug]].js": {
-            "maxDuration": 10,
-            "memory": 256
-        },
-        "api/custom-apps/[[...slug]].js": {
-            "maxDuration": 10,
-            "memory": 256
-        },
         "api/conversations/[[...slug]].js": {
+            "maxDuration": 10,
+            "memory": 256
+        },
+        "api/data/[[...slug]].js": {
             "maxDuration": 10,
             "memory": 256
         }
     },
     "rewrites": [
+        {
+            "source": "/api/todos",
+            "destination": "/api/data/todos"
+        },
+        {
+            "source": "/api/todos/:path*",
+            "destination": "/api/data/todos/:path*"
+        },
+        {
+            "source": "/api/sessions",
+            "destination": "/api/data/sessions"
+        },
+        {
+            "source": "/api/sessions/:path*",
+            "destination": "/api/data/sessions/:path*"
+        },
+        {
+            "source": "/api/custom-apps",
+            "destination": "/api/data/custom-apps"
+        },
+        {
+            "source": "/api/custom-apps/:path*",
+            "destination": "/api/data/custom-apps/:path*"
+        },
+        {
+            "source": "/api/srs",
+            "destination": "/api/data/srs"
+        },
+        {
+            "source": "/api/srs/:path*",
+            "destination": "/api/data/srs/:path*"
+        },
+        {
+            "source": "/api/active-timer",
+            "destination": "/api/data/active-timer"
+        },
         {
             "source": "/api/conversations",
             "destination": "/api/conversations/[[...slug]]"

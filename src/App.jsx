@@ -33,13 +33,16 @@ const CityBuilder = React.lazy(() => import('./components/tools/CityBuilder'));
 const ProgressSection = React.lazy(() => import('./components/tools/ProgressSection'));
 const ResourceCanvas = React.lazy(() => import('./components/resources/ResourceCanvas'));
 const AIChat = React.lazy(() => import('./components/tools/AIChat'));
-const SpacedRepetition = React.lazy(() => import('./components/tools/SpacedRepetition'));
+
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
 import AddAppModal from './components/AddAppModal';
 import { useCustomApps } from './hooks/useCustomApps';
 
 // Widgets
 import { StreakHeatmap, BentoDashboard } from './components/widgets';
+
+// Lumina OS Components
+import { LuminaOverview } from './components/lumina';
 
 // Store & Hooks
 import { useAppStore, useSessionStore, useTaskStore } from './store';
@@ -88,15 +91,16 @@ const MOTIVATIONAL_QUOTES = [
 // Page Transition Variants
 // =============================================================================
 
+// Simplified variants to ensure position: sticky works
 const pageVariants = {
-  initial: { opacity: 0, scale: 0.98, filter: 'blur(10px)' },
-  animate: { opacity: 1, scale: 1, filter: 'blur(0px)' },
-  exit: { opacity: 0, scale: 1.02, filter: 'blur(10px)' },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 const pageTransition = {
-  duration: 0.25,
-  ease: 'easeOut',
+  duration: 0.3,
+  ease: 'easeInOut',
 };
 
 // =============================================================================
@@ -255,13 +259,19 @@ function App() {
 
   // Handler for saving (add or edit) custom app
   const handleSaveApp = useCallback((appData, isEdit) => {
-    if (isEdit) {
+    const isExistingCustomApp = customApps.some(a => a.id === appData.id);
+
+    // If it's an edit of a CUSTOM app, update it.
+    // If it's an "edit" of a SYSTEM app, we technically "Add" it as a new custom app (Shadowing).
+    // If it's a completely new app, we Add it.
+    if (isEdit && isExistingCustomApp) {
       updateApp(appData.id, appData);
     } else {
-      addCustomApp(appData);
+      // Create/Shadow
+      addApp(appData);
     }
     setEditingApp(null);
-  }, [addCustomApp, updateApp]);
+  }, [addCustomApp, updateApp, customApps]);
 
   // Handler for editing a custom app
   const handleEditApp = useCallback((app) => {
@@ -290,14 +300,24 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Combine static apps with custom apps, then filter
+  // Combine static apps with custom apps, with Custom Apps "Shadowing" system apps
   const filteredApps = useMemo(() => {
-    const allApps = [...appsData, ...customApps];
+    // Create a map of all apps, favoring custom apps (overrides)
+    const appMap = new Map();
+
+    // 1. Add all system apps first
+    appsData.forEach(app => appMap.set(app.id, { ...app, isSystem: true }));
+
+    // 2. Add/Overwrite with custom apps
+    customApps.forEach(app => appMap.set(app.id, { ...app, isCustom: true }));
+
+    const allApps = Array.from(appMap.values());
+
     if (!debouncedSearch) return allApps;
     const query = debouncedSearch.toLowerCase();
     return allApps.filter(app =>
       app.name.toLowerCase().includes(query) ||
-      app.description.toLowerCase().includes(query)
+      (app.description && app.description.toLowerCase().includes(query))
     );
   }, [debouncedSearch, customApps]);
 
@@ -729,9 +749,9 @@ function App() {
         {/* Main Content */}
         <main className={cn(
           'flex-1 transition-all duration-300',
-          'ml-16',
-          'p-6 lg:p-10 pb-24',
-          'overflow-y-auto'
+          'ml-0 w-full',
+          'pl-[112px] pr-8 py-8' // Global content padding (Sidebar: 88px + Gap: 24px)
+          // Window scrolling enabled
         )}>
           {/* Animated Page Content */}
           <AnimatePresence mode="wait">
@@ -748,135 +768,22 @@ function App() {
                 transition={pageTransition}
                 className="max-w-7xl mx-auto"
               >
-                {/* Header */}
-                <header className="mb-10">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    <div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
-                        {format(new Date(), 'EEEE, MMMM d, yyyy')}
-                      </p>
-                      <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        {getGreeting()}, <span className="text-gradient">Aspirant</span>
-                      </h1>
-                      <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-xl">
-                        "{dailyQuote.text}" <span className="text-slate-400">— {dailyQuote.author}</span>
-                      </p>
-                    </div>
-
-                    {/* Search & Actions */}
-                    <div className="flex items-center gap-3">
-                      {/* Search */}
-                      <div className="relative group">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
-                        <input
-                          type="text"
-                          placeholder="Search apps..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className={cn(
-                            'w-64 pl-10 pr-4 py-2.5',
-                            'bg-white dark:bg-slate-800',
-                            'border border-slate-200 dark:border-slate-700',
-                            'rounded-xl',
-                            'text-sm text-slate-700 dark:text-slate-200',
-                            'placeholder:text-slate-400',
-                            'shadow-sm',
-                            'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-                            'transition-all'
-                          )}
-                        />
-                        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 text-xs text-slate-400 font-mono">
-                          <Command size={12} />K
-                        </kbd>
-                      </div>
-
-                      {/* Notification Bell */}
-                      <button className={cn(
-                        'relative p-2.5 rounded-xl',
-                        'bg-white dark:bg-slate-800',
-                        'border border-slate-200 dark:border-slate-700',
-                        'text-slate-500 dark:text-slate-400',
-                        'hover:text-indigo-600 dark:hover:text-indigo-400',
-                        'hover:border-indigo-200 dark:hover:border-indigo-800',
-                        'shadow-sm transition-all'
-                      )}>
-                        <Bell size={18} />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-800" />
-                      </button>
-
-                      {/* Online Status */}
-                      {!isOnline && (
-                        <div className="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium">
-                          Offline
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </header>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                  <StatsCard
-                    icon={Clock}
-                    label="Focus Time Today"
-                    value={todayFocusTime}
-                    subtext="Keep up the great work!"
-                    gradient="bg-gradient-to-br from-cyan-500 to-teal-600"
-                    delay={0}
-                  />
-                  <StatsCard
-                    icon={CheckCircle2}
-                    label="Tasks Completed"
-                    value={completedTasksCount}
-                    subtext={`${tasks.length - completedTasksCount} remaining`}
-                    gradient="bg-gradient-to-br from-emerald-500 to-green-600"
-                    delay={0.1}
-                  />
-                  <StatsCard
-                    icon={Flame}
-                    label="Current Streak"
-                    value={`${currentStreak} days`}
-                    subtext="Don't break the chain!"
-                    gradient="bg-gradient-to-br from-indigo-500 to-purple-600"
-                    delay={0.2}
-                  />
-                </div>
-
-                {/* Bento Dashboard - Project Aether */}
-                <BentoDashboard
+                <LuminaOverview
                   sessions={sessions}
-                  focusTime={todayFocusTime}
+                  tasks={tasks}
+                  streak={currentStreak}
+                  apps={filteredApps}
+                  onAddApp={() => {
+                    setEditingApp(null);
+                    setIsAddAppModalOpen(true);
+                  }}
+                  onEditApp={handleEditApp}
+                  onDeleteApp={handleDeleteApp}
+                  onStartSession={() => setActiveTab('study-tools')}
+                  onViewPlan={() => setActiveTab('progress')}
                   userName="Aspirant"
-                  className="mb-10"
+                  onNavigate={setActiveTab}
                 />
-
-                {/* Apps Grid */}
-                <section className="mb-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                      Quick Access
-                    </h2>
-                    <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1">
-                      Customize <ArrowRight size={14} />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {filteredApps.map((app, index) => (
-                      <AppCard
-                        key={app.id}
-                        app={app}
-                        index={index}
-                        onEdit={handleEditApp}
-                        onDelete={handleDeleteApp}
-                      />
-                    ))}
-                    <AddAppCard onClick={() => {
-                      setEditingApp(null);
-                      setIsAddAppModalOpen(true);
-                    }} />
-                  </div>
-                </section>
               </motion.div>
             )}
 
@@ -933,7 +840,6 @@ function App() {
                       isDarkMode={isDarkMode}
                       onToggleTheme={toggleTheme}
                     />
-                    <SpacedRepetition isDarkMode={isDarkMode} />
                     <SessionHistory sessionHistory={sessions} isDarkMode={isDarkMode} />
                     <div className="h-[500px]">
                       <TodoList
@@ -1025,6 +931,8 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* BIG INVISIBLE SPACER */}
+          <div className="h-[70px]" />
         </main>
 
         {/* Command Palette (Cmd+K) */}

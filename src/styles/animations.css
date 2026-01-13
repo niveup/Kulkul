@@ -831,3 +831,166 @@
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3),
         0 0 0 5px rgba(99, 102, 241, 0.5);
 }
+
+/* =============================================================================
+   LUMINA OS - LIQUID GLASS EFFECTS
+   Premium glassmorphism inspired by macOS and visionOS
+   ============================================================================= */
+
+/* Liquid transition timing function - smooth Apple-like feel */
+.ease-liquid {
+    transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ease-bouncy {
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Float animation - gentle floating effect for premium cards */
+@keyframes lumina-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes lumina-float-delayed {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+.animate-lumina-float {
+    animation: lumina-float 8s ease-in-out infinite;
+}
+
+.animate-lumina-float-delayed {
+    animation: lumina-float-delayed 8s ease-in-out 4s infinite;
+}
+
+/* Pulse slow - subtle breathing effect */
+@keyframes lumina-pulse-slow {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
+.animate-lumina-pulse-slow {
+    animation: lumina-pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Liquid blob - organic morphing background shapes */
+@keyframes lumina-blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+.animate-lumina-blob {
+    animation: lumina-blob 20s infinite;
+}
+
+/* Glass text - gradient text with glass-like shine */
+.lumina-glass-text {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.6) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Ultra premium glass panel - Lumina OS style */
+.lumina-glass-panel {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(50px) saturate(180%);
+    -webkit-backdrop-filter: blur(50px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+}
+
+/* Top highlight for 3D glass edge effect */
+.lumina-glass-panel::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Glossy reflection gradient overlay */
+.lumina-glass-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), transparent, transparent);
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+/* Spotlight effect container - for mouse tracking glow */
+.lumina-spotlight {
+    position: relative;
+    overflow: hidden;
+}
+
+.lumina-spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.04), transparent 40%);
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    pointer-events: none;
+}
+
+.lumina-spotlight:hover::before {
+    opacity: 1;
+}
+
+/* Hover effects with liquid transition */
+.lumina-hover-lift {
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.lumina-hover-lift:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.4);
+}
+
+.lumina-hover-lift:active {
+    transform: scale(0.98);
+}

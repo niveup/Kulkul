@@ -58,6 +58,6 @@ This workflow forces the AI to adopt the mindset of a **Principal Software Archi
    - Create `walkthrough.md`.
    - **Mandatory**: Include a section called "Performance Validation" proving the solution is lag-free.
    - **Mandatory**: Screenshots/Videos of the feature in action.
-
+3 also i am making this app so that it will be later on cloud so keep that in mind it is just on local but for future it will be on cloud so make thing according to it
 ---
 **Trigger this workflow by finding complex tasks and running: `/new_feature [Task Description]`**

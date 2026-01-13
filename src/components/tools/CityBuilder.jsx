@@ -195,77 +195,119 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
     };
 
     return (
-        <div className="h-full w-full relative group bg-[#050508]">
-            {/* HUD: Header (Top Left) */}
-            <div className="absolute top-6 left-6 z-10 pointer-events-none">
-                <div className="flex items-center gap-3">
-                    <div className="w-1 h-8 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                    <div>
-                        <h2 className="text-xl font-bold text-white tracking-widest uppercase flex items-center gap-3">
-                            Simulation Viewport
-                        </h2>
-                        <div className="flex items-center gap-4 text-[10px] font-bold text-emerald-500/80 tracking-[0.2em] mt-0.5">
-                            <span>V 2.5.0</span>
-                            <span className="w-1 h-1 bg-white/20 rounded-full" />
-                            <span>{filteredHistory.length} UNITS RENDERED</span>
+        <div className="h-full w-full relative group bg-black/60">
+            {/* Main Canvas Area - handled by Three.js */}
+
+            {/* Dynamic Island HUD (Bottom Center) - minimal glass bar */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 w-full max-w-2xl px-4 pointer-events-none">
+
+                {/* Status Message (If any) */}
+                <AnimatePresence>
+                    {!isLakeDrained && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="pointer-events-auto"
+                        >
+                            <button
+                                onClick={handleGenesisPulse}
+                                className="px-6 py-3 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500/30 hover:scale-105 transition-all font-medium tracking-wide flex items-center gap-2"
+                            >
+                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>Initialize Genesis Pulse</span>
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Main Controls - Glass Pill */}
+                <div className="pointer-events-auto flex items-center p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl gap-2">
+
+                    {/* View Controls */}
+                    <div className="flex items-center gap-1 px-2 border-r border-white/10">
+                        <button
+                            onClick={() => setAutoRotate(!autoRotate)}
+                            className={`p-3 rounded-full transition-all ${autoRotate ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                            title="Auto-Rotate"
+                        >
+                            <div className={`w-5 h-5 rounded-full border-[3px] border-current border-t-transparent ${autoRotate ? 'animate-spin' : ''}`} />
+                        </button>
+                        <button
+                            onClick={() => setLiteMode(!isLiteMode)}
+                            className={`p-3 rounded-full transition-all ${isLiteMode ? 'bg-indigo-500 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                            title="Performance Mode"
+                        >
+                            <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">LQ</div>
+                        </button>
+                    </div>
+
+                    {/* Date Picker Trigger */}
+                    <button
+                        onClick={() => setShowDatePicker(true)}
+                        className="px-6 py-3 rounded-full text-white hover:bg-white/10 transition-all flex items-center gap-3 min-w-[180px] justify-center"
+                    >
+                        <span className="text-sm font-medium opacity-60 uppercase tracking-wider">Viewing</span>
+                        <span className="text-base font-semibold tabular-nums tracking-wide">
+                            {selectedDate ? selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "All Time"}
+                        </span>
+                    </button>
+
+                    {/* Stats Summary */}
+                    <div className="px-4 flex items-center gap-4 text-sm font-medium border-l border-white/10 text-white/80">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>{dateStats.completed}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                            <span>{dateStats.failed}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* HUD: Controls (Right Top/Bottom) */}
-            <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-3 pointer-events-auto">
-                <div className="flex items-center gap-2 p-1 rounded-xl bg-black/40 backdrop-blur-md border border-white/5">
-                    <HoloBtn onClick={() => setLiteMode(!isLiteMode)} icon={ZapOff} active={isLiteMode} title="Lite Mode" />
-                    <HoloBtn onClick={() => setAutoRotate(!autoRotate)} icon={autoRotate ? Unlock : Lock} active={autoRotate} title="Rotate Camera" />
-                    <HoloBtn onClick={onToggleTheme} icon={isDarkMode ? Moon : Moon} title="Atmosphere" />
-                </div>
-
-                {/* Calendar Button */}
-                <button
-                    onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="flex items-center gap-3 px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl hover:bg-white/5 transition-all group"
-                >
-                    <div className="text-right">
-                        <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Timeline</div>
-                        <div className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
-                            {selectedDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'ALL TIME'}
-                        </div>
-                    </div>
-                    <Calendar size={18} className="text-emerald-500" />
-                </button>
-            </div>
-
-            {/* Date Picker Overlay */}
+            {/* Date Picker Overlay - Full Screen Glass */}
             <AnimatePresence>
                 {showDatePicker && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute top-24 right-6 z-50 p-4 rounded-xl bg-black/90 backdrop-blur-xl border border-white/10 shadow-2xl w-72"
+                        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                        animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                        exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                        className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-8"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) setShowDatePicker(false);
+                        }}
                     >
-                        {/* Simple Holographic Calendar Implementation */}
-                        <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                            <span className="text-sm font-bold text-white uppercase tracking-wider">
-                                {pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                            </span>
-                            <div className="flex gap-1">
-                                <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1))} className="p-1 text-white/50 hover:text-white"><ChevronLeft size={14} /></button>
-                                <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1))} className="p-1 text-white/50 hover:text-white"><ChevronRight size={14} /></button>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-[#111] border border-white/10 rounded-3xl p-6 shadow-2xl max-w-lg w-full"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-medium text-white">Select Timeline</h3>
+                                <button onClick={() => setShowDatePicker(false)} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white">✕</button>
                             </div>
-                        </div>
-                        {/* ... (Existing calendar grid logic using buttons with hover states) ... */}
-                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-mono mb-2">
-                            {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map(d => <div key={d} className="text-emerald-500/50">{d}</div>)}
-                        </div>
-                        {/* Only showing placeholder for brevity, assume similar grid logic mapped to dates */}
-                        <div className="text-center py-4 text-xs text-white/30 italic">
-                            Select a date to filter simulation data.
-                        </div>
-                        <button onClick={() => { setInternalSelectedDate(null); setShowDatePicker(false); }} className="w-full py-2 mt-2 text-xs font-bold text-emerald-400 bg-emerald-500/10 rounded border border-emerald-500/20 hover:bg-emerald-500/20">
-                            VIEW ALL TIME
-                        </button>
+
+                            {/* Simple Month View (Placeholder for full calendar) */}
+                            <div className="grid grid-cols-7 gap-2">
+                                {Array.from({ length: 30 }).map((_, i) => (
+                                    <button
+                                        key={i}
+                                        className="aspect-square rounded-xl hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center text-sm font-medium transition-colors"
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => { setInternalSelectedDate(null); setShowDatePicker(false); }}
+                                className="w-full mt-6 py-3 rounded-full bg-white/5 hover:bg-white/10 text-emerald-400 font-medium tracking-wide transition-colors"
+                            >
+                                SHOW ALL TIME
+                            </button>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -297,10 +339,10 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                         />
                     </Suspense>
                 </Canvas>
-            </div>
+            </div >
 
             {/* Bottom Status Bar */}
-            <div className="absolute bottom-6 left-6 right-6 z-10 flex justify-between items-end pointer-events-none">
+            < div className="absolute bottom-6 left-6 right-6 z-10 flex justify-between items-end pointer-events-none" >
                 <div className="flex gap-4">
                     <div className="bg-black/40 backdrop-blur-md border border-white/5 px-4 py-2 rounded-lg">
                         <div className="text-[10px] text-white/40 uppercase font-bold">Grid Stability</div>
@@ -308,14 +350,16 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                     </div>
                 </div>
 
-                {isLakeDrained && (
-                    <button onClick={handleGenesisPulse} className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse">
-                        <Zap size={16} />
-                        <span className="text-xs font-bold uppercase tracking-wider">Genesis Pulse Available</span>
-                    </button>
-                )}
-            </div>
-        </div>
+                {
+                    isLakeDrained && (
+                        <button onClick={handleGenesisPulse} className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] animate-pulse">
+                            <Zap size={16} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Genesis Pulse Available</span>
+                        </button>
+                    )
+                }
+            </div >
+        </div >
     );
 };
 

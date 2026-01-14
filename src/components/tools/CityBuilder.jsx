@@ -1,7 +1,7 @@
 import React, { useMemo, useState, Suspense, useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Html, Sky, Stars } from '@react-three/drei';
-import { Trophy, Map, Lock, Unlock, Zap, ChevronLeft, ChevronRight, Building2, ZapOff, Moon, Calendar, X, RefreshCw } from 'lucide-react';
+import { Trophy, Map, Lock, Unlock, Zap, ChevronLeft, ChevronRight, Building2, ZapOff, Moon, Calendar, X, RefreshCw, Target } from 'lucide-react';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
 import {
     TentComplete, TentRuin,
@@ -144,12 +144,24 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [pickerMonth, setPickerMonth] = useState(new Date());
 
-    // Internal date state
+    // Internal date state with Persistence
     const [internalSelectedDate, setInternalSelectedDate] = useState(() => {
+        const savedDate = localStorage.getItem('city_builder_date');
+        if (savedDate) return new Date(savedDate);
+
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(12, 0, 0, 0); // Noon to avoid timezone shifts
         return today;
     });
+
+    // Persistence Effect
+    useEffect(() => {
+        if (internalSelectedDate) {
+            localStorage.setItem('city_builder_date', internalSelectedDate.toISOString());
+        } else {
+            localStorage.removeItem('city_builder_date');
+        }
+    }, [internalSelectedDate]);
 
     const selectedDate = selectedDateProp !== undefined ? selectedDateProp : internalSelectedDate;
 
@@ -194,6 +206,32 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
         setAutoRotate(true);
     };
 
+    // Calendar Logic
+    const getDaysInMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return new Date(year, month + 1, 0).getDate();
+    };
+
+    const getFirstDayOfMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return new Date(year, month, 1).getDay();
+    };
+
+    const daysInMonth = getDaysInMonth(pickerMonth);
+    const firstDay = getFirstDayOfMonth(pickerMonth);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const handlePrevMonth = () => {
+        setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1, 1));
+    };
+
     return (
         <div className="h-full w-full relative group bg-black/60">
             {/* Main Canvas Area - handled by Three.js */}
@@ -202,24 +240,7 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 w-full max-w-2xl px-4 pointer-events-none">
 
                 {/* Status Message (If any) */}
-                <AnimatePresence>
-                    {!isLakeDrained && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="pointer-events-auto"
-                        >
-                            <button
-                                onClick={handleGenesisPulse}
-                                className="px-6 py-3 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:bg-emerald-500/30 hover:scale-105 transition-all font-medium tracking-wide flex items-center gap-2"
-                            >
-                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span>Initialize Genesis Pulse</span>
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {/* Genesis Pulse Removed as per user request */}
 
                 {/* Main Controls - Glass Pill */}
                 <div className="pointer-events-auto flex items-center p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl gap-2">
@@ -228,26 +249,26 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                     <div className="flex items-center gap-1 px-2 border-r border-white/10">
                         <button
                             onClick={() => setAutoRotate(!autoRotate)}
-                            className={`p-3 rounded-full transition-all ${autoRotate ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
-                            title="Auto-Rotate"
+                            className={`p-3 rounded-full transition-all ${!autoRotate ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                            title={autoRotate ? "Lock Rotation" : "Unlock Rotation"}
                         >
-                            <div className={`w-5 h-5 rounded-full border-[3px] border-current border-t-transparent ${autoRotate ? 'animate-spin' : ''}`} />
+                            {autoRotate ? <RefreshCw size={20} className="animate-spin-slow" /> : <Lock size={20} />}
                         </button>
                         <button
                             onClick={() => setLiteMode(!isLiteMode)}
                             className={`p-3 rounded-full transition-all ${isLiteMode ? 'bg-indigo-500 text-white' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
                             title="Performance Mode"
                         >
-                            <div className="w-5 h-5 flex items-center justify-center font-bold text-xs">LQ</div>
+                            {isLiteMode ? <Zap size={20} fill="currentColor" /> : <ZapOff size={20} />}
                         </button>
                     </div>
 
                     {/* Date Picker Trigger */}
                     <button
                         onClick={() => setShowDatePicker(true)}
-                        className="px-6 py-3 rounded-full text-white hover:bg-white/10 transition-all flex items-center gap-3 min-w-[180px] justify-center"
+                        className="px-6 py-3 rounded-full text-white hover:bg-white/10 transition-all flex items-center gap-3 min-w-[140px] justify-center"
                     >
-                        <span className="text-sm font-medium opacity-60 uppercase tracking-wider">Viewing</span>
+                        <Calendar size={18} className="text-white/60" />
                         <span className="text-base font-semibold tabular-nums tracking-wide">
                             {selectedDate ? selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "All Time"}
                         </span>
@@ -274,7 +295,7 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                         initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
                         animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
                         exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                        className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center p-8"
+                        className="absolute inset-0 z-[60] bg-black/60 flex items-center justify-center p-8 text-white"
                         onClick={(e) => {
                             if (e.target === e.currentTarget) setShowDatePicker(false);
                         }}
@@ -283,29 +304,81 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-[#111] border border-white/10 rounded-3xl p-6 shadow-2xl max-w-lg w-full"
+                            className="bg-[#0A0A0C] border border-white/10 rounded-3xl p-6 shadow-2xl max-w-md w-full"
                         >
+                            {/* Header: Month/Year & Navigation */}
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-medium text-white">Select Timeline</h3>
-                                <button onClick={() => setShowDatePicker(false)} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white">✕</button>
+                                <div className="flex items-center gap-4">
+                                    <h3 className="text-xl font-bold tracking-tight text-white capitalize">
+                                        {pickerMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                                    </h3>
+                                    <button
+                                        onClick={() => setPickerMonth(new Date())}
+                                        className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 transition-colors"
+                                        title="Jump to Today"
+                                    >
+                                        <Target size={14} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><ChevronLeft size={18} /></button>
+                                    <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><ChevronRight size={18} /></button>
+                                    <button onClick={() => setShowDatePicker(false)} className="p-2 ml-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><X size={18} /></button>
+                                </div>
                             </div>
 
-                            {/* Simple Month View (Placeholder for full calendar) */}
-                            <div className="grid grid-cols-7 gap-2">
-                                {Array.from({ length: 30 }).map((_, i) => (
-                                    <button
-                                        key={i}
-                                        className="aspect-square rounded-xl hover:bg-white/10 text-white/50 hover:text-white flex items-center justify-center text-sm font-medium transition-colors"
-                                    >
-                                        {i + 1}
-                                    </button>
+                            {/* Weekday Headers */}
+                            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                    <div key={day} className="text-xs font-bold text-white/30 uppercase tracking-widest py-1">
+                                        {day}
+                                    </div>
                                 ))}
                             </div>
+
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-1">
+                                {/* Empty slots for offset - Add aspect-square to prevent collapse */}
+                                {Array.from({ length: firstDay }).map((_, i) => (
+                                    <div key={`empty-${i}`} className="aspect-square" />
+                                ))}
+
+                                {/* Days */}
+                                {Array.from({ length: daysInMonth }).map((_, i) => {
+                                    // Use noon to avoid DST midnight shifts
+                                    const dayDate = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1, 12, 0, 0);
+                                    const isToday = dayDate.toDateString() === today.toDateString();
+                                    const isSelected = selectedDate && dayDate.toDateString() === selectedDate.toDateString();
+
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                setInternalSelectedDate(dayDate);
+                                                setShowDatePicker(false);
+                                            }}
+                                            className={`
+                                                aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all relative
+                                                ${isSelected
+                                                    ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                                                    : 'hover:bg-white/10 text-white/70 hover:text-white'
+                                                }
+                                                ${isToday && !isSelected ? 'text-emerald-400 font-bold bg-emerald-500/5 border border-emerald-500/20' : ''}
+                                            `}
+                                        >
+                                            {i + 1}
+                                            {isToday && !isSelected && <div className="absolute bottom-1.5 w-1 h-1 rounded-full bg-emerald-500" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Footer */}
                             <button
                                 onClick={() => { setInternalSelectedDate(null); setShowDatePicker(false); }}
-                                className="w-full mt-6 py-3 rounded-full bg-white/5 hover:bg-white/10 text-emerald-400 font-medium tracking-wide transition-colors"
+                                className="w-full mt-6 py-3 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-medium tracking-wide transition-colors text-xs uppercase"
                             >
-                                SHOW ALL TIME
+                                Clear Selection (Show All)
                             </button>
                         </motion.div>
                     </motion.div>

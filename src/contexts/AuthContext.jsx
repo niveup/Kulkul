@@ -35,11 +35,19 @@ export const AuthProvider = ({ children }) => {
             });
 
             if (response.ok) {
-                const data = await response.json();
-                if (data.authenticated) {
-                    setIsAuthenticated(true);
-                    setIsGuest(false);
+                // Check if response is JSON
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const data = await response.json();
+                    if (data.authenticated) {
+                        setIsAuthenticated(true);
+                        setIsGuest(false);
+                    } else {
+                        setIsAuthenticated(false);
+                    }
                 } else {
+                    // API implementation missing or returning HTML fallback
+                    // console.warn('[Auth] API not ready or returning HTML. Defaulting to unauthenticated.');
                     setIsAuthenticated(false);
                 }
             } else {

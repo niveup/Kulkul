@@ -1,6 +1,7 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, AlertTriangle, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Minus, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getBuildingConfig } from '../../utils/pomodoroConfig';
 
 // ============================================================================
 // DESIGN SYSTEM - LIQUID BUTTONS & CONTROLS
@@ -27,8 +28,8 @@ const LiquidButton = ({ onClick, icon: Icon, label, variant = 'primary', size = 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`
-                relative flex items-center justify-center gap-2 font-medium tracking-wide transition-all duration-300
-                ${styles[variant]} ${sizes[size]} ${className}
+                relative flex items-center justify-center gap-3 font-medium tracking-wide transition-all duration-300
+                ${styles[variant]} ${sizes[size]} ${className || ''}
             `}
         >
             {Icon && <Icon size={size === 'sm' ? 16 : 20} strokeWidth={2} />}
@@ -37,7 +38,7 @@ const LiquidButton = ({ onClick, icon: Icon, label, variant = 'primary', size = 
     );
 };
 
-const IconButton = ({ onClick, icon: Icon, disabled }) => (
+const IconButton = ({ onClick, icon: Icon, disabled, className }) => (
     <motion.button
         onClick={onClick}
         disabled={disabled}
@@ -46,6 +47,7 @@ const IconButton = ({ onClick, icon: Icon, disabled }) => (
         className={`
             p-4 rounded-full transition-colors 
             ${disabled ? 'opacity-30 cursor-not-allowed' : 'text-white/70 hover:text-white cursor-pointer'}
+            ${className || ''}
         `}
     >
         <Icon size={24} />
@@ -109,14 +111,15 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
 
     // Helper to calculate progress (0 to 1)
-    const activeTimeBytes = isActive ? Math.floor(initialTime / 60) : duration;
     // Note: progress goes from 0 (start) to 1 (end). 
     // If not active, show full ring (1) or empty (0)? Let's show full ring when idle.
     const progress = isActive ? 1 - (timeLeft / initialTime) : 0;
 
-    // This function is no longer used in the new design, but kept for potential future use or if the original intent was to use it elsewhere.
-    // For now, we'll use a placeholder for CurrentIcon.
-    const CurrentIcon = CheckCircle2; // Placeholder, as getBuildingConfig is removed.
+    // Building Logic
+    // We determine the "Target Building" based on the set duration (if idle) or initialTime (if active)
+    const targetDuration = isActive ? Math.floor(initialTime / 60) : duration;
+    const buildingConfig = getBuildingConfig(targetDuration);
+    const TargetIcon = buildingConfig.icon;
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -125,7 +128,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     };
 
     const handleDurationChange = (change) => {
-        const newDuration = Math.max(5, Math.min(120, duration + change)); // Cap at 120 mins
+        const newDuration = Math.max(5, Math.min(999, duration + change)); // Cap at 999 mins
         onAction('SET_DURATION', newDuration);
     };
 
@@ -134,15 +137,36 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
 
             {/* 1. Header: Status Pill */}
             <div className="flex flex-col items-center gap-2">
-                <div className={`
-                    flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all duration-500
-                    ${isFailed ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
-                        isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                            isActive ? 'bg-white/10 border-white/20 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' :
-                                'bg-white/5 border-white/10 text-white/40'}
-                `}>
-                    <CurrentIcon size={14} />
-                    <span className="text-xs font-bold uppercase tracking-widest">{isCompleted ? 'Completed' : isFailed ? 'Failed' : 'Focus Session'}</span>
+                <div
+                    className={`
+                        relative flex items-center gap-3 px-5 py-2 rounded-full border transition-all duration-500
+                        backdrop-blur-xl shadow-lg
+                        ${isFailed
+                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-rose-500/10'
+                            : isCompleted
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/10'
+                                : isActive
+                                    ? 'bg-white/10 border-white/20 text-white shadow-white/5 animate-pulse-glow'
+                                    : `bg-black/20 border-white/10 ${buildingConfig.color} shadow-${buildingConfig.id === 'landmark' ? 'sky' : 'indigo'}-500/10`
+                        }
+                    `}
+                >
+                    {/* Icon Container */}
+                    <div className={`
+                        flex items-center justify-center w-6 h-6 rounded-full 
+                        ${isFailed ? 'bg-rose-500/20' : isCompleted ? 'bg-emerald-500/20' : isActive ? 'bg-white/20' : 'bg-white/5'}
+                    `}>
+                        {isCompleted ? <CheckCircle2 size={12} /> : isFailed ? <AlertTriangle size={12} /> : <TargetIcon size={12} />}
+                    </div>
+
+                    <div className="flex flex-col leading-none">
+                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">
+                            {isCompleted ? 'Session' : isFailed ? 'Session' : isActive ? 'Current Status' : 'Next Reward'}
+                        </span>
+                        <span className="text-xs font-bold tracking-wide">
+                            {isCompleted ? 'Completed' : isFailed ? 'Failed' : isActive ? 'Focusing' : buildingConfig.label}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -156,43 +180,47 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                 />
 
                 {/* Content Overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    {/* Time Display */}
-                    <motion.div
-                        layout
-                        className="text-7xl font-light tracking-tighter text-white tabular-nums drop-shadow-2xl"
-                        style={{ fontFamily: '"Outfit", sans-serif' }} // Ensuring the font is applied
-                    >
-                        {formatTime(timeLeft)}
-                    </motion.div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
+                    {/* Time Display Row with Controls */}
+                    <div className="flex items-center gap-6 pointer-events-auto">
+                        {/* Decrease Button - Only visible when idle */}
+                        {!isActive && !isCompleted && !isFailed && (
+                            <IconButton
+                                onClick={() => handleDurationChange(-5)}
+                                icon={Minus}
+                                disabled={duration <= 5}
+                                className="opacity-50 hover:opacity-100 transition-opacity"
+                            />
+                        )}
+
+                        {/* Main Time */}
+                        <motion.div
+                            layout
+                            className="text-7xl font-light tracking-tighter text-white tabular-nums drop-shadow-2xl select-none"
+                            style={{ fontFamily: '"Outfit", sans-serif' }}
+                        >
+                            {formatTime(timeLeft)}
+                        </motion.div>
+
+                        {/* Increase Button - Only visible when idle */}
+                        {!isActive && !isCompleted && !isFailed && (
+                            <IconButton
+                                onClick={() => handleDurationChange(5)}
+                                icon={Plus}
+                                disabled={duration >= 999}
+                                className="opacity-50 hover:opacity-100 transition-opacity"
+                            />
+                        )}
+                    </div>
 
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-sm font-medium text-white/50 tracking-[0.2em] mt-2 uppercase"
+                        className="text-sm font-medium text-white/50 tracking-[0.2em] mt-2 uppercase select-none"
                     >
                         {isActive ? 'Focusing' : isCompleted ? 'Session Done' : isFailed ? 'Look Away?' : 'Ready'}
                     </motion.div>
                 </div>
-
-                {/* Floating Controls for Duration (Only visible when Idle) */}
-                <AnimatePresence>
-                    {!isActive && !isCompleted && !isFailed && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="absolute bottom-0 translate-y-20 flex items-center gap-8"
-                        >
-                            <IconButton onClick={() => handleDurationChange(-5)} icon={ChevronLeft} disabled={duration <= 5} />
-                            <div className="flex flex-col items-center">
-                                <span className="text-2xl font-bold text-white">{duration}</span>
-                                <span className="text-[10px] uppercase tracking-widest text-white/40">Minutes</span>
-                            </div>
-                            <IconButton onClick={() => handleDurationChange(5)} icon={ChevronRight} disabled={duration >= 120} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
 
             {/* 3. Primary Controls (Bottom Deck) */}
@@ -213,7 +241,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                                     label="New Session"
                                     icon={RotateCcw}
                                     variant="secondary"
-                                    className="w-48"
+                                    className="px-8 min-w-[160px]"
                                 />
                             ) : (
                                 <LiquidButton
@@ -221,7 +249,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                                     label="Start Focus"
                                     icon={Play}
                                     variant="primary"
-                                    className="w-48"
+                                    className="px-8 min-w-[160px]"
                                 />
                             )}
                         </motion.div>
@@ -238,12 +266,14 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                                 label="Pause"
                                 icon={Pause}
                                 variant="secondary"
+                                className="px-8 min-w-[140px]"
                             />
                             <LiquidButton
                                 onClick={() => onAction('GIVE_UP')}
                                 label="End"
                                 icon={AlertTriangle}
                                 variant="destructive"
+                                className="px-8 min-w-[140px]"
                             />
                         </motion.div>
                     )}

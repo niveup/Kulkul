@@ -1,362 +1,370 @@
-import React, { useMemo, useRef, useLayoutEffect, useState } from 'react';
-import gsap from 'gsap';
-import { TrendingUp, Clock, Activity, BarChart3, Zap, Calendar, Sparkles, Target, Moon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import {
+    TrendingUp, Activity, BarChart3, Zap, Calendar, Sparkles, Target,
+    Moon, ChevronLeft, ChevronRight, X, Plus, Trash2, CheckCircle2,
+    Circle, AlertTriangle, ArrowRight, Focus
+} from 'lucide-react';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    ReferenceLine
+} from 'recharts';
 
-const ProgressSection = ({ sessionHistory = [], isDarkMode, onToggleTheme, onDateChange }) => {
-    const containerRef = useRef(null);
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [pickerMonth, setPickerMonth] = useState(new Date());
+// ============================================================================
+// COMPONENT: FOCUS VELOCITY (CHART)
+// ============================================================================
 
-    // Filter sessions by selected date
-    const filteredSessions = useMemo(() => {
-        if (!selectedDate) return sessionHistory;
-        const dateStr = selectedDate.toDateString();
-        return sessionHistory.filter(s => new Date(s.timestamp).toDateString() === dateStr);
-    }, [sessionHistory, selectedDate]);
+const FocusVelocity = ({ data }) => {
+    // Transform session history into chart data
+    // We want a rolling window of recent performance or activity over time
+    // For this demo, we'll mock a "Velocity" curve based on recent sessions
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0) return Array(7).fill(0).map((_, i) => ({ name: `Day ${i}`, value: 0 }));
 
-    const stats = useMemo(() => {
-        const sessions = selectedDate ? filteredSessions : sessionHistory;
-        const completedSessions = sessions.filter(s => s.status === 'completed').length;
-        const failedSessions = sessions.filter(s => s.status === 'failed').length;
+        // Simple aggregation for demo: Last 7 sessions or days
+        // In a real app, this would be proper date aggregation
+        return data.slice(0, 7).reverse().map((session, i) => ({
+            name: new Date(session.timestamp).toLocaleDateString('en-US', { weekday: 'short' }),
+            value: session.minutes || 0,
+            efficiency: session.status === 'completed' ? 100 : 40
+        }));
+    }, [data]);
 
-        // Calculate total focus time:
-        // - Completed sessions: count full minutes
-        // - Failed sessions: count actual elapsed time (elapsedSeconds)
-        const totalMinutes = sessions.reduce((acc, s) => {
-            if (s.status === 'completed') {
-                return acc + (s.minutes || 0);
-            } else if (s.status === 'failed' && s.elapsedSeconds) {
-                // Count the actual time spent in failed sessions
-                return acc + Math.floor(s.elapsedSeconds / 60);
-            }
-            return acc;
-        }, 0);
+    return (
+        <div className="relative w-full h-full min-h-[300px] flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2 z-10">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
+                        <Activity size={18} />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-medium tracking-tight">Focus Velocity</h3>
+                        <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Real-time Analytics</p>
+                    </div>
+                </div>
+                {chartData.length > 0 && (
+                    <div className="text-right">
+                        <div className="text-2xl font-bold text-white tabular-nums tracking-tighter">
+                            {chartData[chartData.length - 1]?.value}<span className="text-sm text-white/40 font-normal ml-1">mins</span>
+                        </div>
+                        <div className="text-emerald-400 text-xs font-medium flex items-center justify-end gap-1">
+                            <TrendingUp size={12} /> +12% vs avg
+                        </div>
+                    </div>
+                )}
+            </div>
 
-        const hours = Math.floor(totalMinutes / 60);
-        const mins = totalMinutes % 60;
+            <div className="absolute inset-0 top-16 bottom-0 left-0 right-0 min-w-0 overflow-hidden">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                        <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                            }}
+                            itemStyle={{ color: '#fff' }}
+                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2 }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#6366f1"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorValue)"
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+};
 
-        return {
-            sessions: completedSessions,
-            failedSessions: failedSessions,
-            totalSessions: sessions.length,
-            time: `${hours}h ${mins}m`,
-            efficiency: sessions.length > 0
-                ? Math.round((completedSessions / sessions.length) * 100)
-                : 100
-        };
-    }, [sessionHistory, filteredSessions, selectedDate]);
+// ============================================================================
+// COMPONENT: OBJECTIVES PROTOCOL (TODO)
+// ============================================================================
 
+const ObjectivesProtocol = () => {
+    const [tasks, setTasks] = useState([
+        { id: 1, text: "Complete System Architecture", completed: true },
+        { id: 2, text: "Review PR #412", completed: false },
+        { id: 3, text: "Deploy to Production", completed: false }
+    ]);
+    const [newTask, setNewTask] = useState("");
 
-    // Get days with sessions for calendar highlighting
-    const daysWithSessions = useMemo(() => {
-        const days = new Set();
-        sessionHistory.forEach(s => {
-            days.add(new Date(s.timestamp).toDateString());
-        });
-        return days;
-    }, [sessionHistory]);
-
-    // Calendar helpers
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const days = [];
-
-        // Add empty cells for days before the first
-        for (let i = 0; i < firstDay.getDay(); i++) {
-            days.push(null);
-        }
-
-        // Add all days of the month
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            days.push(new Date(year, month, i));
-        }
-
-        return days;
+    const addTask = (e) => {
+        e.preventDefault();
+        if (!newTask.trim()) return;
+        setTasks([...tasks, { id: Date.now(), text: newTask, completed: false }]);
+        setNewTask("");
     };
 
-    const handleDateSelect = (date) => {
-        setSelectedDate(date);
-        setShowDatePicker(false);
-        if (onDateChange) onDateChange(date);
+    const toggleTask = (id) => {
+        setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
     };
 
-    const clearDate = () => {
-        setSelectedDate(null);
-        if (onDateChange) onDateChange(null);
-    };
-
-    // GSAP Premium Entrance Animations
-    useLayoutEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.set('.progress-card', { opacity: 0, y: 60, scale: 0.95 });
-            gsap.set('.progress-header', { opacity: 0, y: -30 });
-            gsap.set('.stat-number', { opacity: 0, scale: 0.8 });
-            gsap.set('.activity-item', { opacity: 0, x: 30 });
-
-            const tl = gsap.timeline({
-                defaults: { ease: 'power3.out' },
-                delay: 0.1
-            });
-
-            tl.to('.progress-header', { opacity: 1, y: 0, duration: 0.8 })
-                .to('.progress-card', { opacity: 1, y: 0, scale: 1, duration: 1, stagger: 0.12, ease: 'back.out(1.2)' }, '-=0.4')
-                .to('.stat-number', { opacity: 1, scale: 1, duration: 0.6, stagger: 0.1, ease: 'elastic.out(1, 0.5)' }, '-=0.6')
-                .to('.activity-item', { opacity: 1, x: 0, duration: 0.5, stagger: 0.08 }, '-=0.4');
-
-            // Note: live-pulse animation uses CSS animation instead of GSAP for better performance
-        }, containerRef);
-
-        return () => ctx.revert();
-    }, []);
-
-
-    const handleMouseMove = (e, cardEl) => {
-        if (!cardEl) return;
-        const rect = cardEl.getBoundingClientRect();
-        const x = (e.clientX - rect.left - rect.width / 2) / 25;
-        const y = (e.clientY - rect.top - rect.height / 2) / 25;
-
-        gsap.to(cardEl, {
-            x: x, y: y, rotateX: -y * 0.3, rotateY: x * 0.3,
-            boxShadow: `${-x * 2}px ${-y * 2}px 30px rgba(99, 102, 241, 0.15)`,
-            duration: 0.4, ease: 'power2.out'
-        });
-    };
-
-    const handleMouseLeave = (cardEl) => {
-        if (!cardEl) return;
-        gsap.to(cardEl, {
-            x: 0, y: 0, rotateX: 0, rotateY: 0,
-            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
-            duration: 0.6, ease: 'elastic.out(1, 0.4)'
-        });
+    const removeTask = (id) => {
+        setTasks(tasks.filter(t => t.id !== id));
     };
 
     return (
-        <div className={`min-h-full ${isDarkMode ? 'dark' : ''}`}>
-            <div
-                ref={containerRef}
-                className="relative w-full min-h-[650px] p-1 transition-colors duration-500 bg-transparent dark:bg-slate-900/50"
-                style={{ perspective: '1200px' }}
-            >
-                {/* Header */}
-                <div className="progress-header flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-                            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg shadow-indigo-200 dark:shadow-none">
-                                <Target size={22} strokeWidth={2} />
-                            </div>
-                            Your Progress
-                            {selectedDate && (
-                                <span className="text-lg font-medium text-indigo-500 dark:text-indigo-400 ml-2">
-                                    • {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </span>
-                            )}
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1.5 ml-14 text-sm font-medium">
-                            {selectedDate ? `Showing data for ${selectedDate.toLocaleDateString()}` : 'Overview • Analytics • Insights'}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {selectedDate && (
-                            <button
-                                onClick={clearDate}
-                                className="px-3 py-2 rounded-xl bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-xs font-medium flex items-center gap-1 hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors"
-                            >
-                                <X size={14} />
-                                Clear filter
-                            </button>
-                        )}
-                        <button
-                            onClick={onToggleTheme}
-                            className={`p-2.5 rounded-xl transition-colors ${isDarkMode ? 'bg-indigo-500 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
-                            title={isDarkMode ? 'Switch to Day Mode' : 'Switch to Night Mode'}
-                        >
-                            {isDarkMode ? <Moon size={18} fill="currentColor" /> : <Moon size={18} />}
-                        </button>
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <span className="relative flex h-2 w-2">
-                                <span className="live-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-ping opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Live</span>
-                        </div>
-                    </div>
+        <div className="h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                    <CheckCircle2 size={18} />
                 </div>
-
-                {/* Main Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Column */}
-                    <div className="lg:col-span-7 flex flex-col gap-6">
-                        {/* Hero Card */}
-                        <div
-                            className="progress-card hero-card group relative p-8 rounded-[2rem] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 shadow-2xl shadow-indigo-300/40 overflow-hidden"
-                            style={{ transformStyle: 'preserve-3d' }}
-                            onMouseMove={(e) => handleMouseMove(e, e.currentTarget)}
-                            onMouseLeave={(e) => handleMouseLeave(e.currentTarget)}
-                        >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
-                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-400/20 rounded-full blur-2xl -translate-x-1/2 translate-y-1/2"></div>
-
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm text-white ring-1 ring-white/30">
-                                        <Clock size={20} strokeWidth={1.5} />
-                                    </div>
-                                    <span className="text-white/90 font-medium tracking-wide text-sm uppercase">
-                                        {selectedDate ? 'Focus Time (Selected Date)' : 'Total Focus Time'}
-                                    </span>
-                                </div>
-
-                                <h3 className="stat-number text-5xl lg:text-6xl font-bold text-white tracking-tighter drop-shadow-lg">
-                                    {stats.time}
-                                </h3>
-
-                                <div className="mt-6 flex items-center gap-3">
-                                    <span className="px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-medium flex items-center gap-2">
-                                        <Zap size={14} className="fill-amber-300 text-amber-300" />
-                                        {selectedDate ? 'Daily' : 'Aggregated'}
-                                    </span>
-                                    <span className="text-white/80 text-sm">
-                                        {selectedDate ? `On ${selectedDate.toLocaleDateString()}` : 'Across all sessions'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="progress-card group p-5 rounded-[1.5rem] bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-md transition-all duration-300"
-                                style={{ transformStyle: 'preserve-3d' }}
-                                onMouseMove={(e) => handleMouseMove(e, e.currentTarget)}
-                                onMouseLeave={(e) => handleMouseLeave(e.currentTarget)}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-100 dark:ring-emerald-800">
-                                        <Activity size={20} strokeWidth={1.5} />
-                                    </div>
-                                    <Sparkles size={16} className="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <div className="stat-number text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-0.5">{stats.sessions}</div>
-                                <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                                    {selectedDate ? 'Sessions Today' : 'Total Sessions'}
-                                </div>
-                            </div>
-
-                            <div className="progress-card group p-5 rounded-[1.5rem] bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-md transition-all duration-300"
-                                style={{ transformStyle: 'preserve-3d' }}
-                                onMouseMove={(e) => handleMouseMove(e, e.currentTarget)}
-                                onMouseLeave={(e) => handleMouseLeave(e.currentTarget)}>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 ring-1 ring-rose-100 dark:ring-rose-800">
-                                        <BarChart3 size={20} strokeWidth={1.5} />
-                                    </div>
-                                    <Sparkles size={16} className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <div className="stat-number text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-0.5">{stats.efficiency}%</div>
-                                <div className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Focus Efficiency</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Activity List */}
-                    <div className="lg:col-span-5">
-                        <div className="progress-card h-full p-5 rounded-[1.5rem] bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 shadow-md flex flex-col">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                                    <button
-                                        onClick={() => setShowDatePicker(!showDatePicker)}
-                                        className={`p-2 rounded-lg transition-colors ${showDatePicker ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'}`}
-                                    >
-                                        <Calendar size={18} strokeWidth={2} />
-                                    </button>
-                                    <span className="text-sm font-bold uppercase tracking-wide">
-                                        {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent Activity'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Date Picker Dropdown */}
-                            {showDatePicker && (
-                                <div className="mb-4 p-4 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-lg">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1))} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-600">
-                                            <ChevronLeft size={16} className="text-slate-600 dark:text-slate-300" />
-                                        </button>
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                            {pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                        </span>
-                                        <button onClick={() => setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() + 1))} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-600">
-                                            <ChevronRight size={16} className="text-slate-600 dark:text-slate-300" />
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                                            <div key={d} className="p-1 font-medium text-slate-400">{d}</div>
-                                        ))}
-                                        {getDaysInMonth(pickerMonth).map((day, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => day && handleDateSelect(day)}
-                                                disabled={!day}
-                                                className={`p-2 rounded-lg text-xs transition-colors ${!day ? '' :
-                                                    selectedDate?.toDateString() === day.toDateString()
-                                                        ? 'bg-indigo-500 text-white'
-                                                        : daysWithSessions.has(day.toDateString())
-                                                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 font-semibold'
-                                                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
-                                                    }`}
-                                            >
-                                                {day?.getDate() || ''}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-                                {filteredSessions.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 py-12">
-                                        <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center mb-4">
-                                            <Activity size={28} className="text-slate-300 dark:text-slate-500" />
-                                        </div>
-                                        <p className="text-sm font-medium">{selectedDate ? 'No activity on this day' : 'No activity yet'}</p>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                                            {selectedDate ? 'Try selecting a different date' : 'Complete a focus session to see it here'}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    [...filteredSessions].reverse().slice(0, 10).map((session, idx) => (
-                                        <div
-                                            key={session.id || idx}
-                                            className="activity-item group flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all cursor-default"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${session.status === 'completed' ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 text-white' : 'bg-gradient-to-br from-rose-400 to-rose-500 text-white'}`}>
-                                                    {session.status === 'completed' ? <TrendingUp size={18} /> : <Activity size={18} />}
-                                                </div>
-                                                <div>
-                                                    <div className="text-slate-900 dark:text-white font-semibold text-base">{session.minutes} Minutes</div>
-                                                    <div className="text-slate-500 dark:text-slate-400 text-xs font-medium">
-                                                        {new Date(session.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${session.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400'}`}>
-                                                {session.status === 'completed' ? 'Done' : 'Failed'}
-                                            </span>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <h3 className="text-white font-medium tracking-tight">Objectives Protocol</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Daily Targets</p>
                 </div>
             </div>
+
+            <form onSubmit={addTask} className="relative group mb-6">
+                <input
+                    type="text"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    placeholder="Initialize new objective..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-11 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition-all placeholder:text-white/20"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30">
+                    <Plus size={16} />
+                </div>
+                <button
+                    type="submit"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white/10 text-white hover:bg-indigo-500 hover:text-white transition-colors opacity-0 group-focus-within:opacity-100"
+                >
+                    <ArrowRight size={14} />
+                </button>
+            </form>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                <AnimatePresence initial={false}>
+                    {tasks.map(task => (
+                        <motion.div
+                            key={task.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${task.completed ? 'bg-white/5 border-transparent opacity-60' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'}`}
+                        >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <button
+                                    onClick={() => toggleTask(task.id)}
+                                    className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-black' : 'border-white/20 text-transparent hover:border-white/40'}`}
+                                >
+                                    <CheckCircle2 size={12} strokeWidth={3} />
+                                </button>
+                                <span className={`text-sm truncate transition-all ${task.completed ? 'text-white/30 line-through' : 'text-white/90'}`}>
+                                    {task.text}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => removeTask(task.id)}
+                                className="text-white/20 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-all p-1"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+                {tasks.length === 0 && (
+                    <div className="text-center py-8 text-white/20 text-xs uppercase tracking-widest">
+                        Protocol Empty
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// COMPONENT: SESSION TIMELINE (HISTORY)
+// ============================================================================
+
+const SessionTimeline = ({ sessions = [] }) => {
+    return (
+        <div className="h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400">
+                    <Calendar size={18} />
+                </div>
+                <div>
+                    <h3 className="text-white font-medium tracking-tight">Session Timeline</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Recent Activity</p>
+                </div>
+            </div>
+
+            <div className="relative flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                {/* Connector Line */}
+                <div className="absolute left-4 top-0 bottom-0 w-px bg-white/10"></div>
+
+                <div className="space-y-6 pl-10 pt-2">
+                    {sessions.slice(0, 10).map((session, i) => (
+                        <motion.div
+                            key={session.id || i}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="relative"
+                        >
+                            {/* Dot */}
+                            <div className={`absolute -left-[29px] top-1.5 w-3 h-3 rounded-full border-2 border-[#1a1a1a] ${session.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
+
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-white font-medium text-sm">
+                                    {session.minutes} Minutes
+                                </span>
+                                <span className="text-white/40 text-xs">
+                                    {new Date(session.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                            <div className="text-white/50 text-xs">
+                                {session.status === 'completed' ? 'Deep Work Cycle Completed' : 'Session Aborted'}
+                            </div>
+                        </motion.div>
+                    ))}
+                    {sessions.length === 0 && (
+                        <div className="text-white/20 text-xs">No recorded sessions. Initialize loop.</div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// MAIN LAYOUT: BENTO GRID
+// ============================================================================
+
+const ProgressSection = ({ sessionHistory = [] }) => {
+
+    // Bento Item Wrapper
+    const BentoItem = ({ children, className, delay = 0 }) => (
+        <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+            className={`
+                relative bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] 
+                shadow-2xl overflow-hidden p-6
+                ${className || ''}
+            `}
+        >
+            {/* Glass Shine */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+            {children}
+        </motion.div>
+    );
+
+    return (
+        <div className="min-h-full w-full p-1 text-white">
+
+            {/* 1. Header Area with Date/Theme Controls */}
+            <div className="flex items-center justify-between mb-8 px-2">
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-4"
+                >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <BarChart3 className="text-white" size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-white">Command Center</h1>
+                        <p className="text-white/50 text-sm font-medium tracking-wide">
+                            Productivity Analytics & Objectives
+                        </p>
+                    </div>
+                </motion.div>
+
+                <div className="flex items-center gap-4">
+                    <div className="h-10 px-4 rounded-full bg-black/20 border border-white/10 flex items-center gap-2 backdrop-blur-md">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-semibold tracking-wide text-white/70">LIVE SYSTEM</span>
+                    </div>
+                    {/* Theme Toggle placeholder if needed again */}
+                </div>
+            </div>
+
+            {/* 2. Main Bento Grid */}
+            <LayoutGroup>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-20">
+
+                    {/* Hero Chart (Span 8) */}
+                    <div className="col-span-1 md:col-span-12 lg:col-span-8 h-[400px]">
+                        <BentoItem className="h-full bg-gradient-to-br from-indigo-900/20 to-black/40">
+                            <FocusVelocity data={sessionHistory} />
+                        </BentoItem>
+                    </div>
+
+                    {/* Efficiency Gauge (Span 4) */}
+                    <div className="col-span-1 md:col-span-6 lg:col-span-4 h-[400px]">
+                        <BentoItem className="h-full flex flex-col justify-between bg-gradient-to-br from-emerald-900/10 to-black/40">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                                        <Zap size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-white font-medium tracking-tight">Efficiency Pulse</h3>
+                                        <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Systems Normal</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                                <div className="relative">
+                                    {/* Decorative Rings */}
+                                    <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-[spin_8s_linear_infinite]" />
+                                    <div className="absolute -inset-4 rounded-full border border-emerald-500/10 animate-[spin_12s_linear_infinite_reverse]" />
+
+                                    <div className="w-40 h-40 rounded-full bg-gradient-to-b from-emerald-500/10 to-transparent backdrop-blur-md border border-emerald-500/30 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+                                        <span className="text-5xl font-bold text-white tracking-tighter">98%</span>
+                                        <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest mt-1">Optimal</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="text-white/40 text-xs uppercase font-bold">Total Sessions</div>
+                                    <div className="text-xl font-bold text-white mt-1">{sessionHistory.length}</div>
+                                </div>
+                                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="text-white/40 text-xs uppercase font-bold">Focus Hours</div>
+                                    <div className="text-xl font-bold text-white mt-1">
+                                        {(sessionHistory.reduce((acc, s) => acc + (s.minutes || 0), 0) / 60).toFixed(1)}h
+                                    </div>
+                                </div>
+                            </div>
+                        </BentoItem>
+                    </div>
+
+                    {/* Objectives Protocol (Span 6) */}
+                    <div className="col-span-1 md:col-span-6 h-[500px]">
+                        <BentoItem className="h-full" delay={0.1}>
+                            <ObjectivesProtocol />
+                        </BentoItem>
+                    </div>
+
+                    {/* Session Timeline (Span 6) */}
+                    <div className="col-span-1 md:col-span-6 h-[500px]">
+                        <BentoItem className="h-full" delay={0.15}>
+                            <SessionTimeline sessions={sessionHistory} />
+                        </BentoItem>
+                    </div>
+
+                </div>
+            </LayoutGroup>
         </div>
     );
 };

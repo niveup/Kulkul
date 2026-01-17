@@ -7,11 +7,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { shouldUseLocalStorage } from '../utils/authMode';
 import { localCustomApps } from '../services/localStorageAdapter';
 
 export const useCustomApps = () => {
-    const { isAuthenticated, isGuest } = useAuth();
     const [customApps, setCustomApps] = useState([]);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -19,8 +18,8 @@ export const useCustomApps = () => {
     // Load apps on mount - from API (authenticated) or localStorage (guest)
     useEffect(() => {
         const loadApps = async () => {
-            // Guest mode or not authenticated: use localStorage
-            if (isGuest || !isAuthenticated) {
+            // Guest mode: use localStorage only
+            if (shouldUseLocalStorage()) {
                 const localApps = localCustomApps.getAll();
                 setCustomApps(localApps);
                 setIsLoaded(true);
@@ -46,7 +45,7 @@ export const useCustomApps = () => {
             }
         };
         loadApps();
-    }, [isAuthenticated, isGuest]);
+    }, []);
 
     // Add a new app
     const addApp = useCallback(async (app) => {
@@ -54,7 +53,7 @@ export const useCustomApps = () => {
         setCustomApps(prev => [...prev, app]);
 
         // Guest mode: save to localStorage only
-        if (isGuest || !isAuthenticated) {
+        if (shouldUseLocalStorage()) {
             localCustomApps.add(app);
             return;
         }
@@ -80,7 +79,7 @@ export const useCustomApps = () => {
             // Fallback: save to localStorage
             localCustomApps.add(app);
         }
-    }, [isAuthenticated, isGuest]);
+    }, []);
 
     // Remove an app by id
     const removeApp = useCallback(async (id) => {
@@ -88,7 +87,7 @@ export const useCustomApps = () => {
         setCustomApps(prev => prev.filter(app => app.id !== id));
 
         // Guest mode: remove from localStorage only
-        if (isGuest || !isAuthenticated) {
+        if (shouldUseLocalStorage()) {
             localCustomApps.remove(id);
             return;
         }
@@ -99,7 +98,7 @@ export const useCustomApps = () => {
         } catch (error) {
             console.error('Failed to remove custom app:', error);
         }
-    }, [isAuthenticated, isGuest]);
+    }, []);
 
     // Update an existing app
     const updateApp = useCallback(async (id, updates) => {
@@ -109,7 +108,7 @@ export const useCustomApps = () => {
         ));
 
         // Guest mode: update localStorage only
-        if (isGuest || !isAuthenticated) {
+        if (shouldUseLocalStorage()) {
             localCustomApps.update(id, updates);
             return;
         }
@@ -124,11 +123,11 @@ export const useCustomApps = () => {
         } catch (error) {
             console.error('Failed to update custom app:', error);
         }
-    }, [isAuthenticated, isGuest]);
+    }, []);
 
     // Refresh from server (only works when authenticated)
     const refreshApps = useCallback(async () => {
-        if (isGuest || !isAuthenticated) {
+        if (shouldUseLocalStorage()) {
             // Reload from localStorage
             setCustomApps(localCustomApps.getAll());
             return;
@@ -146,7 +145,7 @@ export const useCustomApps = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [isAuthenticated, isGuest]);
+    }, []);
 
     return {
         customApps,

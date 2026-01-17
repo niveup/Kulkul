@@ -15,6 +15,8 @@ import {
     HardDrive,
     Cloud
 } from 'lucide-react';
+import { shouldUseLocalStorage } from '../../utils/authMode';
+import { localSessions, localTodos, localConversations } from '../../services/localStorageAdapter';
 
 const AdminPanel = ({ isDarkMode }) => {
     const [stats, setStats] = useState({
@@ -41,6 +43,25 @@ const AdminPanel = ({ isDarkMode }) => {
     const fetchStats = async () => {
         setLoading(true);
         try {
+            // Guest mode: get stats from localStorage
+            if (shouldUseLocalStorage()) {
+                const sessions = JSON.parse(localStorage.getItem('pomodoro_sessions') || '[]');
+                const todos = JSON.parse(localStorage.getItem('daily_todos') || '[]');
+                const conversations = JSON.parse(localStorage.getItem('ai_conversations') || '[]');
+                setStats({
+                    sessions: sessions.length,
+                    todos: todos.length,
+                    conversations: conversations.length,
+                    conversationsTrash: 0,
+                    srsTopics: 0,
+                    vaultFiles: 0
+                });
+                setDbStorage({ used: 0, total: 5 * 1024 * 1024 * 1024 });
+                setLoading(false);
+                return;
+            }
+
+            // Authenticated mode: fetch from API
             const [sessionsRes, todosRes, convRes, trashRes, srsRes, vaultRes, dbRes] = await Promise.allSettled([
                 fetch('/api/sessions'),
                 fetch('/api/todos'),
@@ -85,6 +106,30 @@ const AdminPanel = ({ isDarkMode }) => {
     const handleDelete = async (type) => {
         setDeleting(type);
         try {
+            // Guest mode: clear localStorage
+            if (shouldUseLocalStorage()) {
+                switch (type) {
+                    case 'sessions':
+                        localStorage.removeItem('pomodoro_sessions');
+                        localStorage.removeItem('active_timer');
+                        break;
+                    case 'todos':
+                        localStorage.removeItem('daily_todos');
+                        break;
+                    case 'conversations':
+                    case 'conversationsTrash':
+                        localStorage.removeItem('ai_conversations');
+                        break;
+                    default:
+                        break;
+                }
+                await fetchStats();
+                setDeleting(null);
+                setConfirmDelete(null);
+                return;
+            }
+
+            // Authenticated mode: call API
             let endpoint = '';
             const method = 'DELETE';
 
@@ -96,7 +141,7 @@ const AdminPanel = ({ isDarkMode }) => {
                     endpoint = '/api/todos/all';
                     break;
                 case 'conversations':
-                    // Delete all conversations (active and trash) via new bulk endpoint
+                    // Delete all conversations (active and trash) via bulk endpoint
                     await fetch('/api/conversations/all', { method: 'DELETE' });
                     await fetchStats();
                     setDeleting(null);

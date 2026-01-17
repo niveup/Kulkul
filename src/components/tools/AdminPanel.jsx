@@ -11,7 +11,9 @@ import {
     AlertTriangle,
     Shield,
     X,
-    Loader2
+    Loader2,
+    HardDrive,
+    Cloud
 } from 'lucide-react';
 
 const AdminPanel = ({ isDarkMode }) => {
@@ -20,7 +22,12 @@ const AdminPanel = ({ isDarkMode }) => {
         todos: 0,
         conversations: 0,
         conversationsTrash: 0,
-        srsTopics: 0
+        srsTopics: 0,
+        vaultFiles: 0
+    });
+    const [dbStorage, setDbStorage] = useState({
+        used: 0,
+        total: 5 * 1024 * 1024 * 1024 // 5GB typical free tier
     });
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(null);
@@ -34,12 +41,14 @@ const AdminPanel = ({ isDarkMode }) => {
     const fetchStats = async () => {
         setLoading(true);
         try {
-            const [sessionsRes, todosRes, convRes, trashRes, srsRes] = await Promise.allSettled([
+            const [sessionsRes, todosRes, convRes, trashRes, srsRes, vaultRes, dbRes] = await Promise.allSettled([
                 fetch('/api/sessions'),
                 fetch('/api/todos'),
                 fetch('/api/conversations'),
                 fetch('/api/conversations/trash'),
-                fetch('/api/srs/topics')
+                fetch('/api/srs/topics'),
+                fetch('/api/vault/list'),
+                fetch('/api/admin/db-stats')
             ]);
 
             setStats({
@@ -52,8 +61,21 @@ const AdminPanel = ({ isDarkMode }) => {
                 conversationsTrash: trashRes.status === 'fulfilled' && trashRes.value.ok
                     ? (await trashRes.value.json()).length || 0 : 0,
                 srsTopics: srsRes.status === 'fulfilled' && srsRes.value.ok
-                    ? (await srsRes.value.json()).length || 0 : 0
+                    ? (await srsRes.value.json()).length || 0 : 0,
+                vaultFiles: vaultRes.status === 'fulfilled' && vaultRes.value.ok
+                    ? (await vaultRes.value.json()).files?.length || 0 : 0
             });
+
+            // Get database storage stats
+            if (dbRes.status === 'fulfilled' && dbRes.value.ok) {
+                const dbData = await dbRes.value.json();
+                if (dbData.success) {
+                    setDbStorage({
+                        used: dbData.used || 0,
+                        total: dbData.total || 5 * 1024 * 1024 * 1024
+                    });
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch stats:', error);
         }
@@ -64,7 +86,7 @@ const AdminPanel = ({ isDarkMode }) => {
         setDeleting(type);
         try {
             let endpoint = '';
-            let method = 'DELETE';
+            const method = 'DELETE';
 
             switch (type) {
                 case 'sessions':
@@ -188,6 +210,17 @@ const AdminPanel = ({ isDarkMode }) => {
         }
     };
 
+    // Helper for formatting file sizes
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const dbStoragePercent = Math.round((dbStorage.used / dbStorage.total) * 100);
+
     return (
         <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
             {/* Header */}
@@ -218,6 +251,51 @@ const AdminPanel = ({ isDarkMode }) => {
                         <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </div>
+
+                {/* Database Storage Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`
+                        mb-6 p-5 rounded-2xl border
+                        ${isDarkMode
+                            ? 'bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/20'
+                            : 'bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200'
+                        }
+                    `}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-cyan-500/20' : 'bg-cyan-100'}`}>
+                            <HardDrive size={24} className={isDarkMode ? 'text-cyan-400' : 'text-cyan-600'} />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                                    Database Storage
+                                </h3>
+                                <span className={`text-sm font-medium ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
+                                    {loading ? '...' : `${formatFileSize(dbStorage.used)} / ${formatFileSize(dbStorage.total)}`}
+                                </span>
+                            </div>
+                            <div className={`h-3 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${dbStoragePercent}%` }}
+                                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    {dbStoragePercent}% used
+                                </span>
+                                <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    {formatFileSize(dbStorage.total - dbStorage.used)} available
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
 
                 {/* Warning Banner */}
                 <motion.div

@@ -109,7 +109,7 @@ const getStreakGraphData = (sessions = [], currentStreak = 0) => {
         let streakOnDay = 0;
         if (hadActivity) {
             // Count consecutive days ending on this date
-            let checkDate = new Date(date);
+            const checkDate = new Date(date);
             while (sessionsByDate[checkDate.toDateString()]) {
                 streakOnDay++;
                 checkDate.setDate(checkDate.getDate() - 1);
@@ -214,7 +214,7 @@ export const StatsGroup = ({
                 </div>
 
                 {/* Dynamic Wave Graph - Last 7 Days */}
-                <div className="relative w-full h-28 mt-auto translate-y-2">
+                <div className="relative w-full h-20 mt-auto">
                     <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
                         <defs>
                             <linearGradient id="focusGradient" x1="0" y1="0" x2="0" y2="1">
@@ -309,7 +309,7 @@ export const StatsGroup = ({
                 </div>
 
                 {/* Dynamic Line Graph - Streak History */}
-                <div className="relative w-full h-28 mt-auto flex items-end translate-y-1">
+                <div className="relative w-full h-20 mt-auto flex items-end">
                     <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
                         <defs>
                             <linearGradient id="streakGradient" x1="0" y1="0" x2="0" y2="1">

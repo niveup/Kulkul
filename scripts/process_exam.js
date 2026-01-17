@@ -23,7 +23,7 @@ async function processPdf() {
 
         console.log(`Converted ${pdfArray.length} pages. Processing layout...`);
 
-        let questionsData = [];
+        const questionsData = [];
         let questionCounter = 1;
 
         for (let i = 0; i < pdfArray.length; i++) {

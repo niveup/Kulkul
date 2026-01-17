@@ -10,7 +10,8 @@ import {
     Settings,
     Sun,
     Monitor,
-    UserCircle2
+    UserCircle2,
+    Cloud
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppStore } from '../store';
@@ -19,13 +20,15 @@ import { useHotkey } from '../hooks';
 // =============================================================================
 // Designer Configuration
 // =============================================================================
+// Navigation Items Configuration
 const MENU_ITEMS = [
     { id: 'overview', icon: LayoutGrid, label: 'Overview', shortcut: '1' },
     { id: 'study-tools', icon: BookOpen, label: 'Workstation', shortcut: '2' },
     { id: 'progress', icon: TrendingUp, label: 'Analytics', shortcut: '3' },
     { id: 'resources', icon: Layers, label: 'Library', shortcut: '4' },
     { id: 'ai-assistant', icon: MessageSquare, label: 'Neural Link', shortcut: '5' },
-    { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '6' },
+    { id: 'vault', icon: Cloud, label: 'Vault', shortcut: '6' },
+    { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '7' },
 ];
 
 export const Sidebar = () => {
@@ -34,9 +37,13 @@ export const Sidebar = () => {
     const sidebarRef = useRef(null);
 
     // Keyboard shortcuts
-    MENU_ITEMS.forEach((item) => {
-        useHotkey(item.shortcut, () => setActiveTab(item.id), [setActiveTab]);
-    });
+    useHotkey('1', () => setActiveTab('overview'), [setActiveTab]);
+    useHotkey('2', () => setActiveTab('study-tools'), [setActiveTab]);
+    useHotkey('3', () => setActiveTab('progress'), [setActiveTab]);
+    useHotkey('4', () => setActiveTab('resources'), [setActiveTab]);
+    useHotkey('5', () => setActiveTab('ai-assistant'), [setActiveTab]);
+    useHotkey('6', () => setActiveTab('vault'), [setActiveTab]);
+    useHotkey('7', () => setActiveTab('admin'), [setActiveTab]);
 
     // Mouse Tracking for Spotlight
     useEffect(() => {
@@ -103,10 +110,10 @@ export const Sidebar = () => {
                 {/* Header: Identity */}
                 <div className="h-24 flex items-center px-5 mb-2 relative">
                     <div className="flex items-center gap-4 w-full overflow-hidden">
-                        {/* Avatar */}
+                        {/* Logo */}
                         <div className="relative group/avatar cursor-pointer shrink-0">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-lg transition-transform group-hover/avatar:scale-105">
-                                <Monitor size={18} className="text-indigo-400" />
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-lg transition-transform group-hover/avatar:scale-105 overflow-hidden">
+                                <img src="/logo.png" alt="StudyHub" className="w-7 h-7 object-contain" />
                             </div>
                             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#050508] shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                         </div>

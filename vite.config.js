@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { config } from 'dotenv'
 import mysql from 'mysql2/promise'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // Load environment variables
 config();
@@ -775,7 +776,7 @@ export default defineConfig({
               // Calculate streak
               let streak = 0;
               const today = new Date();
-              let checkDate = new Date(today);
+              const checkDate = new Date(today);
 
               // Check if today has activity (if not, check from yesterday)
               const todayStr = checkDate.toISOString().split('T')[0];
@@ -1081,6 +1082,301 @@ export default defineConfig({
           }
         });
 
+        // Admin API middleware - Database stats endpoint
+        server.middlewares.use('/api/admin/db-stats', async (req, res, next) => {
+          console.log('[Admin DB Stats API]', req.method, req.url);
+
+          if (req.method !== 'GET') {
+            res.statusCode = 405;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Method not allowed' }));
+            return;
+          }
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            // Get database size from information_schema
+            const [rows] = await db.execute(`
+              SELECT 
+                SUM(data_length + index_length) as used_bytes
+              FROM information_schema.tables 
+              WHERE table_schema = DATABASE()
+            `);
+
+            const usedBytes = rows[0]?.used_bytes || 0;
+            const totalBytes = 5 * 1024 * 1024 * 1024; // 5GB default
+
+            // Get per-table breakdown
+            const [tableRows] = await db.execute(`
+              SELECT 
+                table_name,
+                data_length + index_length as size_bytes,
+                table_rows as row_count
+              FROM information_schema.tables 
+              WHERE table_schema = DATABASE()
+              ORDER BY size_bytes DESC
+            `);
+
+            const tables = tableRows.map(row => ({
+              name: row.table_name,
+              size: parseInt(row.size_bytes || 0),
+              rows: parseInt(row.row_count || 0)
+            }));
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: true,
+              used: parseInt(usedBytes),
+              total: totalBytes,
+              tables
+            }));
+          } catch (error) {
+            console.error('[Admin DB Stats API] Error:', error);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: false,
+              error: error.message,
+              used: 0,
+              total: 5 * 1024 * 1024 * 1024
+            }));
+          }
+        });
+
+        // Vault API middleware - PDF uploads metadata management with trash system
+        server.middlewares.use('/api/vault', async (req, res, next) => {
+          console.log('[Vault API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            // Parse URL path
+            const urlPath = req.url.split('?')[0];
+            const pathSegments = urlPath.split('/').filter(Boolean);
+            const action = pathSegments[0] || 'list'; // 'list', 'save', 'delete', 'trash', 'restore', 'permanent-delete'
+
+            // Parse body for POST requests
+            let body = {};
+            if (req.method === 'POST') {
+              const chunks = [];
+              for await (const chunk of req) chunks.push(chunk);
+              const raw = Buffer.concat(chunks).toString();
+              if (raw) body = JSON.parse(raw);
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+
+            // Ensure pdf_uploads table exists with deleted_at column
+            try {
+              await db.execute(`
+                CREATE TABLE IF NOT EXISTS pdf_uploads (
+                  id VARCHAR(36) PRIMARY KEY,
+                  filename VARCHAR(255) NOT NULL,
+                  size_bytes BIGINT NOT NULL,
+                  mega_node_id VARCHAR(255),
+                  mega_download_url TEXT,
+                  deleted_at TIMESTAMP NULL DEFAULT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  INDEX idx_created (created_at),
+                  INDEX idx_deleted (deleted_at)
+                )
+              `);
+              // Add deleted_at column if it doesn't exist (migration)
+              try {
+                await db.execute(`ALTER TABLE pdf_uploads ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL`);
+              } catch (e) { /* Column already exists */ }
+            } catch (e) { /* Table already exists */ }
+
+            // Auto-cleanup: Permanently delete trash items older than 10 days
+            try {
+              await db.execute(`
+                DELETE FROM pdf_uploads 
+                WHERE deleted_at IS NOT NULL 
+                AND deleted_at < DATE_SUB(NOW(), INTERVAL 10 DAY)
+              `);
+            } catch (cleanupErr) {
+              console.log('[Vault] Cleanup skipped:', cleanupErr.message);
+            }
+
+            if (req.method === 'GET' && (action === 'list' || action === '')) {
+              // List active files (not in trash)
+              const [rows] = await db.execute(`
+                SELECT id, filename, size_bytes, mega_node_id, mega_download_url, created_at
+                FROM pdf_uploads
+                WHERE deleted_at IS NULL
+                ORDER BY created_at DESC
+              `);
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                files: rows.map(row => ({
+                  id: row.id,
+                  name: row.filename,
+                  size: row.size_bytes,
+                  megaNodeId: row.mega_node_id,
+                  downloadUrl: row.mega_download_url,
+                  createdAt: row.created_at
+                }))
+              }));
+
+            } else if (req.method === 'GET' && action === 'trash') {
+              // List files in trash
+              const [rows] = await db.execute(`
+                SELECT id, filename, size_bytes, mega_node_id, mega_download_url, deleted_at, created_at
+                FROM pdf_uploads
+                WHERE deleted_at IS NOT NULL
+                ORDER BY deleted_at DESC
+              `);
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                files: rows.map(row => ({
+                  id: row.id,
+                  name: row.filename,
+                  size: row.size_bytes,
+                  megaNodeId: row.mega_node_id,
+                  downloadUrl: row.mega_download_url,
+                  deletedAt: row.deleted_at,
+                  createdAt: row.created_at,
+                  // Calculate days remaining before permanent deletion
+                  daysRemaining: Math.max(0, 10 - Math.floor((Date.now() - new Date(row.deleted_at).getTime()) / (1000 * 60 * 60 * 24)))
+                }))
+              }));
+
+            } else if (req.method === 'POST' && action === 'save') {
+              // Save file metadata
+              const { id, filename, sizeBytes, megaNodeId, downloadUrl } = body;
+
+              if (!filename || !sizeBytes) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing required fields: filename, sizeBytes' }));
+                return;
+              }
+
+              const fileId = id || crypto.randomUUID();
+
+              await db.execute(`
+                INSERT INTO pdf_uploads (id, filename, size_bytes, mega_node_id, mega_download_url)
+                VALUES (?, ?, ?, ?, ?)
+              `, [fileId, filename, sizeBytes, megaNodeId || null, downloadUrl || null]);
+
+              res.statusCode = 201;
+              res.end(JSON.stringify({
+                success: true,
+                file: {
+                  id: fileId,
+                  name: filename,
+                  size: sizeBytes,
+                  megaNodeId,
+                  downloadUrl
+                }
+              }));
+
+            } else if (req.method === 'POST' && action === 'delete') {
+              // Soft delete - move to trash (set deleted_at)
+              const { id: fileId } = body;
+
+              if (!fileId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing required field: id' }));
+                return;
+              }
+
+              const [result] = await db.execute(`
+                UPDATE pdf_uploads SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL
+              `, [fileId]);
+
+              if (result.affectedRows === 0) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: 'File not found or already in trash' }));
+                return;
+              }
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                message: 'File moved to trash',
+                recoverable: true,
+                daysUntilPermanentDeletion: 10
+              }));
+
+            } else if (req.method === 'POST' && action === 'restore') {
+              // Restore from trash
+              const { id: fileId } = body;
+
+              if (!fileId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing required field: id' }));
+                return;
+              }
+
+              const [result] = await db.execute(`
+                UPDATE pdf_uploads SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL
+              `, [fileId]);
+
+              if (result.affectedRows === 0) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: 'File not found in trash' }));
+                return;
+              }
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                message: 'File restored from trash'
+              }));
+
+            } else if (req.method === 'POST' && action === 'permanent-delete') {
+              // Permanent delete (from trash only) - also returns megaNodeId for client-side MEGA deletion
+              const { id: fileId } = body;
+
+              if (!fileId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing required field: id' }));
+                return;
+              }
+
+              // First get the file info for MEGA deletion
+              const [fileRows] = await db.execute(`
+                SELECT mega_node_id FROM pdf_uploads WHERE id = ? AND deleted_at IS NOT NULL
+              `, [fileId]);
+
+              if (fileRows.length === 0) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: 'File not found in trash' }));
+                return;
+              }
+
+              const megaNodeId = fileRows[0].mega_node_id;
+
+              // Now permanently delete from database
+              await db.execute(`DELETE FROM pdf_uploads WHERE id = ?`, [fileId]);
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({
+                success: true,
+                message: 'File permanently deleted',
+                megaNodeId: megaNodeId // Client should use this to delete from MEGA
+              }));
+
+            } else {
+              res.statusCode = 405;
+              res.end(JSON.stringify({ error: `Method ${req.method} or action ${action} not allowed` }));
+            }
+          } catch (error) {
+            console.error('[Vault API] Error:', error);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
         server.middlewares.use('/api/chat', async (req, res, next) => {
           if (req.method === 'GET') {
             res.end('API functionality check: OK');
@@ -1284,13 +1580,13 @@ export default defineConfig({
               console.log('[Hybrid] Message roles:', conversationHistory.map(m => m.role).join(', '));
               console.log('[Hybrid] Last message:', conversationHistory[conversationHistory.length - 1]?.content?.slice(0, 100));
 
-              let deepseekMessages = [
+              const deepseekMessages = [
                 { role: 'system', content: 'You are a brilliant problem solver. You have context from a previous conversation which may include image descriptions. Use that context to answer follow-up questions. Be helpful and concise. IMPORTANT: Do NOT use LaTeX notation. Use plain text and Unicode symbols (like ², ³, √, π, α, β, γ, ∑, ∫, →, ≈, ≠, ≤, ≥) instead of $...$ or \\frac{} syntax.' },
                 ...conversationHistory
               ];
 
               // First attempt: DeepSeek tries alone
-              let deepseekResponse = await callDeepSeek(deepseekMessages);
+              const deepseekResponse = await callDeepSeek(deepseekMessages);
 
               // Check if DeepSeek needs visual help
               const needsVisualHelp = /need to see (the |an )?image|cannot (see|view|analyze) the image|require visual|need visual (information|reference|context)/i.test(deepseekResponse);
@@ -1343,10 +1639,10 @@ export default defineConfig({
 
 Be thorough - the more detail, the better. This description will be used by a reasoning AI to solve any problems shown.`;
 
-            let imageDescription = await callGemini(visionPrompt, imageBase64);
+            const imageDescription = await callGemini(visionPrompt, imageBase64);
 
             // Build conversation for DeepSeek
-            let deepseekMessages = [
+            const deepseekMessages = [
               { role: 'system', content: 'You are a brilliant problem solver. You have been given a detailed description of an image. Use your reasoning abilities to help the user. If you need more information about specific details in the image, clearly ask for clarification. IMPORTANT: Do NOT use LaTeX notation. Use plain text and Unicode symbols (like ², ³, √, π, α, β, γ, ∑, ∫, →, ≈, ≠, ≤, ≥) instead of $...$ or \\frac{} syntax.' },
               { role: 'user', content: `IMAGE DESCRIPTION:\n${imageDescription}\n\nUSER QUESTION: ${userQuestion}` }
             ];
@@ -1550,10 +1846,22 @@ Look at the image again and provide the specific information requested. Focus on
           'vendor-utils': ['date-fns', 'clsx', 'tailwind-merge', 'zustand'],
           'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
         }
-      }
+      },
+      plugins: [
+        // Bundle analysis - generates stats.html in dist folder
+        process.env.ANALYZE && visualizer({
+          filename: 'dist/bundle-stats.html',
+          open: true,
+          gzipSize: true,
+          brotliSize: true,
+        })
+      ].filter(Boolean),
     },
     chunkSizeWarningLimit: 500,
     sourcemap: false, // Reduce bundle size in production
+    // Optimize minification
+    minify: 'esbuild',
+    target: 'es2020',
   },
 })
 

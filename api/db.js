@@ -184,6 +184,50 @@ export async function initDatabase() {
             )
         `);
 
+        // Daily todos (24h TTL - cloud sync for today only)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS daily_todos (
+                id VARCHAR(36) PRIMARY KEY,
+                text VARCHAR(500) NOT NULL,
+                completed BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Compact sessions table for graphs (date + minutes only)
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS compact_sessions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                date DATE NOT NULL,
+                minutes INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_date (date)
+            )
+        `);
+
+        // PDF Uploads (Vault) - stores metadata for files uploaded to MEGA
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS pdf_uploads (
+                id VARCHAR(36) PRIMARY KEY,
+                filename VARCHAR(255) NOT NULL,
+                size_bytes BIGINT NOT NULL,
+                mega_node_id VARCHAR(255),
+                mega_download_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_created (created_at)
+            )
+        `);
+
+        // Run cleanup on init: delete daily data older than 24h
+        await connection.execute(`
+            DELETE FROM daily_todos WHERE created_at < NOW() - INTERVAL 1 DAY
+        `);
+
+        // Run cleanup: delete compact sessions older than 1 year
+        await connection.execute(`
+            DELETE FROM compact_sessions WHERE date < DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        `);
+
         isDbInitialized = true;
     } finally {
         connection.release();

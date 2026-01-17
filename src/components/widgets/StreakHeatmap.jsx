@@ -119,7 +119,7 @@ const StreakHeatmap = ({ sessions = [] }) => {
     const currentStreak = useMemo(() => {
         const today = new Date();
         let streak = 0;
-        let checkDate = new Date(today);
+        const checkDate = new Date(today);
 
         const hoursMap = {};
         sessions.forEach(session => {

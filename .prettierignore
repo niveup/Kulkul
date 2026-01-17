@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Coverage reports
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Lock files (optional - don't format)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Large generated files
+*.min.js
+*.min.css

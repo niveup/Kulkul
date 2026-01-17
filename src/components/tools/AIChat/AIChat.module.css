@@ -1,0 +1,537 @@
+/* =============================================================================
+   Neural Link (AIChat) - Scoped Liquid Glass System
+   ============================================================================= */
+
+/* -- Local Design Tokens -- */
+.container {
+    /* -- Obsidian Platinum Theme -- */
+    --nl-bg-base: #000000;
+    --nl-glass-panel: rgba(255, 255, 255, 0.03);
+    --nl-glass-border: rgba(255, 255, 255, 0.08);
+
+    /* Electric Cyan & Platinum Accents */
+    --nl-aurora-1: rgba(34, 211, 238, 0.15);
+    /* Cyan */
+    --nl-aurora-2: rgba(148, 163, 184, 0.10);
+    /* Slate/Platinum */
+    --nl-aurora-3: rgba(255, 255, 255, 0.05);
+    /* White/Glow */
+
+    --nl-accent-gradient: linear-gradient(135deg, #22d3ee 0%, #94a3b8 100%);
+    --nl-input-bg: rgba(20, 20, 20, 0.6);
+
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--nl-bg-base);
+    color: white;
+    font-family: 'Outfit', system-ui, sans-serif;
+
+    /* Layout Fix: Side-by-side */
+    display: flex;
+    flex-direction: row;
+}
+
+/* -- Background Mesh -- */
+.auroraMesh {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(circle at 20% 30%, var(--nl-aurora-1) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, var(--nl-aurora-2) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, var(--nl-aurora-3) 0%, transparent 60%);
+    filter: blur(80px);
+    opacity: 0.6;
+    pointer-events: none;
+    animation: auroraPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes auroraPulse {
+    0% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    100% {
+        opacity: 0.7;
+        transform: scale(1.05);
+    }
+}
+
+/* -- Main Chat Area -- */
+.chatArea {
+    position: relative;
+    z-index: 10;
+    flex: 1;
+    /* Take remaining space */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    /* Prevent flex overflow */
+    /* No bg here, let aurora shine through */
+    backdrop-filter: blur(0px);
+    /* Performance fix */
+}
+
+/* -- Message Bubbles -- */
+.messageRow {
+    display: flex;
+    width: 100%;
+    padding: 16px 24px;
+    opacity: 0;
+    animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.messageRow.user {
+    justify-content: flex-end;
+}
+
+.messageRow.ai {
+    justify-content: flex-start;
+}
+
+/* User Bubble: "Glass Shard" */
+.bubbleUser {
+    max-width: 80%;
+    padding: 12px 20px;
+    border-radius: 20px 20px 4px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.95);
+    transition: transform 0.2s ease;
+}
+
+.bubbleUser:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* AI Bubble: "Liquid Flow" */
+.bubbleAi {
+    max-width: 85%;
+    padding: 0 16px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
+    position: relative;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.aiHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.aiName {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #22d3ee, #94a3b8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* -- Input "Floating Capsule" -- */
+.inputWrapper {
+    position: fixed;
+    bottom: 0;
+    left: 72px;
+    /* Sidebar collapsed width */
+    right: 0;
+    z-index: 100;
+    padding: 16px 24px 24px 24px;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 1) 0%,
+            rgba(0, 0, 0, 0.95) 40%,
+            rgba(0, 0, 0, 0.7) 70%,
+            transparent 100%);
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.inputCapsule {
+    pointer-events: auto;
+    /* Re-enable clicking on capsule */
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 800px;
+    padding: 8px 8px 8px 20px;
+    background: rgba(25, 25, 35, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    box-shadow:
+        0 8px 32px -8px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.inputCapsule:focus-within {
+    transform: translateY(-2px);
+    background: rgba(20, 20, 25, 0.95);
+    border-color: rgba(34, 211, 238, 0.4);
+    box-shadow:
+        0 20px 60px -12px rgba(34, 211, 238, 0.15),
+        0 0 0 2px rgba(34, 211, 238, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.inputField {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-family: inherit;
+    padding: 10px 0;
+    min-height: 24px;
+    max-height: 200px;
+    resize: none;
+    outline: none;
+}
+
+.inputField::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.sendButton {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    /* Squircle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--nl-accent-gradient);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.sendButton:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
+}
+
+.sendButton:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.sendButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+}
+
+/* -- Thinking Animation -- */
+.thinkingBlob {
+    width: 8px;
+    height: 8px;
+    background: #a855f7;
+    border-radius: 50%;
+    animation: blobPulse 1.4s ease-in-out infinite both;
+}
+
+.thinkingBlob:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.thinkingBlob:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes blobPulse {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* -- Neural Orb (Custom CSS Logo) -- */
+.neuralOrb {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.orbCore {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    box-shadow:
+        0 0 40px rgba(34, 211, 238, 0.6),
+        0 0 80px rgba(34, 211, 238, 0.3),
+        inset 0 0 20px rgba(34, 211, 238, 0.8);
+    animation: orbBreathe 4s ease-in-out infinite alternate;
+    z-index: 2;
+}
+
+.orbRing {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.1);
+}
+
+.orbRing:nth-child(1) {
+    width: 100%;
+    height: 100%;
+    animation: orbSpin 10s linear infinite;
+    border-top-color: rgba(34, 211, 238, 0.5);
+}
+
+.orbRing:nth-child(2) {
+    width: 140%;
+    height: 140%;
+    animation: orbSpin 15s linear infinite reverse;
+    border-bottom-color: rgba(148, 163, 184, 0.3);
+    opacity: 0.5;
+}
+
+@keyframes orbBreathe {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.9;
+    }
+
+    100% {
+        transform: scale(1.05);
+        opacity: 1;
+        box-shadow: 0 0 50px rgba(34, 211, 238, 0.8);
+    }
+}
+
+@keyframes orbSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Scrollbar Helper */
+.scrollContainer {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.scrollContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+}
+
+.scrollContainer::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* -- Sidebar Scoped Styles -- */
+.sidebar {
+    width: 320px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 10, 15, 0.4);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    z-index: 20;
+}
+
+.sidebarHeader {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sidebarTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.01em;
+    background: linear-gradient(to right, white, rgba(255, 255, 255, 0.7));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.glassButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+}
+
+.glassButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.glassButton:active {
+    transform: translateY(0);
+}
+
+.primaryButton {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--nl-accent-gradient);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+
+.primaryButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+}
+
+.primaryButton:active {
+    transform: translateY(0);
+}
+
+.searchWrapper {
+    margin: 0 16px 16px;
+    position: relative;
+}
+
+.glassInput {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.glassInput:focus {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.glassInput::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.searchIcon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.3);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+.conversationItem {
+    padding: 12px 16px;
+    margin: 4px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border: 1px solid transparent;
+}
+
+.conversationItem:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.conversationItem.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.conversationTitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2px;
+}
+
+.conversationSnippet {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sectionTitle {
+    padding: 16px 20px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.3);
+}

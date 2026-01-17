@@ -17,6 +17,12 @@ export const ActivityGrid = ({ sessions = [] }) => {
         const grid = [];
         let totalContributions = 0;
 
+        // Pre-generate random values for demo mode (seeded based on date position)
+        const getSeededRandom = (w, d) => {
+            const seed = (w * 7 + d) % 100;
+            return seed / 100;
+        };
+
         // Calculate contributions from real sessions
         const sessionsByDate = {};
         sessions.forEach(session => {
@@ -25,14 +31,15 @@ export const ActivityGrid = ({ sessions = [] }) => {
         });
 
         for (let w = 0; w < weeks; w++) {
-            let weekCol = [];
+            const weekCol = [];
             for (let d = 0; d < days; d++) {
                 const date = new Date();
                 date.setDate(date.getDate() - ((weeks - w - 1) * 7 + (6 - d)));
                 const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-                // Use real data if available, otherwise generate random for demo
-                const contributions = sessionsByDate[dateStr] || (sessions.length === 0 ? Math.random() > 0.3 ? Math.floor(Math.random() * 5) + 1 : 0 : 0);
+                // Use real data if available, otherwise generate deterministic pattern for demo
+                const randomVal = getSeededRandom(w, d);
+                const contributions = sessionsByDate[dateStr] || (sessions.length === 0 ? (randomVal > 0.3 ? Math.floor(randomVal * 5) + 1 : 0) : 0);
                 totalContributions += contributions;
 
                 // Calculate level based on contributions

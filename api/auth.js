@@ -62,7 +62,7 @@ async function logAudit(db, eventType, req, details = null) {
     }
 }
 
-async function isRateLimited(db, ip, endpoint = 'auth') {
+async function _isRateLimited(db, ip, endpoint = 'auth') {
     try {
         const windowStart = new Date(Date.now() - RATE_LIMIT_AUTH.windowMinutes * 60 * 1000);
 
@@ -97,7 +97,7 @@ async function isRateLimited(db, ip, endpoint = 'auth') {
 
 // Simple bcrypt-like comparison (using built-in crypto for serverless compatibility)
 // In production, use actual bcrypt package
-async function verifyPassword(password, hash) {
+async function _verifyPassword(password, hash) {
     // For this implementation, we'll use a simple hash comparison
     // The hash is stored as: sha256(password + salt) where salt is the first 16 chars
     if (!hash || hash.length < 64) return false;

@@ -59,8 +59,8 @@ export const BrandedSpinner = ({ className = '' }) => {
             />
             {/* Center logo */}
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                    S
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center shadow-lg overflow-hidden">
+                    <img src="/logo.png" alt="StudyHub" className="w-6 h-6 object-contain" />
                 </div>
             </div>
         </div>

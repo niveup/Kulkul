@@ -23,6 +23,49 @@ import { getDbPool, initDatabase } from './db.js';
 const RATE_LIMIT_API = { maxRequests: 100, windowMinutes: 60 };
 
 // =============================================================================
+// Environment Detection
+// =============================================================================
+
+/**
+ * Detect if running on localhost (development mode)
+ * In development, authentication is bypassed for convenience
+ */
+export function isLocalhost(req) {
+    // Check VERCEL environment variable (set automatically by Vercel)
+    if (process.env.VERCEL === '1') {
+        return false; // Running on Vercel, enforce auth
+    }
+
+    // Check NODE_ENV
+    if (process.env.NODE_ENV === 'production') {
+        return false;
+    }
+
+    // Check host header for localhost patterns
+    const host = req?.headers?.host || '';
+    const isLocalHost = host.includes('localhost') ||
+        host.includes('127.0.0.1') ||
+        host.startsWith('192.168.') ||
+        host.startsWith('10.');
+
+    return isLocalHost;
+}
+
+/**
+ * Check if auth should be bypassed (for development convenience)
+ * Set BYPASS_AUTH=true in .env to enable, or rely on auto-detection
+ */
+export function shouldBypassAuth(req) {
+    // Explicit bypass via environment variable
+    if (process.env.BYPASS_AUTH === 'true') {
+        return true;
+    }
+
+    // Auto-bypass on localhost
+    return isLocalhost(req);
+}
+
+// =============================================================================
 // Helper Functions
 // =============================================================================
 
@@ -90,6 +133,13 @@ async function incrementRateLimit(db, ip, endpoint = 'api') {
  */
 export async function requireAuth(req, res, options = {}) {
     try {
+        // 0. Check for localhost bypass (development mode)
+        if (shouldBypassAuth(req)) {
+            console.log('[Auth] Localhost detected - bypassing authentication');
+            req.session = { id: 'dev-session', ip_address: 'localhost' };
+            return true;
+        }
+
         await initDatabase();
         const db = await getDbPool();
         const clientIP = getClientIP(req);

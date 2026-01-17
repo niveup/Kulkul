@@ -9,11 +9,11 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { electrostatics } from '../data/electrostatics';
 
-// Data files removed - using empty defaults
-// If you need to restore formula data, add JSON files back to src/data/
+// Load electrostatics for Class 12
 const formulas11 = [];
-const formulas12 = [];
+const formulas12 = [electrostatics]; // Add electrostatics chapter
 
 // =============================================================================
 // CONSTANTS

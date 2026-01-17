@@ -58,8 +58,10 @@ export default async function handler(req, res) {
         await initDatabase();
         const db = await getDbPool();
 
-        // Run cleanup on each request
-        await runCleanup(db);
+        // Run cleanup only 1% of requests to avoid timeout
+        if (Math.random() < 0.01) {
+            runCleanup(db).catch(e => console.error('[Cleanup]', e.message));
+        }
 
         // Parse URL path
         const urlPath = req.url.split('?')[0];

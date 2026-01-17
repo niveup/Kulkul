@@ -1,99 +1,182 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '../../../lib/utils';
 import { format } from 'date-fns';
+import { cn } from '../../../lib/utils';
+import styles from './AIChat.module.css';
 
-// Inline spring config
+// Spring config
 const springGentle = { type: 'spring', stiffness: 100, damping: 15, mass: 1 };
 
-// =============================================================================
-// Simple Markdown Renderer
-// =============================================================================
+// ===========================================================================
+// Premium Markdown Renderer (Billion Dollar Quality)
+// ===========================================================================
 
+// Code Block Component with Copy Button
+const CodeBlock = ({ language, code }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="my-4 rounded-xl overflow-hidden bg-[#0d1117] border border-white/5 shadow-xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/5">
+                <span className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
+                    {language || 'code'}
+                </span>
+                <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                >
+                    {copied ? (
+                        <>
+                            <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-green-400">Copied!</span>
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span>Copy</span>
+                        </>
+                    )}
+                </button>
+            </div>
+            {/* Code Content */}
+            <pre className="p-4 overflow-x-auto text-sm font-mono leading-relaxed text-slate-300">
+                <code>{code}</code>
+            </pre>
+        </div>
+    );
+};
+
+// Inline LaTeX/Formula styling
+const renderInlineFormatting = (text) => {
+    if (!text) return text;
+
+    return text
+        // Bold
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+        // Italic
+        .replace(/\*(.*?)\*/g, '<em class="italic text-slate-200">$1</em>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 mx-0.5 rounded-md bg-white/10 text-cyan-300 text-sm font-mono border border-white/5">$1</code>')
+        // LaTeX inline math $...$
+        .replace(/\$([^$]+)\$/g, '<span class="px-1 py-0.5 mx-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-sm border border-purple-500/20">$1</span>');
+};
+
+// Main renderer
 const renderMarkdown = (text) => {
     if (!text) return null;
 
-    // Split by lines for processing
     const lines = text.split('\n');
     const elements = [];
     let inCodeBlock = false;
-    let codeContent = [];
+    let codeBlockLines = [];
+    let codeLanguage = '';
 
-    lines.forEach((line, lineIndex) => {
-        // Code block handling
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Code block start/end
         if (line.startsWith('```')) {
-            if (inCodeBlock) {
-                elements.push(
-                    <pre key={`code-${lineIndex}`} className="my-2 p-3 bg-slate-800 dark:bg-slate-900 rounded-lg overflow-x-auto">
-                        <code className="text-sm text-emerald-400 font-mono">{codeContent.join('\n')}</code>
-                    </pre>
-                );
-                codeContent = [];
-                inCodeBlock = false;
-            } else {
+            if (!inCodeBlock) {
                 inCodeBlock = true;
+                codeLanguage = line.slice(3).trim();
+                codeBlockLines = [];
+            } else {
+                // End of code block
+                elements.push(
+                    <CodeBlock
+                        key={`code-${i}`}
+                        language={codeLanguage}
+                        code={codeBlockLines.join('\n')}
+                    />
+                );
+                inCodeBlock = false;
+                codeLanguage = '';
             }
-            return;
+            continue;
         }
 
         if (inCodeBlock) {
-            codeContent.push(line);
-            return;
+            codeBlockLines.push(line);
+            continue;
         }
 
-        // Process inline markdown
-        let processed = line;
-
-        // Bold: **text** or __text__
-        processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>');
-        processed = processed.replace(/__(.+?)__/g, '<strong class="font-semibold">$1</strong>');
-
-        // Italic: *text* or _text_
-        processed = processed.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>');
-        processed = processed.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em class="italic">$1</em>');
-
-        // Inline code: `code`
-        processed = processed.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-sm font-mono text-indigo-600 dark:text-indigo-400">$1</code>');
-
         // Headers
-        if (processed.startsWith('### ')) {
-            processed = `<h3 class="text-base font-bold mt-3 mb-1">${processed.slice(4)}</h3>`;
-        } else if (processed.startsWith('## ')) {
-            processed = `<h2 class="text-lg font-bold mt-3 mb-1">${processed.slice(3)}</h2>`;
-        } else if (processed.startsWith('# ')) {
-            processed = `<h1 class="text-xl font-bold mt-3 mb-1">${processed.slice(2)}</h1>`;
+        if (line.startsWith('### ')) {
+            elements.push(
+                <h3 key={i} className="text-lg font-bold text-white mt-4 mb-2">
+                    {line.slice(4)}
+                </h3>
+            );
+            continue;
+        }
+        if (line.startsWith('## ')) {
+            elements.push(
+                <h2 key={i} className="text-xl font-bold text-white mt-5 mb-2">
+                    {line.slice(3)}
+                </h2>
+            );
+            continue;
+        }
+        if (line.startsWith('# ')) {
+            elements.push(
+                <h1 key={i} className="text-2xl font-bold text-white mt-6 mb-3">
+                    {line.slice(2)}
+                </h1>
+            );
+            continue;
         }
 
         // Bullet points
-        if (processed.startsWith('• ') || processed.startsWith('- ') || processed.startsWith('* ')) {
-            processed = `<li class="ml-4 list-disc">${processed.slice(2)}</li>`;
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+            elements.push(
+                <div key={i} className="flex gap-2 my-1">
+                    <span className="text-cyan-400 mt-1">•</span>
+                    <span
+                        dangerouslySetInnerHTML={{ __html: renderInlineFormatting(line.slice(2)) }}
+                    />
+                </div>
+            );
+            continue;
         }
 
         // Numbered lists
-        const numberedMatch = processed.match(/^(\d+)\.\s(.+)/);
+        const numberedMatch = line.match(/^(\d+)\.\s(.+)/);
         if (numberedMatch) {
-            processed = `<li class="ml-4 list-decimal">${numberedMatch[2]}</li>`;
+            elements.push(
+                <div key={i} className="flex gap-2 my-1">
+                    <span className="text-cyan-400 font-mono text-sm min-w-[1.5rem]">{numberedMatch[1]}.</span>
+                    <span
+                        dangerouslySetInnerHTML={{ __html: renderInlineFormatting(numberedMatch[2]) }}
+                    />
+                </div>
+            );
+            continue;
         }
 
-        if (processed.trim()) {
-            elements.push(
-                <span
-                    key={lineIndex}
-                    dangerouslySetInnerHTML={{ __html: processed }}
-                    className="block"
-                />
-            );
-        } else {
-            elements.push(<br key={lineIndex} />);
-        }
-    });
+        // Regular paragraph
+        const processed = renderInlineFormatting(line);
+        elements.push(
+            <span
+                key={i}
+                className="block my-1"
+                dangerouslySetInnerHTML={{ __html: processed || '&nbsp;' }}
+            />
+        );
+    }
 
     return elements;
 };
-
-// =============================================================================
-// Main Component
-// =============================================================================
 
 const MessageBubble = ({ message, isLast }) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -125,70 +208,46 @@ const MessageBubble = ({ message, isLast }) => {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={springGentle}
             className={cn(
-                'flex gap-3',
-                isUser ? 'justify-end' : 'justify-start',
+                styles.messageRow,
+                isUser ? styles.user : styles.ai
             )}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* Assistant Avatar */}
+            {/* Assistant Avatar (Only for AI) */}
             {!isUser && (
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className={cn(
-                        'flex-shrink-0 w-8 h-8 rounded-xl',
-                        'bg-gradient-to-br from-indigo-500 to-purple-600',
-                        'flex items-center justify-center',
-                        'shadow-lg shadow-indigo-500/30',
-                    )}
-                >
-                    <span className="text-sm">✨</span>
-                </motion.div>
+                <div className="flex-shrink-0 w-8 h-8 mr-4 mt-1 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-500/20">
+                    <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+                </div>
             )}
 
             {/* Message Content */}
             <div className={cn(
-                'relative max-w-[70%] group',
+                isUser ? styles.bubbleUser : styles.bubbleAi,
+                "relative group"
             )}>
-                <motion.div
-                    className={cn(
-                        'px-4 py-3 rounded-2xl',
-                        isUser
-                            ? [
-                                // User bubble: gradient pill
-                                'bg-gradient-to-br from-indigo-500 to-purple-600',
-                                'text-white',
-                                'rounded-br-md',
-                                'shadow-lg shadow-indigo-500/20',
-                            ]
-                            : [
-                                // Assistant bubble: glass card
-                                'bg-white/60 dark:bg-white/10',
-                                'backdrop-blur-md',
-                                'border border-white/30 dark:border-white/10',
-                                'text-slate-800 dark:text-slate-100',
-                                'rounded-bl-md',
-                            ],
-                    )}
-                >
-                    {/* Message Text */}
-                    <div className={cn(
-                        'text-sm leading-relaxed',
-                        isUser ? 'text-white whitespace-pre-wrap' : 'text-slate-800 dark:text-slate-100',
-                    )}>
-                        {renderedContent}
+                {/* AI Header Name */}
+                {!isUser && (
+                    <div className={styles.aiHeader}>
+                        <span className={styles.aiName}>Neural Link</span>
                     </div>
+                )}
 
-                    {/* Timestamp */}
-                    <div className={cn(
-                        'mt-1 text-xs',
-                        isUser ? 'text-white/60' : 'text-slate-400 dark:text-slate-500',
-                    )}>
-                        {format(new Date(message.timestamp), 'h:mm a')}
-                    </div>
-                </motion.div>
+                {/* Message Text */}
+                <div className={cn(
+                    'text-sm leading-relaxed',
+                    // Text color handled by CSS module now
+                )}>
+                    {renderedContent}
+                </div>
+
+                {/* Timestamp */}
+                <div className={cn(
+                    'mt-2 text-xs opacity-50 block',
+                    isUser ? 'text-right' : 'text-left'
+                )}>
+                    {format(new Date(message.timestamp), 'h:mm a')}
+                </div>
 
                 {/* Copy Button (on hover) */}
                 {isHovered && !isUser && (
@@ -197,18 +256,11 @@ const MessageBubble = ({ message, isLast }) => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         onClick={handleCopy}
-                        className={cn(
-                            'absolute -right-10 top-2',
-                            'p-2 rounded-lg',
-                            'bg-white/50 dark:bg-white/10',
-                            'hover:bg-white dark:hover:bg-white/20',
-                            'text-slate-500 dark:text-slate-400',
-                            'transition-colors',
-                        )}
+                        className="absolute -right-12 top-0 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white transition-colors"
                         title="Copy message"
                     >
                         {copied ? (
-                            <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         ) : (
@@ -219,23 +271,6 @@ const MessageBubble = ({ message, isLast }) => {
                     </motion.button>
                 )}
             </div>
-
-            {/* User Avatar */}
-            {isUser && (
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className={cn(
-                        'flex-shrink-0 w-8 h-8 rounded-xl',
-                        'bg-gradient-to-br from-emerald-400 to-cyan-500',
-                        'flex items-center justify-center text-white font-semibold text-sm',
-                        'shadow-lg shadow-emerald-500/30',
-                    )}
-                >
-                    U
-                </motion.div>
-            )}
         </motion.div>
     );
 };

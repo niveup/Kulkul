@@ -67,7 +67,7 @@ const CropEditorModal = ({ isOpen, onClose, imageSrc, initialCrop, onSave }) => 
             setDragStart(pos);
         } else if (isResizing) {
             setCrop(prev => {
-                let newCrop = { ...prev };
+                const newCrop = { ...prev };
 
                 if (resizeHandle.includes('e')) {
                     newCrop.width = Math.max(50, Math.min(imageSize.width - prev.x, prev.width + dx));

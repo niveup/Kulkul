@@ -1,11 +1,8 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useTexture, Instance, Instances } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Use simple geometry for stones instead of loading models to keep it self-contained
-const StoneGeometry = new THREE.DodecahedronGeometry(0.2, 0);
-const SkullGeometry = new THREE.SphereGeometry(0.25, 8, 8); // Placeholder for skull, improved below
+// Note: StoneGeometry and SkullGeometry were previously defined here but unused
 
 // ============================================
 // HIDDEN SECRETS

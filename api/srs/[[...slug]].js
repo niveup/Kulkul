@@ -55,7 +55,7 @@ export default async function handler(req, res) {
             // Calculate streak
             let streak = 0;
             const today = new Date();
-            let checkDate = new Date(today);
+            const checkDate = new Date(today);
             const todayStr = getLocalDateStr(checkDate);
             if (!activity[todayStr] || activity[todayStr].count === 0) {
                 checkDate.setDate(checkDate.getDate() - 1);

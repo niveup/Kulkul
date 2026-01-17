@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Float, Html, useTexture } from '@react-three/drei';

@@ -8,17 +8,16 @@
  * - Premium glassmorphism and reduced z-fighting
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
-    Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Sparkles, ChevronUp
+    Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Sparkles, Cloud
 } from 'lucide-react';
 import {
     motion,
     useMotionValue,
     useSpring,
     useTransform,
-    AnimatePresence,
-    useMotionTemplate
+    AnimatePresence
 } from 'framer-motion';
 
 // Dock navigation items configuration
@@ -28,6 +27,7 @@ const DOCK_ITEMS = [
     { id: 'progress', icon: PieChart, label: 'Progress', color: 'from-purple-500 to-violet-400' },
     { id: 'resources', icon: LayoutGrid, label: 'Resources', color: 'from-orange-500 to-amber-400' },
     { id: 'ai-assistant', icon: Bot, label: 'AI Assistant', color: 'from-pink-500 to-rose-400' },
+    { id: 'vault', icon: Cloud, label: 'Vault', color: 'from-indigo-500 to-blue-400' },
     { id: 'admin', icon: Shield, label: 'Admin', color: 'from-slate-600 to-slate-500' },
 ];
 
@@ -106,7 +106,7 @@ const DockIcon = ({ item, mouseX, activeTab, onSelect }) => {
             {/* Active Indicator */}
             <motion.div
                 style={{ scale: activeDotScale }}
-                className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-white opacity-80"
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white opacity-80"
             />
         </motion.div>
     );

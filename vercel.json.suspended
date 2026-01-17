@@ -1,0 +1,135 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "framework": "vite",
+    "regions": [
+        "iad1"
+    ],
+    "functions": {
+        "api/auth.js": {
+            "maxDuration": 10,
+            "memory": 256
+        },
+        "api/chat.js": {
+            "maxDuration": 60,
+            "memory": 1024
+        },
+        "api/conversations/[[...slug]].js": {
+            "maxDuration": 10,
+            "memory": 256
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/api/todos/:path*",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/todos",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/sessions/:path*",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/sessions",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/custom-apps/:path*",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/custom-apps",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/vault/:slug*",
+            "destination": "/api/vault/[[...slug]]"
+        },
+        {
+            "source": "/api/vault",
+            "destination": "/api/vault/[[...slug]]"
+        },
+        {
+            "source": "/api/srs/:slug*",
+            "destination": "/api/srs/[[...slug]]"
+        },
+        {
+            "source": "/api/srs",
+            "destination": "/api/srs/[[...slug]]"
+        },
+        {
+            "source": "/api/admin/:slug*",
+            "destination": "/api/admin/[[...slug]]"
+        },
+        {
+            "source": "/api/admin",
+            "destination": "/api/admin/[[...slug]]"
+        },
+        {
+            "source": "/api/conversations/:slug*",
+            "destination": "/api/conversations/[[...slug]]"
+        },
+        {
+            "source": "/api/conversations",
+            "destination": "/api/conversations/[[...slug]]"
+        },
+        {
+            "source": "/((?!api/).*)",
+            "destination": "/"
+        }
+    ],
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "Strict-Transport-Security",
+                    "value": "max-age=31536000; includeSubDomains"
+                },
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                }
+            ]
+        },
+        {
+            "source": "/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/(.*).js",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/(.*).css",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        }
+    ]
+}

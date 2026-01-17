@@ -51,7 +51,7 @@ function StudyHeatmap({ studyActivity, isDarkMode }) {
         const firstDay = new Date(startDate);
         firstDay.setDate(firstDay.getDate() - firstDay.getDay());
 
-        let currentDate = new Date(firstDay);
+        const currentDate = new Date(firstDay);
         while (currentDate <= endDate || data.length % 7 !== 0) {
             const dateStr = getLocalDateStr(currentDate);
             const activity = studyActivity[dateStr] || { count: 0, topics: [] };
@@ -266,7 +266,7 @@ function TopicCard({ topic, isDarkMode }) {
 function StatsCards({ topics, streakDays, studyActivity, isDarkMode }) {
     const stats = useMemo(() => {
         let totalReviews = 0;
-        let uniqueTopics = topics.length;
+        const uniqueTopics = topics.length;
 
         topics.forEach(t => {
             totalReviews += t.reviewCount || 0;

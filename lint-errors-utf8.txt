@@ -1,0 +1,1215 @@
+﻿
+D:\formula ap\personal-dashboard\api\[...route].js
+  21:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\api\auth.js
+   65:16  error    'isRateLimited' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  100:16  error    'verifyPassword' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  177:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error      no-console
+  178:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error      no-console
+  179:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error      no-console
+  180:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error      no-console
+
+D:\formula ap\personal-dashboard\api\authMiddleware.js
+  138:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\api\chat.js
+   19:49  error    'overrideModel' is defined but never used. Allowed unused args must match /^_/u    no-unused-vars
+  186:13  error    'overrideModel' is never reassigned. Use 'const' instead                           prefer-const
+  230:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\api\conversations\[[...slug]].js
+  74:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\api\srs\[[...slug]].js
+   17:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   58:17  error    'checkDate' is never reassigned. Use 'const' instead                               prefer-const
+  130:22  error    'e' is defined but never used                                                      no-unused-vars
+
+D:\formula ap\personal-dashboard\api\vault\[[...slug]].js
+  23:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  24:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  25:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  43:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  64:18  error    'e' is defined but never used                                                      no-unused-vars
+  73:18  error    'e' is defined but never used                                                      no-unused-vars
+
+D:\formula ap\personal-dashboard\scripts\process_exam.js
+  17:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  24:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  26:13  error    'questionsData' is never reassigned. Use 'const' instead                           prefer-const
+  30:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  80:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\src\App.jsx
+   13:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                    no-unused-vars
+   14:10  error    'format' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                    no-unused-vars
+   57:14  error    'getGreeting' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                               no-unused-vars
+  112:28  error    'Icon' is defined but never used. Allowed unused args must match /^_/u                                                                                                           no-unused-vars
+  222:9   error    'isOnline' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                         no-unused-vars
+  249:22  error    'setSearchTerm' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                    no-unused-vars
+  250:10  error    'isLoadingSessions' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                no-unused-vars
+  251:10  error    'isLoadingTasks' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                   no-unused-vars
+  258:10  error    'dailyQuote' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                       no-unused-vars
+  273:7   error    'addApp' is not defined                                                                                                                                                          no-undef
+  276:6   warning  React Hook useCallback has an unnecessary dependency: 'addCustomApp'. Either exclude it or remove the dependency array                                                           react-hooks/exhaustive-deps
+  353:18  error    '_parseError' is defined but never used                                                                                                                                          no-unused-vars
+  446:6   warning  React Hook useEffect has missing dependencies: 'notifications', 'setSessions', 'setTimerState', 'soundManager', and 'toast'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  518:6   warning  React Hook useEffect has missing dependencies: 'notifications' and 'soundManager'. Either include them or remove the dependency array                                            react-hooks/exhaustive-deps
+  525:9   error    Unexpected lexical declaration in case block                                                                                                                                     no-case-declarations
+  526:9   error    Unexpected lexical declaration in case block                                                                                                                                     no-case-declarations
+  574:9   error    Unexpected lexical declaration in case block                                                                                                                                     no-case-declarations
+  577:9   error    Unexpected lexical declaration in case block                                                                                                                                     no-case-declarations
+  612:9   error    Unexpected lexical declaration in case block                                                                                                                                     no-case-declarations
+  625:9   error    'handleAddTask' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                    no-unused-vars
+  630:9   error    'handleSaveTask' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                   no-unused-vars
+  651:9   error    'handleToggleTask' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                 no-unused-vars
+  670:9   error    'handleRemoveTask' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                 no-unused-vars
+  684:9   error    'todayFocusTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                   no-unused-vars
+  704:9   error    'completedTasksCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                              no-unused-vars
+  712:9   error    'checkDate' is never reassigned. Use 'const' instead                                                                                                                             prefer-const
+
+D:\formula ap\personal-dashboard\src\components\AddAppModal.jsx
+   14:10   error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  158:13   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  156 |     useEffect(() => {
+  157 |         if (!isOpen) {
+> 158 |             setName('');
+      |             ^^^^^^^ Avoid calling setState() directly within an effect
+  159 |             setUrl('');
+  160 |             setDescription('');
+  161 |             setIconMode('auto');                                                                                                                                                                                                                                                                                  react-hooks/set-state-in-effect
+  309:42   error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  307 |                                     {/* Left Column: Preview & Switcher */}
+  308 |                                     <div className="flex flex-col items-center gap-5 flex-shrink-0">
+> 309 |                                         <IconPreview />
+      |                                          ^^^^^^^^^^^ This component is created during render
+  310 |
+  311 |                                         {/* Mode Switcher */}
+  312 |                                         <div className="p-1 rounded-xl bg-white/5 border border-white/10 flex w-full shadow-inner">
+
+  220 |
+  221 |     // Live Icon Preview
+> 222 |     const IconPreview = () => {
+      |                         ^^^^^^^
+> 223 |         if (iconMode === 'auto') {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 224 |             if (isFetchingFavicon) {
+      ÔÇª
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 257 |         );
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 258 |     };
+      | ^^^^^^ The component is created during render here
+  259 |
+  260 |     return (
+  261 |         <AnimatePresence>  react-hooks/static-components
+  391:102  error  'Icon' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\AppCard.jsx
+  12:48  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  13:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\PasswordModal.jsx
+   2:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   9:69  error  'authError' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  33:18  error  'err' is defined but never used                                                            no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\Sidebar.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\lumina\ActivityGrid.jsx
+   28:17   error    'weekCol' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    prefer-const
+   35:91   error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  33 |
+  34 |                 // Use real data if available, otherwise generate random for demo
+> 35 |                 const contributions = sessionsByDate[dateStr] || (sessions.length === 0 ? Math.random() > 0.3 ? Math.floor(Math.random() * 5) + 1 : 0 : 0);
+     |                                                                                           ^^^^^^^^^^^^^ Cannot call impure function
+  36 |                 totalContributions += contributions;
+  37 |
+  38 |                 // Calculate level based on contributions                                   react-hooks/purity
+   35:124  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  33 |
+  34 |                 // Use real data if available, otherwise generate random for demo
+> 35 |                 const contributions = sessionsByDate[dateStr] || (sessions.length === 0 ? Math.random() > 0.3 ? Math.floor(Math.random() * 5) + 1 : 0 : 0);
+     |                                                                                                                            ^^^^^^^^^^^^^ Cannot call impure function
+  36 |                 totalContributions += contributions;
+  37 |
+  38 |                 // Calculate level based on contributions  react-hooks/purity
+  112:13   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     jsx-a11y/no-static-element-interactions
+  117:33   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\lumina\GlassCard.jsx
+  7:17  error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  8:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\lumina\LuminaOverview.jsx
+    3:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  174:18  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\src\components\lumina\QuickAccess.jsx
+   13:36  error    'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+   14:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+  228:9   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  405:9   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\lumina\StatsGroup.jsx
+   86:44  error  'currentStreak' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+  112:17  error  'checkDate' is never reassigned. Use 'const' instead                                      prefer-const
+
+D:\formula ap\personal-dashboard\src\components\navigation\Dock.jsx
+   11:48  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   16:5   error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   21:5   error  'useMotionTemplate' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   68:11  error  'opacity' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  126:22  error  'setPosition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  136:11  error  'savePosition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  139:17  error  Empty block statement                                                                         no-empty
+  158:31  error  'newPos' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\resources\DraggableWidget.jsx
+   15:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+   45:22  error    'e' is defined but never used                                                                                                                                                                      no-unused-vars
+  104:11  error    'style' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                              no-unused-vars
+  231:21  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  231:21  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\resources\EditToolbar.jsx
+  14:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\resources\ResourceCanvas.jsx
+   12:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+   23:5   error    'arrayMove' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   51:7   error    'itemVariants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+   66:11  error    'layouts' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+   68:11  error    'theme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+   69:11  error    'actions' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+   84:38  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  82 |     const menuRef = useRef(null);
+  83 |     const canvasRef = useRef(null);
+> 84 |     const topicStartTimeRef = useRef(Date.now());
+     |                                      ^^^^^^^^^^ Cannot call impure function
+  85 |
+  86 |     // Mouse tracking for spotlight effect
+  87 |     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });  react-hooks/purity
+  154:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-console
+  194:9   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\resources\WidgetEditor.jsx
+  12:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  33:22  error  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  69:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  67 |     useEffect(() => {
+  68 |         if (widget) {
+> 69 |             setFormData({
+     |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  70 |                 concept: widget.concept || '',
+  71 |                 theory: widget.theory || '',
+  72 |                 formula: widget.formula || '',  react-hooks/set-state-in-effect
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\ChatArea.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\ChatSidebar.jsx
+   13:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  105:5   error  'trashedConversations' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+  110:5   error  'onRestore' is defined but never used. Allowed unused args must match /^_/u                      no-unused-vars
+  111:5   error  'onPermanentDelete' is defined but never used. Allowed unused args must match /^_/u              no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\InputArea.jsx
+  13:12  error  'isFocused' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\MessageBubble.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  181:35  error  'isLast' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\ThinkingIndicator.jsx
+  11:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\AIChat\index.jsx
+   15:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+   48:19  error    'isDarkMode' is defined but never used. Allowed unused args must match /^_/u                                                                                                                       no-unused-vars
+  140:11  error    'activeConversation' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                 no-unused-vars
+  475:29  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  475:29  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\AdminPanel.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+   38:9   error  Error: Cannot access variable before it is declared
+
+`fetchStats` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  36 |     // Fetch stats on mount
+  37 |     useEffect(() => {
+> 38 |         fetchStats();
+     |         ^^^^^^^^^^ `fetchStats` accessed before it is declared
+  39 |     }, []);
+  40 |
+  41 |     const fetchStats = async () => {
+
+  39 |     }, []);
+  40 |
+> 41 |     const fetchStats = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |         try {
+     ÔÇª
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 82 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 83 |     };
+     | ^^^^^^^ `fetchStats` is declared here
+  84 |
+  85 |     const handleDelete = async (type) => {
+  86 |         setDeleting(type);  react-hooks/immutability
+   89:17  error  'method' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             prefer-const
+  102:21  error  Unexpected lexical declaration in case block                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-case-declarations
+
+D:\formula ap\personal-dashboard\src\components\tools\BuildingModels.jsx
+     1:34   error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+     3:23   error  'useTexture' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+    42:21   error  Error: This value cannot be modified
+
+Modifying component props or hook arguments is not allowed. Consider using a local variable instead.
+
+  40 |                     onLand();
+  41 |                     // Only trigger once
+> 42 |                     onLand = null;
+     |                     ^^^^^^ `onLand` cannot be modified
+  43 |                 }
+  44 |             } else {
+  45 |                 // Stop                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/immutability
+    67:33   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  65 |
+  66 |         for (let i = 0; i < count; i++) {
+> 67 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+     |                                 ^^^^^^^^^^^^^ Cannot call impure function
+  68 |             positions[i * 3 + 1] = Math.random() * scale * 2;
+  69 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+  70 |                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/purity
+    68:36   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  66 |         for (let i = 0; i < count; i++) {
+  67 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+> 68 |             positions[i * 3 + 1] = Math.random() * scale * 2;
+     |                                    ^^^^^^^^^^^^^ Cannot call impure function
+  69 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+  70 |
+  71 |             // Fire colors: yellow to orange to red                                                                                                                                                                                                                                                                                                                                                       react-hooks/purity
+    69:37   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  67 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+  68 |             positions[i * 3 + 1] = Math.random() * scale * 2;
+> 69 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+     |                                     ^^^^^^^^^^^^^ Cannot call impure function
+  70 |
+  71 |             // Fire colors: yellow to orange to red
+  72 |             const t = Math.random();                                                                                                                                                                                                                                                                                                                                                           react-hooks/purity
+    72:23   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  70 |
+  71 |             // Fire colors: yellow to orange to red
+> 72 |             const t = Math.random();
+     |                       ^^^^^^^^^^^^^ Cannot call impure function
+  73 |             colors[i * 3] = 1;
+  74 |             colors[i * 3 + 1] = 0.3 + t * 0.5;
+  75 |             colors[i * 3 + 2] = t * 0.2;                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/purity
+    77:24   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  75 |             colors[i * 3 + 2] = t * 0.2;
+  76 |
+> 77 |             sizes[i] = Math.random() * 0.1 + 0.05;
+     |                        ^^^^^^^^^^^^^ Cannot call impure function
+  78 |         }
+  79 |
+  80 |         return { positions, colors, sizes };                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/purity
+    83:15   error  'state' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           no-unused-vars
+   140:33   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  138 |
+  139 |         for (let i = 0; i < count; i++) {
+> 140 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+      |                                 ^^^^^^^^^^^^^ Cannot call impure function
+  141 |             positions[i * 3 + 1] = Math.random() * scale * 3;
+  142 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+  143 |             opacities[i] = Math.random();                                                                                                                                                                                                                                                                                                                                                             react-hooks/purity
+   141:36   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  139 |         for (let i = 0; i < count; i++) {
+  140 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+> 141 |             positions[i * 3 + 1] = Math.random() * scale * 3;
+      |                                    ^^^^^^^^^^^^^ Cannot call impure function
+  142 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+  143 |             opacities[i] = Math.random();
+  144 |         }                                                                                                                                                                                                                                                                                                                                                react-hooks/purity
+   142:37   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  140 |             positions[i * 3] = (Math.random() - 0.5) * scale;
+  141 |             positions[i * 3 + 1] = Math.random() * scale * 3;
+> 142 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+      |                                     ^^^^^^^^^^^^^ Cannot call impure function
+  143 |             opacities[i] = Math.random();
+  144 |         }
+  145 |                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/purity
+   143:28   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  141 |             positions[i * 3 + 1] = Math.random() * scale * 3;
+  142 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale;
+> 143 |             opacities[i] = Math.random();
+      |                            ^^^^^^^^^^^^^ Cannot call impure function
+  144 |         }
+  145 |
+  146 |         return { positions, opacities };                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/purity
+   197:33   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  195 |
+  196 |         for (let i = 0; i < count; i++) {
+> 197 |             positions[i * 3] = (Math.random() - 0.5) * scale * 0.5;
+      |                                 ^^^^^^^^^^^^^ Cannot call impure function
+  198 |             positions[i * 3 + 1] = Math.random() * scale;
+  199 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale * 0.5;
+  200 |             velocities.push({                                                                                                                                                                                                                                                                                                                                                                 react-hooks/purity
+   198:36   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  196 |         for (let i = 0; i < count; i++) {
+  197 |             positions[i * 3] = (Math.random() - 0.5) * scale * 0.5;
+> 198 |             positions[i * 3 + 1] = Math.random() * scale;
+      |                                    ^^^^^^^^^^^^^ Cannot call impure function
+  199 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale * 0.5;
+  200 |             velocities.push({
+  201 |                 x: (Math.random() - 0.5) * 0.02,                                                                                                                                                                                                                                                                                                             react-hooks/purity
+   199:37   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  197 |             positions[i * 3] = (Math.random() - 0.5) * scale * 0.5;
+  198 |             positions[i * 3 + 1] = Math.random() * scale;
+> 199 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale * 0.5;
+      |                                     ^^^^^^^^^^^^^ Cannot call impure function
+  200 |             velocities.push({
+  201 |                 x: (Math.random() - 0.5) * 0.02,
+  202 |                 y: 0.02 + Math.random() * 0.02,                                                                                                                                                                                                                                                                                                      react-hooks/purity
+   201:21   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  199 |             positions[i * 3 + 2] = (Math.random() - 0.5) * scale * 0.5;
+  200 |             velocities.push({
+> 201 |                 x: (Math.random() - 0.5) * 0.02,
+      |                     ^^^^^^^^^^^^^ Cannot call impure function
+  202 |                 y: 0.02 + Math.random() * 0.02,
+  203 |                 z: (Math.random() - 0.5) * 0.02,
+  204 |             });                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/purity
+   202:27   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  200 |             velocities.push({
+  201 |                 x: (Math.random() - 0.5) * 0.02,
+> 202 |                 y: 0.02 + Math.random() * 0.02,
+      |                           ^^^^^^^^^^^^^ Cannot call impure function
+  203 |                 z: (Math.random() - 0.5) * 0.02,
+  204 |             });
+  205 |         }                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/purity
+   203:21   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  201 |                 x: (Math.random() - 0.5) * 0.02,
+  202 |                 y: 0.02 + Math.random() * 0.02,
+> 203 |                 z: (Math.random() - 0.5) * 0.02,
+      |                     ^^^^^^^^^^^^^ Cannot call impure function
+  204 |             });
+  205 |         }
+  206 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/purity
+   592:60   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  590 |                 [0.5, 0.05, -0.5]
+  591 |             ].map((pos, i) => (
+> 592 |                 <mesh key={i} position={pos} rotation={[0, Math.random(), Math.random() * 0.3]}>
+      |                                                            ^^^^^^^^^^^^^ Cannot call impure function
+  593 |                     <boxGeometry args={[0.12, 0.06, 0.08]} />
+  594 |                     <meshStandardMaterial color="#4A3C3C" roughness={1} />
+  595 |                 </mesh>                                                                                                                                                                                                                                                                                react-hooks/purity
+   592:75   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  590 |                 [0.5, 0.05, -0.5]
+  591 |             ].map((pos, i) => (
+> 592 |                 <mesh key={i} position={pos} rotation={[0, Math.random(), Math.random() * 0.3]}>
+      |                                                                           ^^^^^^^^^^^^^ Cannot call impure function
+  593 |                     <boxGeometry args={[0.12, 0.06, 0.08]} />
+  594 |                     <meshStandardMaterial color="#4A3C3C" roughness={1} />
+  595 |                 </mesh>                                                                                                                                                                                                                                                                 react-hooks/purity
+   813:70   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  811 |             {/* Glass shards on ground */}
+  812 |             {[[-0.3, 0.02, 0.5], [0.4, 0.02, 0.6], [-0.5, 0.02, 0.3]].map((pos, i) => (
+> 813 |                 <mesh key={i} position={pos} rotation={[Math.PI / 2, Math.random(), 0]}>
+      |                                                                      ^^^^^^^^^^^^^ Cannot call impure function
+  814 |                     <planeGeometry args={[0.08, 0.06]} />
+  815 |                     <meshStandardMaterial
+  816 |                         color="#5D6D7E"                                                                                                                                                                                                                                  react-hooks/purity
+  1258:43   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                           ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>                                                                                                                                react-hooks/purity
+  1258:77   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                                                             ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>                                                                                              react-hooks/purity
+  1258:99   error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                                                                                   ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>                                                                        react-hooks/purity
+  1258:139  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                                                                                                                           ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>                                react-hooks/purity
+  1258:154  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                                                                                                                                          ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>                 react-hooks/purity
+  1258:169  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  1256 |             {/* Exposed Interior/Rebar */}
+  1257 |             {Array.from({ length: 6 }).map((_, i) => (
+> 1258 |                 <mesh key={i} position={[(Math.random() - 0.5) * 0.8, 1.5 + Math.random() * 1.5, (Math.random() - 0.5) * 0.8]} rotation={[Math.random(), Math.random(), Math.random()]}>
+       |                                                                                                                                                                         ^^^^^^^^^^^^^ Cannot call impure function
+  1259 |                     <cylinderGeometry args={[0.02, 0.02, 1, 4]} />
+  1260 |                     <meshStandardMaterial color="#FF5722" emissive="#FF5722" emissiveIntensity={0.5} />
+  1261 |                 </mesh>  react-hooks/purity
+
+D:\formula ap\personal-dashboard\src\components\tools\ChapterGraphs.jsx
+  34:11  error  'data' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  48:11  error  'options' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\CityBuilder.jsx
+    1:46   error    'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+    1:54   error    'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+    2:18   error    'useFrame' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+    2:28   error    'useThree' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+   16:10   error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+   21:35   error    'Icon' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   42:110  error    'autoRotate' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+   42:122  error    'resetLakeTrigger' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+   42:140  error    'onLakeDrained' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+   43:27   error    'setSplashTrigger' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  139:45   error    'isDarkMode' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+  139:57   error    'onToggleTheme' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  139:104  error    'onDateChange' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  188:34   error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  186 |         // Randomize
+  187 |         for (let i = valid.length - 1; i > 0; i--) {
+> 188 |             const j = Math.floor(Math.random() * (i + 1));
+      |                                  ^^^^^^^^^^^^^ Cannot call impure function
+  189 |             [valid[i], valid[j]] = [valid[j], valid[i]];
+  190 |         }
+  191 |         return valid;  react-hooks/purity
+  389:13   warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      jsx-a11y/click-events-have-key-events
+  389:13   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\CropEditorModal.jsx
+   16:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  14 |     useEffect(() => {
+  15 |         if (initialCrop) {
+> 16 |             setCrop(initialCrop);
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  17 |         }
+  18 |     }, [initialCrop]);
+  19 |  react-hooks/set-state-in-effect
+   70:21  error    'newCrop' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              prefer-const
+  195:25  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               jsx-a11y/no-static-element-interactions
+  209:33  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\EfficiencyPulse.jsx
+   2:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+  14:9   warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  14:9   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\EnvironmentAssets.jsx
+    3:10  error  'useTexture' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+   72:31  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  70 | const LiveFish = ({ position, color = "#FF9800", speed = 1 }) => {
+  71 |     const ref = useRef();
+> 72 |     const [offset] = useState(Math.random() * 100);
+     |                               ^^^^^^^^^^^^^ Cannot call impure function
+  73 |
+  74 |     useFrame((state) => {
+  75 |         if (!ref.current) return;                                                                                                                                                                                                                                                                                                                                                   react-hooks/purity
+  190:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  188 |         if (splashTrigger > 0) {
+  189 |             const id = Date.now();
+> 190 |             setActiveSplashes(prev => [...prev, id]);
+      |             ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  191 |
+  192 |         }
+  193 |     }, [splashTrigger]);  react-hooks/set-state-in-effect
+  202:11  error  'plantColor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\FocusVelocity.jsx
+  41:47  error  'label' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+  95:44  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  93 |                             </linearGradient>
+  94 |                         </defs>
+> 95 |                         <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
+     |                                            ^^^^^^^^^^^^^ This component is created during render
+  96 |                         <Area
+  97 |                             type="monotone"
+  98 |                             dataKey="value"
+
+  39 |     }, [chartData]);
+  40 |
+> 41 |     const CustomTooltip = ({ active, payload, label }) => {
+     |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         if (active && payload && payload.length) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |             return (
+     ÔÇª
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |         return null;
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 53 |     };
+     | ^^^^^^ The component is created during render here
+  54 |
+  55 |     if (chartData.length === 0) {
+  56 |         return (  react-hooks/static-components
+
+D:\formula ap\personal-dashboard\src\components\tools\FullPageViewer.jsx
+   8:9   warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+   8:9   warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  24:13  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  24:13  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\GoalSettings.jsx
+    2:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   23:8   warning  React Hook useEffect has a missing dependency: 'x'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+  101:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   99 |     // Sync local state when open
+  100 |     useEffect(() => {
+> 101 |         if (isOpen) setLocalGoals(goals);
+      |                     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  102 |     }, [isOpen, goals]);
+  103 |
+  104 |     const handleSave = () => {  react-hooks/set-state-in-effect
+
+D:\formula ap\personal-dashboard\src\components\tools\ObjectivesProtocol.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\PdfViewerModal.jsx
+   15:51  error    'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                     no-unused-vars
+   16:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                      no-unused-vars
+  286:13  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  286:13  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  393:13  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  393:13  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+D:\formula ap\personal-dashboard\src\components\tools\PomodoroTimer.jsx
+    3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+   41:38  error  'Icon' is defined but never used. Allowed unused args must match /^_/u           no-unused-vars
+   61:45  error  'isActive' is defined but never used. Allowed unused args must match /^_/u       no-unused-vars
+  110:43  error  'isDarkMode' is defined but never used. Allowed unused args must match /^_/u     no-unused-vars
+  110:55  error  'onToggleTheme' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\ProgressSection.jsx
+   2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  12:10  error  'getISTDate' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\Resources.jsx
+    3:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  108:22  error    'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+  118:9   error    'processedText' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           prefer-const
+  182:33  error    'index' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+  466:38  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  464 |
+  465 |     // Refs
+> 466 |     const topicStartTimeRef = useRef(Date.now());
+      |                                      ^^^^^^^^^^ Cannot call impure function
+  467 |     const currentTopicRef = useRef({ cls: '12', subject: 'Physics', topic: 'Electrostatics' });
+  468 |     const menuRef = useRef(null);
+  469 |                                                                 react-hooks/purity
+  493:29  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-console
+  529:37  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  527 |     const handleTopicClick = (cls, subject, topic) => {
+  528 |         logReviewIfQualified();
+> 529 |         topicStartTimeRef.current = Date.now();
+      |                                     ^^^^^^^^^^ Cannot call impure function
+  530 |         currentTopicRef.current = { cls, subject, topic };
+  531 |         setElapsedSeconds(0);
+  532 |         setSelectedClass(cls);  react-hooks/purity
+  583:11  error    'theme' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\SessionHistory.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\SessionTimeline.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\SpacedRepetition.jsx
+    1:47  error    'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+   35:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  33 |         const todayStr = getTodayStr();
+  34 |         if (selectedDay.dateStr === todayStr) {
+> 35 |             setSelectedDay(prev => ({
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  36 |                 ...prev,
+  37 |                 count: studyActivity[todayStr]?.count || 0,
+  38 |                 topics: studyActivity[todayStr]?.topics || []  react-hooks/set-state-in-effect
+   41:8   warning  React Hook useEffect has missing dependencies: 'getTodayStr' and 'selectedDay.dateStr'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+   54:13  error    'currentDate' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              prefer-const
+  168:29  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      jsx-a11y/click-events-have-key-events
+  168:29  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   jsx-a11y/no-static-element-interactions
+  269:13  error    'uniqueTopics' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             prefer-const
+
+D:\formula ap\personal-dashboard\src\components\tools\TodoList.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  5:85  error  'hasUnsaved' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\TopicAnalysisModal.jsx
+  1:17  error  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\tools\VaultPanel.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  352:23  error  'isDarkMode' is defined but never used. Allowed unused args must match /^_/u   no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\AnimatedCounter.jsx
+  9:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\ChronoDial.jsx
+  12:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\CommandPalette.jsx
+  13:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  55:5   error  'isDarkMode' is defined but never used. Allowed unused args must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-unused-vars
+  86:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  84 |     useEffect(() => {
+  85 |         if (isOpen) {
+> 86 |             setQuery('');
+     |             ^^^^^^^^ Avoid calling setState() directly within an effect
+  87 |             setSelectedIndex(0);
+  88 |             setTimeout(() => inputRef.current?.focus(), 50);
+  89 |         }  react-hooks/set-state-in-effect
+
+D:\formula ap\personal-dashboard\src\components\ui\ErrorBoundary.jsx
+   11:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+  206:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  219:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+D:\formula ap\personal-dashboard\src\components\ui\FluidInput.jsx
+  13:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  39:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  37 |     // Auto-expand when there's content or focused
+  38 |     useEffect(() => {
+> 39 |         setIsExpanded(isFocused || value.length > 0);
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |     }, [isFocused, value]);
+  41 |
+  42 |     const handleSubmit = (e) => {  react-hooks/set-state-in-effect
+
+D:\formula ap\personal-dashboard\src\components\ui\GlassCardSpotlight.jsx
+  22:9  error  'Component' is assigned a value but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\GlassPanel.jsx
+  119:10  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+D:\formula ap\personal-dashboard\src\components\ui\LazyLoadingFallbacks.jsx
+  8:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\Loading.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\ui\Toast.jsx
+    2:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+   11:14  error    Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-refresh/only-export-components
+  132:17  error    Error: Cannot access variable before it is declared
+
+`dismissToast` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  130 |         if (duration > 0) {
+  131 |             setTimeout(() => {
+> 132 |                 dismissToast(id);
+      |                 ^^^^^^^^^^^^ `dismissToast` accessed before it is declared
+  133 |             }, duration);
+  134 |         }
+  135 |
+
+  137 |     }, []);
+  138 |
+> 139 |     const dismissToast = useCallback((id) => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 140 |         setToasts((prev) => prev.filter((toast) => toast.id !== id));
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 141 |     }, []);
+      | ^^^^^^^^^^^^ `dismissToast` is declared here
+  142 |
+  143 |     const dismissAllToasts = useCallback(() => {
+  144 |         setToasts([]);  react-hooks/immutability
+  137:8   warning  React Hook useCallback has a missing dependency: 'dismissToast'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+
+D:\formula ap\personal-dashboard\src\components\widgets\BentoDashboard.jsx
+   9:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  11:10  error  'springs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\components\widgets\HeroWindow.jsx
+  11:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+  73:19  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+  71 |     const hour = now.getHours();
+  72 |
+> 73 |     const theme = useMemo(() => getTimeTheme(hour), [hour]);
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing memoization
+  74 |     const greeting = useMemo(() => getGreeting(hour), [hour]);
+  75 |     const TimeIcon = theme.icon;
+  76 |                                                    react-hooks/preserve-manual-memoization
+  73:54  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+  71 |     const hour = now.getHours();
+  72 |
+> 73 |     const theme = useMemo(() => getTimeTheme(hour), [hour]);
+     |                                                      ^^^^ This dependency may be modified later
+  74 |     const greeting = useMemo(() => getGreeting(hour), [hour]);
+  75 |     const TimeIcon = theme.icon;
+  76 |                               react-hooks/preserve-manual-memoization
+  74:22  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+  72 |
+  73 |     const theme = useMemo(() => getTimeTheme(hour), [hour]);
+> 74 |     const greeting = useMemo(() => getGreeting(hour), [hour]);
+     |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Could not preserve existing memoization
+  75 |     const TimeIcon = theme.icon;
+  76 |
+  77 |     const formattedDate = now.toLocaleDateString('en-US', {                       react-hooks/preserve-manual-memoization
+  74:56  error  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+  72 |
+  73 |     const theme = useMemo(() => getTimeTheme(hour), [hour]);
+> 74 |     const greeting = useMemo(() => getGreeting(hour), [hour]);
+     |                                                        ^^^^ This dependency may be modified later
+  75 |     const TimeIcon = theme.icon;
+  76 |
+  77 |     const formattedDate = now.toLocaleDateString('en-US', {  react-hooks/preserve-manual-memoization
+
+D:\formula ap\personal-dashboard\src\components\widgets\StreakHeatmap.jsx
+   13:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+   50:57  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  48 |                     initial={{ scale: 0, opacity: 0 }}
+  49 |                     animate={{ scale: 1, opacity: 1 }}
+> 50 |                     transition={{ duration: 0.2, delay: Math.random() * 0.3 }}
+     |                                                         ^^^^^^^^^^^^^ Cannot call impure function
+  51 |                     className={cn(
+  52 |                         'w-3 h-3 rounded-sm cursor-pointer transition-all duration-200',
+  53 |                         INTENSITY_COLORS[intensity],  react-hooks/purity
+  122:13  error  'checkDate' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                prefer-const
+
+D:\formula ap\personal-dashboard\src\components\workstation\Workstation.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  5:10  error  'cn' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+D:\formula ap\personal-dashboard\src\contexts\AuthContext.jsx
+  16:14  error    Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  27:8   warning  React Hook useEffect has a missing dependency: 'checkAuthStatus'. Either include it or remove the dependency array              react-hooks/exhaustive-deps
+  43:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                               no-console
+
+D:\formula ap\personal-dashboard\src\hooks\index.js
+  107:24  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  105 |
+  106 |     return useMemo(
+> 107 |         () => debounce((...args) => callbackRef.current(...args), delay),
+      |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  108 |         [delay]
+  109 |     );
+  110 | }                                                                                                                                                                                                                                                                 react-hooks/refs
+  124:24  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  122 |
+  123 |     return useMemo(
+> 124 |         () => throttle((...args) => callbackRef.current(...args), delay),
+      |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  125 |         [delay]
+  126 |     );
+  127 | }                                                                                                                                                                                                                                                                 react-hooks/refs
+  241:25  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  293:12  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  291 |     }, [value]);
+  292 |
+> 293 |     return ref.current;
+      |            ^^^^^^^^^^^ Cannot access ref value during render
+  294 | }
+  295 |
+  296 | // =============================================================================                                                                                                                                                                                                                                                                                                                             react-hooks/refs
+  303:9   error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  301 |     const isFirst = useRef(true);
+  302 |
+> 303 |     if (isFirst.current) {
+      |         ^^^^^^^^^^^^^^^ Cannot access ref value during render
+  304 |         isFirst.current = false;
+  305 |         return true;
+  306 |     }                                                                                                                                                                                                                                                                                                                               react-hooks/refs
+  304:9   error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  302 |
+  303 |     if (isFirst.current) {
+> 304 |         isFirst.current = false;
+      |         ^^^^^^^^^^^^^^^ Cannot update ref during render
+  305 |         return true;
+  306 |     }
+  307 |                                                                                                                                                                                                                                                                                                                                                                       react-hooks/refs
+  324:47  warning  The ref value 'prevTitleRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'prevTitleRef.current' to a variable inside the effect, and use that variable in the cleanup function                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  515:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  513 |
+  514 |     useEffect(() => {
+> 515 |         setMounted(true);
+      |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  516 |     }, []);
+  517 |
+  518 |     return mounted;  react-hooks/set-state-in-effect
+
+D:\formula ap\personal-dashboard\src\hooks\useCustomApps.js
+  71:22  error  'e' is defined but never used  no-unused-vars
+  71:25  error  Empty block statement          no-empty
+
+D:\formula ap\personal-dashboard\src\hooks\useVault.js
+   89:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error              no-console
+  107:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error              no-console
+  276:25  error    'deletedAt' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  276:36  error    'daysRemaining' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  327:25  warning  Unexpected console statement. Only these console methods are allowed: warn, error              no-console
+
+D:\formula ap\personal-dashboard\src\lib\SoundManager.js
+  18:18  error  'e' is defined but never used  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\lib\idb.js
+  67:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\src\lib\motionHooks.js
+  312:29  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  310 |     const [scrollDirection, setScrollDirection] = useState('none');
+  311 |     const lastScrollY = useRef(0);
+> 312 |     const lastTime = useRef(Date.now());
+      |                             ^^^^^^^^^^ Cannot call impure function
+  313 |
+  314 |     useEffect(() => {
+  315 |         const handleScroll = () => {  react-hooks/purity
+
+D:\formula ap\personal-dashboard\src\lib\utils.test.js
+  32:27  error  Unexpected constant truthiness on the left-hand side of a `&&` expression  no-constant-binary-expression
+  33:27  error  Unexpected constant truthiness on the left-hand side of a `&&` expression  no-constant-binary-expression
+
+D:\formula ap\personal-dashboard\src\services\api\client.js
+  326:8   warning  React Hook useCallback has a missing dependency: 'fetchOptions'. Either include it or remove the dependency array                           react-hooks/exhaustive-deps
+  326:14  warning  React Hook useCallback has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+D:\formula ap\personal-dashboard\src\store\index.js
+  22:15  error  'get' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\store\resourceStore.js
+  27:7  error  'deepMerge' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\test\setup.jsx
+   93:21  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   93:30  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+   93:39  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   93:45  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   93:57  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   94:21  error  'whileHover' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   94:33  error  'whileTap' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   94:43  error  'whileFocus' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+   94:55  error  'whileInView' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+   95:21  error  'onAnimationStart' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   95:39  error  'onAnimationComplete' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  101:25  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  101:34  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  101:43  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  101:49  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  101:61  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  105:25  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  105:34  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  105:43  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  105:49  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  105:61  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  105:71  error  'whileHover' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  105:83  error  'whileTap' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  109:25  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  109:34  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  109:43  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  109:49  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  109:61  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  113:25  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  113:34  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  113:43  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  113:49  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  113:61  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  117:25  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  117:34  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  117:43  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  117:49  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  117:61  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  122:21  error  'initial' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  122:30  error  'animate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  122:39  error  'exit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+  122:45  error  'transition' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  122:57  error  'variants' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  123:21  error  'strokeDashoffset' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  123:39  error  'strokeDasharray' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+
+D:\formula ap\personal-dashboard\src\test\templates\component.test.template.js
+   9:10  error  'render' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   9:18  error  'screen' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   9:26  error  'fireEvent' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   9:37  error  'waitFor' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  10:8   error  'userEvent' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\test\templates\hook.test.template.js
+  9:10  error  'renderHook' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  9:22  error  'act' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  9:27  error  'waitFor' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+D:\formula ap\personal-dashboard\src\test\templates\store.test.template.js
+   9:10  error  'act' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+  22:7   error  'resetStore' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  23:11  error  'initialState' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\formula ap\personal-dashboard\src\utils\tidbConfig.js
+   52:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  108:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  173:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+D:\formula ap\personal-dashboard\vite.config.js
+    77:14  error    'e' is defined but never used                                                                                          no-unused-vars
+   173:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   189:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   195:70  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   196:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   227:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   236:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   247:24  error    'e' is defined but never used                                                                                          no-unused-vars
+   436:24  error    This branch can never execute. Its condition is a duplicate or covered by previous conditions in the if-else-if chain  no-dupe-else-if
+   455:63  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   456:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   469:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   561:66  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   562:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   575:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   635:70  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   636:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   712:61  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   713:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   779:19  error    'checkDate' is never reassigned. Use 'const' instead                                                                   prefer-const
+   906:24  error    'e' is defined but never used                                                                                          no-unused-vars
+   908:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+   966:69  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+   967:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1086:72  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+  1087:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1150:63  error    'next' is defined but never used. Allowed unused args must match /^_/u                                                 no-unused-vars
+  1151:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1191:24  error    'e' is defined but never used                                                                                          no-unused-vars
+  1192:22  error    'e' is defined but never used                                                                                          no-unused-vars
+  1202:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1390:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1414:11  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1505:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1523:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1525:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1558:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1579:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1580:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1581:15  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1583:19  error    'deepseekMessages' is never reassigned. Use 'const' instead                                                            prefer-const
+  1589:19  error    'deepseekResponse' is never reassigned. Use 'const' instead                                                            prefer-const
+  1599:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1630:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1642:17  error    'imageDescription' is never reassigned. Use 'const' instead                                                            prefer-const
+  1645:17  error    'deepseekMessages' is never reassigned. Use 'const' instead                                                            prefer-const
+  1763:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error                                      no-console
+  1797:30  error    'e' is defined but never used                                                                                          no-unused-vars
+  1797:33  error    Empty block statement                                                                                                  no-empty
+
+Ô£û 389 problems (297 errors, 92 warnings)
+  17 errors and 0 warnings potentially fixable with the `--fix` option.
+
+

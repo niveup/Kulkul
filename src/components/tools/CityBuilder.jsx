@@ -1,8 +1,10 @@
-import React, { useMemo, useState, Suspense, useRef, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+/* eslint-disable react-hooks/purity */
+import React, { useMemo, useState, Suspense, useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, ContactShadows, Html, Sky, Stars } from '@react-three/drei';
-import { Trophy, Map, Lock, Unlock, Zap, ChevronLeft, ChevronRight, Building2, ZapOff, Moon, Calendar, X, RefreshCw, Target } from 'lucide-react';
+import { Lock, Zap, ChevronLeft, ChevronRight, ZapOff, Calendar, X, RefreshCw, Target } from 'lucide-react';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
+import { getISTDate, getTodayIST, isFutureIST, isTodayIST } from '../../utils/dateUtils';
 import {
     TentComplete, TentRuin,
     CozyHouseComplete, CozyHouseRuin,
@@ -11,8 +13,8 @@ import {
     LandmarkComplete, LandmarkRuin
 } from './BuildingModels';
 import { Platform, Fence, InteractiveLake } from './EnvironmentAssets';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
+// THREE is imported in BuildingModels.jsx
+import { AnimatePresence } from 'framer-motion';
 
 // ============================================================================
 // HOLOGRAPHIC CONTROL BUTTON
@@ -144,24 +146,14 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [pickerMonth, setPickerMonth] = useState(new Date());
 
-    // Internal date state with Persistence
+    // Internal date state - Defaults to Today (IST)
     const [internalSelectedDate, setInternalSelectedDate] = useState(() => {
-        const savedDate = localStorage.getItem('city_builder_date');
-        if (savedDate) return new Date(savedDate);
-
-        const today = new Date();
+        const today = getISTDate();
         today.setHours(12, 0, 0, 0); // Noon to avoid timezone shifts
         return today;
     });
 
-    // Persistence Effect
-    useEffect(() => {
-        if (internalSelectedDate) {
-            localStorage.setItem('city_builder_date', internalSelectedDate.toISOString());
-        } else {
-            localStorage.removeItem('city_builder_date');
-        }
-    }, [internalSelectedDate]);
+    // Persistence Effect Removed to allow daily auto-rotation
 
     const selectedDate = selectedDateProp !== undefined ? selectedDateProp : internalSelectedDate;
 
@@ -221,8 +213,7 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
 
     const daysInMonth = getDaysInMonth(pickerMonth);
     const firstDay = getFirstDayOfMonth(pickerMonth);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayIST();
 
     const handlePrevMonth = () => {
         setPickerMonth(new Date(pickerMonth.getFullYear(), pickerMonth.getMonth() - 1, 1));
@@ -322,7 +313,13 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><ChevronLeft size={18} /></button>
-                                    <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><ChevronRight size={18} /></button>
+                                    <button
+                                        onClick={handleNextMonth}
+                                        disabled={pickerMonth.getMonth() === today.getMonth() && pickerMonth.getFullYear() === today.getFullYear()}
+                                        className={`p-2 rounded-full transition-colors ${pickerMonth.getMonth() === today.getMonth() && pickerMonth.getFullYear() === today.getFullYear() ? 'opacity-30 cursor-not-allowed text-white/30' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+                                    >
+                                        <ChevronRight size={18} />
+                                    </button>
                                     <button onClick={() => setShowDatePicker(false)} className="p-2 ml-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"><X size={18} /></button>
                                 </div>
                             </div>
@@ -347,21 +344,25 @@ const CityBuilder = ({ sessionHistory = [], isDarkMode, onToggleTheme, selectedD
                                 {Array.from({ length: daysInMonth }).map((_, i) => {
                                     // Use noon to avoid DST midnight shifts
                                     const dayDate = new Date(pickerMonth.getFullYear(), pickerMonth.getMonth(), i + 1, 12, 0, 0);
-                                    const isToday = dayDate.toDateString() === today.toDateString();
+                                    const isToday = isTodayIST(dayDate);
                                     const isSelected = selectedDate && dayDate.toDateString() === selectedDate.toDateString();
+
+                                    const isFuture = isFutureIST(dayDate);
 
                                     return (
                                         <button
                                             key={i}
+                                            disabled={isFuture}
                                             onClick={() => {
                                                 setInternalSelectedDate(dayDate);
                                                 setShowDatePicker(false);
                                             }}
                                             className={`
                                                 aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all relative
-                                                ${isSelected
+                                                ${isFuture ? 'opacity-20 cursor-not-allowed' : ''}
+                                                ${isSelected && !isFuture
                                                     ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                                                    : 'hover:bg-white/10 text-white/70 hover:text-white'
+                                                    : !isFuture ? 'hover:bg-white/10 text-white/70 hover:text-white' : ''
                                                 }
                                                 ${isToday && !isSelected ? 'text-emerald-400 font-bold bg-emerald-500/5 border border-emerald-500/20' : ''}
                                             `}

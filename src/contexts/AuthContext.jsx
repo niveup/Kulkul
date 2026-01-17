@@ -26,9 +26,27 @@ export const AuthProvider = ({ children }) => {
         checkAuthStatus();
     }, []);
 
+    // Detect if running on localhost (development mode)
+    const isLocalhost = () => {
+        const hostname = window.location.hostname;
+        return hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('10.');
+    };
+
     // Check if user has valid session (cookie is automatically sent)
     const checkAuthStatus = async () => {
         try {
+            // Development mode: auto-authenticate on localhost
+            if (isLocalhost()) {
+                console.log('[Auth] Localhost detected - auto-authenticating');
+                setIsAuthenticated(true);
+                setIsGuest(false);
+                setIsLoading(false);
+                return;
+            }
+
             const response = await fetch('/api/auth', {
                 method: 'GET',
                 credentials: 'include', // Include cookies

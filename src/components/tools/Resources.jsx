@@ -7,6 +7,7 @@ import 'katex/dist/katex.min.css';
 import katex from 'katex';
 import { Search, ChevronDown, Atom, Calculator, Beaker, PieChart, Moon, Sun, Clock, Sparkles, BookOpen, Lightbulb, X, Maximize2 } from 'lucide-react';
 import TopicAnalysisModal from './TopicAnalysisModal';
+import { shouldUseLocalStorage } from '../../utils/authMode';
 
 // ============================================================================
 // DESIGN SYSTEM - Apple-esque Muted Palette
@@ -115,7 +116,7 @@ const KatexRenderer = ({ latex }) => {
 
 const MixedTextRenderer = ({ text, isDarkMode }) => {
     if (!text) return null;
-    let processedText = text.replace(/\s+(\d+\.)\s/g, '\n$1 ');
+    const processedText = text.replace(/\s+(\d+\.)\s/g, '\n$1 ');
     const lines = processedText.split(/\\n|\n/);
 
     const renderWithSubscripts = (str, key) => {
@@ -484,7 +485,7 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
         const timeSpent = (Date.now() - topicStartTimeRef.current) / 1000 / 60;
         const { cls, subject, topic } = currentTopicRef.current;
 
-        if (timeSpent >= 5 && subject === 'Physics') {
+        if (timeSpent >= 5 && subject === 'Physics' && !shouldUseLocalStorage()) {
             const topicId = `${cls}-${subject.toLowerCase()}-${topic.toLowerCase().replace(/\s+/g, '-')}`;
             fetch('/api/srs/review', {
                 method: 'POST',

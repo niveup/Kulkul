@@ -8,7 +8,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import { springs, staggerContainerVariants, staggerItemVariants } from '../../lib/motion';
+import { staggerContainerVariants, staggerItemVariants } from '../../lib/motion';
 import HeroWindow from './HeroWindow';
 import { StreakHeatmap } from './index';
 

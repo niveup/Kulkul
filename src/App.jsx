@@ -11,12 +11,13 @@
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
-import { format } from 'date-fns';
+// date-fns import removed - not used
 
 // Components (Eagerly loaded - always needed)
 import AppCard, { AddAppCard } from './components/AppCard';
 import Sidebar from './components/Sidebar';
 import Dock from './components/navigation/Dock';
+
 import PomodoroTimer from './components/tools/PomodoroTimer';
 import TodoList from './components/tools/TodoList';
 import SessionHistory from './components/tools/SessionHistory';
@@ -36,6 +37,7 @@ const Workstation = React.lazy(() => import('./components/workstation/Workstatio
 const AIChat = React.lazy(() => import('./components/tools/AIChat'));
 
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
+const VaultPanel = React.lazy(() => import('./components/tools/VaultPanel'));
 import AddAppModal from './components/AddAppModal';
 import { useCustomApps } from './hooks/useCustomApps';
 
@@ -53,10 +55,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import PasswordModal from './components/PasswordModal';
 
 // Utils
-import { cn, getGreeting } from './lib/utils';
+import { cn } from './lib/utils';
 import { getBuildingConfig } from './utils/pomodoroConfig';
 import { useSoundManager } from './utils/soundManager';
 import { useNotifications } from './utils/notificationService';
+import { shouldUseLocalStorage } from './utils/authMode';
+import { localSessions, localActiveTimer } from './services/localStorageAdapter';
 import appsData from './apps.json';
 
 // Icons
@@ -108,7 +112,7 @@ const pageTransition = {
 // Stats Card Component with Animated Counter
 // =============================================================================
 
-const StatsCard = ({ icon: Icon, label, value, subtext, gradient, delay = 0 }) => {
+const StatsCard = ({ icon: IconComponent, label, value, subtext, gradient, delay = 0 }) => {
   const cardRef = React.useRef(null);
   const [isHovered, setIsHovered] = React.useState(false);
   const rotateX = useMotionValue(0);
@@ -178,7 +182,7 @@ const StatsCard = ({ icon: Icon, label, value, subtext, gradient, delay = 0 }) =
             animate={{ rotate: isHovered ? [0, -10, 10, 0] : 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Icon size={18} className="text-white/80" />
+            <IconComponent size={18} className="text-white/80" />
           </motion.div>
           <span className="text-sm font-medium text-white/80">{label}</span>
         </div>
@@ -269,7 +273,7 @@ function App() {
       updateApp(appData.id, appData);
     } else {
       // Create/Shadow
-      addApp(appData);
+      addCustomApp(appData);
     }
     setEditingApp(null);
   }, [addCustomApp, updateApp, customApps]);
@@ -333,120 +337,144 @@ function App() {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  // Load sessions from API
+  // Load sessions - localStorage for guest mode, API for authenticated
   useEffect(() => {
-    const loadSessions = async () => {
+    const loadSessionsData = async () => {
+      // Guest mode: load from localStorage only
+      if (shouldUseLocalStorage()) {
+        const localData = localSessions.getAll();
+        setSessions(localData);
+        setIsLoadingSessions(false);
+        return;
+      }
+
+      // Authenticated: fetch from API
       try {
         const response = await fetch('/api/sessions');
         if (response.ok) {
           const data = await response.json();
-          // Validate data is an array before setting
           setSessions(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error('Failed to load sessions:', error);
         // Fallback to localStorage
-        try {
-          const saved = localStorage.getItem('pomodoro_history');
-          if (saved) setSessions(JSON.parse(saved));
-        } catch (_parseError) {
-          // localStorage parse failed, ignore
-        }
+        setSessions(localSessions.getAll());
       } finally {
         setIsLoadingSessions(false);
       }
     };
-    loadSessions();
+    loadSessionsData();
   }, [setSessions]);
 
-  // Load active timer from server (cross-device persistence) - runs ONCE on mount
+  // Load active timer - localStorage for guest mode, API for authenticated
   const hasLoadedActiveTimer = React.useRef(false);
   useEffect(() => {
     if (hasLoadedActiveTimer.current) return;
     hasLoadedActiveTimer.current = true;
 
-    const loadActiveTimer = async () => {
-      try {
-        const response = await fetch('/api/active-timer');
-        if (!response.ok) return;
-        const data = await response.json();
+    const loadActiveTimerData = async () => {
+      let data = null;
 
-        if (data.status === 'active' && data.startTime && data.durationSeconds) {
-          const elapsed = Math.floor((Date.now() - Number(data.startTime)) / 1000);
-          const remaining = data.durationSeconds - elapsed;
+      // Guest mode: load from localStorage
+      if (shouldUseLocalStorage()) {
+        data = localActiveTimer.get();
+      } else {
+        // Authenticated: fetch from API
+        try {
+          const response = await fetch('/api/active-timer');
+          if (response.ok) {
+            data = await response.json();
+          }
+        } catch (error) {
+          console.error('Failed to load active timer:', error);
+          // Fallback to localStorage
+          data = localActiveTimer.get();
+        }
+      }
 
-          if (remaining > 0) {
-            // Resume timer - store startTime for continuous sync
-            setTimerState({
-              duration: Math.floor(data.durationSeconds / 60),
-              timeLeft: remaining,
-              initialTime: data.durationSeconds,
-              startTime: Number(data.startTime),
-              isActive: true,
-              isCompleted: false,
-              isFailed: false,
-            });
-            toast.info('Timer Resumed', `Resuming with ${Math.floor(remaining / 60)}m ${remaining % 60}s left`);
-          } else {
-            // Timer completed while away - trigger completion
-            const minutes = Math.floor(data.durationSeconds / 60);
-            const building = getBuildingConfig(minutes);
+      if (!data) return;
 
-            setTimerState({
-              duration: minutes,
-              timeLeft: 0,
-              initialTime: data.durationSeconds,
-              isActive: false,
-              isCompleted: true,
-              isFailed: false,
-            });
+      if (data.status === 'active' && data.startTime && data.durationSeconds) {
+        const elapsed = Math.floor((Date.now() - Number(data.startTime)) / 1000);
+        const remaining = data.durationSeconds - elapsed;
 
-            // Save completed session
-            const newSession = {
-              id: String(Date.now()),
-              type: building.id,
-              minutes,
-              elapsedSeconds: data.durationSeconds,
-              timestamp: new Date(),
-              status: 'completed',
-            };
-            setSessions(prev => [...prev, newSession]);
+        if (remaining > 0) {
+          setTimerState({
+            duration: Math.floor(data.durationSeconds / 60),
+            timeLeft: remaining,
+            initialTime: data.durationSeconds,
+            startTime: Number(data.startTime),
+            isActive: true,
+            isCompleted: false,
+            isFailed: false,
+          });
+          toast.info('Timer Resumed', `Resuming with ${Math.floor(remaining / 60)}m ${remaining % 60}s left`);
+        } else {
+          // Timer completed while away
+          const minutes = Math.floor(data.durationSeconds / 60);
+          const building = getBuildingConfig(minutes);
 
+          setTimerState({
+            duration: minutes,
+            timeLeft: 0,
+            initialTime: data.durationSeconds,
+            isActive: false,
+            isCompleted: true,
+            isFailed: false,
+          });
+
+          const newSession = {
+            id: String(Date.now()),
+            type: building.id,
+            minutes,
+            elapsedSeconds: data.durationSeconds,
+            timestamp: new Date(),
+            status: 'completed',
+          };
+          setSessions(prev => [...prev, newSession]);
+
+          // Save session - localStorage for guest, API for authenticated
+          localSessions.add(newSession);
+          if (!shouldUseLocalStorage()) {
             fetch('/api/sessions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(newSession),
             }).catch(err => console.error('Failed to save session:', err));
-
-            // Clear active timer from server
             fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
-
-            soundManager.playComplete();
-            notifications.timerComplete(minutes);
-            toast.success('Focus Complete!', `Session completed while you were away!`);
+          } else {
+            localActiveTimer.clear();
           }
-        } else if (data.status === 'paused' && data.pausedRemaining) {
-          // Restore paused state
-          const durationMins = Math.floor(data.durationSeconds / 60);
-          setTimerState({
-            duration: durationMins,
-            timeLeft: data.pausedRemaining,
-            initialTime: data.durationSeconds,
-            isActive: false,
-            isCompleted: false,
-            isFailed: false,
-          });
+
+          soundManager.playComplete();
+          notifications.timerComplete(minutes);
+          toast.success('Focus Complete!', `Session completed while you were away!`);
         }
-      } catch (error) {
-        console.error('Failed to load active timer:', error);
+      } else if (data.status === 'paused' && data.pausedRemaining) {
+        const durationMins = Math.floor(data.durationSeconds / 60);
+        setTimerState({
+          duration: durationMins,
+          timeLeft: data.pausedRemaining,
+          initialTime: data.durationSeconds,
+          isActive: false,
+          isCompleted: false,
+          isFailed: false,
+        });
       }
     };
-    loadActiveTimer();
+    loadActiveTimerData();
   }, []); // Empty deps - run once on mount
 
-  // Load tasks from API
+  // Load tasks - skip API in guest mode (Zustand handles localStorage persistence)
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadTasksData = async () => {
+      // Guest mode: Zustand already restores from localStorage, just mark as loaded
+      if (shouldUseLocalStorage()) {
+        setIsLoadingTasks(false);
+        return;
+      }
+
+      // Authenticated: fetch from API
       try {
         const response = await fetch('/api/todos');
         if (response.ok) {
@@ -459,7 +487,7 @@ function App() {
         setIsLoadingTasks(false);
       }
     };
-    loadTasks();
+    loadTasksData();
   }, [setTasks]);
 
   // Timer logic - calculate remaining from startTime for cross-browser sync
@@ -488,7 +516,6 @@ function App() {
 
       setTimerState({ isActive: false, isCompleted: true });
 
-      // Play completion sound and notification
       soundManager.playComplete();
       notifications.timerComplete(minutes);
 
@@ -504,15 +531,17 @@ function App() {
       setSessions([...sessions, newSession]);
       toast.success('Focus Complete!', `Great job! You focused for ${minutes} minutes.`);
 
-      // Save to API
-      fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSession),
-      }).catch(err => console.error('Failed to save session:', err));
-
-      // Clear active timer from server
-      fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+      // Save session and clear timer - conditional on auth mode
+      localSessions.add(newSession);
+      localActiveTimer.clear();
+      if (!shouldUseLocalStorage()) {
+        fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSession),
+        }).catch(err => console.error('Failed to save session:', err));
+        fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+      }
     }
   }, [timerState.timeLeft, timerState.isActive, timerState.initialTime, sessions, setSessions, setTimerState, toast]);
 
@@ -539,32 +568,32 @@ function App() {
           setTimerState({ isActive: true, isFailed: false, startTime: now });
         }
 
-        // Save to server
-        fetch('/api/active-timer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            startTime: Date.now(),
-            durationSeconds: startInitial,
-            status: 'active',
-          }),
-        }).catch(err => console.error('Failed to save active timer:', err));
+        // Save timer state - localStorage for guest, API for authenticated
+        const timerData = { startTime: now, durationSeconds: startInitial, status: 'active' };
+        localActiveTimer.set(timerData);
+        if (!shouldUseLocalStorage()) {
+          fetch('/api/active-timer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(timerData),
+          }).catch(err => console.error('Failed to save active timer:', err));
+        }
         break;
 
       case 'PAUSE':
         soundManager.playPause();
         setTimerState({ isActive: false });
 
-        // Save paused state to server
-        fetch('/api/active-timer', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            durationSeconds: timerState.initialTime,
-            pausedRemaining: timerState.timeLeft,
-            status: 'paused',
-          }),
-        }).catch(err => console.error('Failed to save paused timer:', err));
+        // Save paused state
+        const pausedData = { durationSeconds: timerState.initialTime, pausedRemaining: timerState.timeLeft, status: 'paused' };
+        localActiveTimer.set(pausedData);
+        if (!shouldUseLocalStorage()) {
+          fetch('/api/active-timer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pausedData),
+          }).catch(err => console.error('Failed to save paused timer:', err));
+        }
         break;
 
       case 'GIVE_UP':
@@ -583,14 +612,17 @@ function App() {
         };
         setSessions([...sessions, failedSession]);
 
-        fetch('/api/sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(failedSession),
-        }).catch(err => console.error('Failed to save session:', err));
-
-        // Clear active timer from server
-        fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+        // Save failed session and clear timer
+        localSessions.add(failedSession);
+        localActiveTimer.clear();
+        if (!shouldUseLocalStorage()) {
+          fetch('/api/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(failedSession),
+          }).catch(err => console.error('Failed to save session:', err));
+          fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+        }
         break;
 
       case 'RESET':
@@ -603,8 +635,11 @@ function App() {
           initialTime: timerState.duration * 60,
         });
 
-        // Clear active timer from server
-        fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+        // Clear timer
+        localActiveTimer.clear();
+        if (!shouldUseLocalStorage()) {
+          fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+        }
         break;
 
       case 'SET_DURATION':
@@ -630,6 +665,14 @@ function App() {
     const task = tasks.find(t => t.id === id);
     if (!task || task.isSaved) return;
 
+    // Guest mode: mark as saved locally
+    if (shouldUseLocalStorage()) {
+      markTaskSaved(id, { ...task, isSaved: true });
+      toast.success('Task Saved', 'Your task has been saved locally.');
+      return;
+    }
+
+    // Authenticated: save to API
     try {
       const response = await fetch('/api/todos', {
         method: 'POST',
@@ -653,6 +696,10 @@ function App() {
 
     toggleTask(id);
 
+    // Guest mode: skip API sync
+    if (shouldUseLocalStorage()) return;
+
+    // Authenticated: sync to API
     if (task.isSaved) {
       try {
         await fetch(`/api/todos/${id}`, {
@@ -670,6 +717,10 @@ function App() {
     const task = tasks.find(t => t.id === id);
     removeTask(id);
 
+    // Guest mode: skip API sync
+    if (shouldUseLocalStorage()) return;
+
+    // Authenticated: sync to API
     if (task?.isSaved) {
       try {
         await fetch(`/api/todos/${id}`, { method: 'DELETE' });
@@ -708,7 +759,7 @@ function App() {
     // Calculate streak from sessions
     let streak = 0;
     const today = new Date();
-    let checkDate = new Date(today);
+    const checkDate = new Date(today);
 
     const sessionsByDate = sessions.reduce((acc, s) => {
       const date = new Date(s.timestamp).toDateString();
@@ -741,7 +792,7 @@ function App() {
 
       <div className={cn(
         'flex min-h-screen transition-colors duration-500',
-        'bg-slate-50 dark:bg-slate-950',
+        'bg-transparent', // Transparent to show Liquid Mesh body background
         isDarkMode ? 'dark' : ''
       )}>
         {/* Sidebar */}
@@ -830,17 +881,6 @@ function App() {
                       isDarkMode={isDarkMode}
                       onToggleTheme={toggleTheme}
                     />
-                    <SessionHistory sessionHistory={sessions} isDarkMode={isDarkMode} />
-                    <div className="h-[500px]">
-                      <TodoList
-                        tasks={tasks}
-                        addTask={handleAddTask}
-                        toggleTask={handleToggleTask}
-                        removeTask={handleRemoveTask}
-                        saveTask={handleSaveTask}
-                        saveAllTasks={() => { }}
-                      />
-                    </div>
                   </Suspense>
                 </div>
               </motion.div>
@@ -875,10 +915,31 @@ function App() {
                 animate="animate"
                 exit="exit"
                 transition={pageTransition}
+                className="h-full"
               >
                 <Suspense fallback={<ChatLoadingSkeleton />}>
                   <AIChat isDarkMode={isDarkMode} />
                 </Suspense>
+              </motion.div>
+            )}
+
+            {/* =================================================================
+              VAULT TAB (SECURE CLOUD STORAGE)
+              ================================================================= */}
+            {activeTab === 'vault' && (
+              <motion.div
+                key="vault"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
+                <div className="max-w-7xl mx-auto">
+                  <Suspense fallback={<PageLoadingSkeleton />}>
+                    <VaultPanel isDarkMode={isDarkMode} />
+                  </Suspense>
+                </div>
               </motion.div>
             )}
 
@@ -925,6 +986,12 @@ function App() {
           <div className="h-[70px]" />
         </main>
 
+        {/* Floating Dock Navigation */}
+        <Dock
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+
         {/* Command Palette (Cmd+K) */}
         <CommandPalette
           isOpen={isCommandPaletteOpen}
@@ -938,12 +1005,7 @@ function App() {
           isDarkMode={isDarkMode}
         />
 
-        {/* Floating Dock Navigation */}
-        <Dock
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        />
+
 
         {/* Add App Modal */}
         <AddAppModal

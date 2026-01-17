@@ -21,6 +21,7 @@ import { Lock } from 'lucide-react';
 import ChatSidebar from './ChatSidebar';
 import ChatArea from './ChatArea';
 import InputArea from './InputArea';
+import styles from './AIChat.module.css';
 
 // =============================================================================
 // AI Models Configuration
@@ -372,14 +373,11 @@ const AIChat = ({ isDarkMode }) => {
     }
 
     return (
-        <div className={cn(
-            'h-[calc(100vh-120px)] flex overflow-hidden rounded-2xl',
-            'bg-white/50 dark:bg-slate-900/50',
-            'backdrop-blur-2xl',
-            'border border-white/20 dark:border-white/10',
-            'shadow-2xl shadow-indigo-500/10 dark:shadow-black/30',
-        )}>
-            {/* Sidebar */}
+        <div className={styles.container}>
+            {/* Aurora Background Mesh (Scoped) */}
+            <div className={styles.auroraMesh} />
+
+            {/* Sidebar (Kept as is, or can be wrapped if needed) */}
             <AnimatePresence mode="wait">
                 {sidebarOpen && (
                     <ChatSidebar
@@ -396,54 +394,38 @@ const AIChat = ({ isDarkMode }) => {
                 )}
             </AnimatePresence>
 
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col min-w-0">
-                {/* Chat Header */}
+            {/* Main Chat Area (Scoped) */}
+            <div className={cn(styles.chatArea, "flex-1 flex flex-col min-w-0")}>
+
+                {/* Header (Transparent Glass) */}
                 <motion.header
-                    className={cn(
-                        'flex items-center gap-3 px-4 py-3',
-                        'border-b border-white/10 dark:border-white/5',
-                        'bg-white/30 dark:bg-white/5',
-                    )}
+                    className="flex items-center gap-3 px-6 py-4 z-20"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
                 >
                     {/* Toggle Sidebar Button */}
                     {!sidebarOpen && (
                         <motion.button
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={handleToggleSidebar}
-                            className={cn(
-                                'p-2 rounded-xl',
-                                'bg-white/50 dark:bg-white/10',
-                                'hover:bg-white dark:hover:bg-white/20',
-                                'transition-colors',
-                            )}
+                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
                         >
-                            <svg className="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </motion.button>
                     )}
 
-                    {/* Model Selector */}
+                    {/* Model Selector (Glass Pill) */}
                     <div className="flex-1 flex items-center justify-center relative">
                         <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
                             onClick={() => setModelSelectorOpen(!modelSelectorOpen)}
-                            className={cn(
-                                'flex items-center gap-2 px-4 py-2 rounded-full',
-                                'bg-gradient-to-r from-indigo-500/10 to-purple-500/10',
-                                'dark:from-indigo-500/20 dark:to-purple-500/20',
-                                'border border-indigo-500/20 dark:border-indigo-400/30',
-                                'text-sm font-medium text-indigo-600 dark:text-indigo-400',
-                                'hover:border-indigo-500/40 transition-colors',
-                            )}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md transition-all text-sm font-medium text-white/90 shadow-lg"
                         >
-                            <span>{selectedModel.icon}</span>
                             <span>{selectedModel.name}</span>
                             <motion.svg
-                                className="w-4 h-4 opacity-50"
+                                className="w-4 h-4 text-white/50"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -453,59 +435,41 @@ const AIChat = ({ isDarkMode }) => {
                             </motion.svg>
                         </motion.button>
 
-                        {/* Dropdown */}
+                        {/* Dropdown (Glass) */}
                         <AnimatePresence>
                             {modelSelectorOpen && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                                    className={cn(
-                                        'absolute top-full mt-2 z-50',
-                                        'w-80 p-2 rounded-2xl',
-                                        'bg-white/90 dark:bg-slate-800/90',
-                                        'backdrop-blur-xl',
-                                        'border border-white/30 dark:border-white/10',
-                                        'shadow-xl shadow-indigo-500/10',
-                                        'max-h-[60vh] overflow-y-auto',
-                                    )}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    className="absolute top-full mt-3 z-50 w-80 p-2 rounded-2xl bg-[#0a0a0f]/90 backdrop-blur-xl border border-white/10 shadow-2xl"
                                 >
-                                    <p className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider sticky top-0 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl">
-                                        Select AI Model
+                                    <p className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        Neural Core
                                     </p>
                                     {AI_MODELS.map((model) => (
-                                        <motion.button
+                                        <button
                                             key={model.id}
-                                            whileHover={{ x: 4 }}
                                             onClick={() => {
                                                 setSelectedModel(model);
                                                 setModelSelectorOpen(false);
                                             }}
                                             className={cn(
-                                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left',
-                                                'transition-colors',
+                                                'w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all',
                                                 selectedModel.id === model.id
-                                                    ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                                                    : 'hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300',
+                                                    ? 'bg-white/10 text-white'
+                                                    : 'hover:bg-white/5 text-slate-400 hover:text-slate-200'
                                             )}
                                         >
-                                            <span className="text-xl">{model.icon}</span>
-                                            <div className="flex-1">
-                                                <p className="font-medium">{model.name}</p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400">{model.description}</p>
+                                            <div>
+                                                <p className="font-medium text-sm">{model.name}</p>
+                                                <p className="text-xs text-slate-500 font-mono">{model.model}</p>
                                             </div>
-                                            {selectedModel.id === model.id && (
-                                                <svg className="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
-                                        </motion.button>
+                                        </button>
                                     ))}
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
                         {/* Click outside to close */}
                         {modelSelectorOpen && (
                             <div
@@ -514,7 +478,6 @@ const AIChat = ({ isDarkMode }) => {
                             />
                         )}
                     </div>
-
                 </motion.header>
 
                 {/* Messages Area */}
@@ -530,6 +493,7 @@ const AIChat = ({ isDarkMode }) => {
                     onSend={handleSendMessage}
                     disabled={isThinking}
                     placeholder={`Message ${selectedModel.name}...`}
+                    isThinking={isThinking}
                 />
             </div>
         </div>

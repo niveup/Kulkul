@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import InteractiveGraph from './InteractiveGraph';
 
 // =============================================================================
 // KATEX RENDERER
@@ -267,6 +268,18 @@ const DraggableWidget = ({
                                     <KatexRenderer latex={concept.formula} />
                                 </div>
                             </div>
+                        )}
+
+                        {/* Interactive Graph */}
+                        {concept.graph && (
+                            <InteractiveGraph
+                                formula={concept.graph.fn}
+                                range={concept.graph.domain}
+                                step={concept.graph.step}
+                                xLabel={concept.graph.xLabel}
+                                yLabel={concept.graph.yLabel}
+                                isDarkMode={isDarkMode}
+                            />
                         )}
 
                         {/* Shortcut/Tip */}

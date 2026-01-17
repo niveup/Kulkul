@@ -183,7 +183,7 @@ export default async function handler(req, res) {
         // Get API key and provider based on provider name
         let apiKey;
         let provider;
-        let overrideModel = modelName; // Allow custom model names
+        const overrideModel = modelName; // Allow custom model names
 
         if (providerName === 'cerebras') {
             apiKey = process.env.CEREBRAS_API_KEY;

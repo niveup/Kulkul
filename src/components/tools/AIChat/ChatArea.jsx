@@ -1,18 +1,9 @@
-/**
- * ChatArea - Main message display area
- * 
- * Features:
- * - iMessage/ChatGPT style message bubbles
- * - "Thinking" shimmer animation
- * - Auto-scroll to latest message
- * - Markdown rendering ready
- */
-
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../../lib/utils';
 import MessageBubble from './MessageBubble';
 import ThinkingIndicator from './ThinkingIndicator';
+import styles from './AIChat.module.css';
 
 // Inline spring config
 const springGentle = { type: 'spring', stiffness: 100, damping: 15, mass: 1 };
@@ -42,32 +33,21 @@ const ChatArea = ({ messages, isThinking }) => {
                     transition={springGentle}
                     className="text-center max-w-md"
                 >
-                    {/* Animated Icon */}
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.05, 1],
-                            rotate: [0, 2, -2, 0],
-                        }}
-                        transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                        }}
-                        className="mb-6"
-                    >
-                        <div className={cn(
-                            'w-20 h-20 mx-auto rounded-3xl',
-                            'bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500',
-                            'flex items-center justify-center',
-                            'shadow-2xl shadow-indigo-500/30',
-                        )}>
-                            <span className="text-4xl">✨</span>
+                    {/* Neural Orb Logo */}
+                    <div className="mb-8 flex justify-center">
+                        <div className={styles.neuralOrb}>
+                            <div className={styles.orbCore} />
+                            <div className={styles.orbRing} />
+                            <div className={styles.orbRing} />
                         </div>
-                    </motion.div>
+                    </div>
 
-                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
-                        How can I help you today?
+                    <h3 className="text-xl font-medium text-white/90 tracking-wide">
+                        Neural Core Online
                     </h3>
+                    <p className="text-sm text-slate-400 mt-2">
+                        System ready. Initialize request.
+                    </p>
                 </motion.div>
             </div>
         );
@@ -77,9 +57,8 @@ const ChatArea = ({ messages, isThinking }) => {
         <div
             ref={scrollRef}
             className={cn(
-                'flex-1 overflow-y-auto',
-                'px-4 py-6',
-                'space-y-4',
+                styles.scrollContainer,
+                'flex-1 px-4 py-6 space-y-4' // Keep padding/spacing utility classes
             )}
         >
             {/* Messages */}
@@ -98,8 +77,8 @@ const ChatArea = ({ messages, isThinking }) => {
                 {isThinking && <ThinkingIndicator />}
             </AnimatePresence>
 
-            {/* Scroll anchor */}
-            <div ref={bottomRef} className="h-1" />
+            {/* Scroll anchor + spacer for fixed input bar */}
+            <div ref={bottomRef} className="h-24" />
         </div>
     );
 };

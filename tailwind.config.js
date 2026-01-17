@@ -7,57 +7,54 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Lumina Premium Palette
-                void: '#030304',      // Deepest background
-                obsidian: '#0A0A0C',  // Card/Sidebar background
-                mantle: '#111114',    // Hover states
-
-                // Brand Colors
-                lumina: {
-                    50: '#f0f4ff',
-                    100: '#e5edff',
-                    200: '#cddbfe',
-                    300: '#b4c6fc',
-                    400: '#8da2fb',
-                    500: '#6366f1', // Main Brand (Indigo)
-                    600: '#4f46e5',
-                    700: '#4338ca',
-                    800: '#3730a3',
-                    900: '#312e81',
-                    950: '#1e1b4b',
+                // Liquid System Palette - Apple-inspired
+                liquid: {
+                    base: '#000000', // Deep black for contrast
+                    surface: '#121212', // Slightly lighter black
+                    white: 'rgba(255, 255, 255, 0.7)', // Primary Text
+                    glass: 'rgba(255, 255, 255, 0.08)', // Card Background
+                    stroke: 'rgba(255, 255, 255, 0.06)', // Subtle Borders
+                    highlight: 'rgba(255, 255, 255, 0.15)', // Hover state
                 },
-
-                // Functional
-                glass: {
-                    10: 'rgba(255, 255, 255, 0.03)',
-                    20: 'rgba(255, 255, 255, 0.05)',
-                    30: 'rgba(255, 255, 255, 0.10)',
+                // Accent Palette - Soft, pastel neon
+                accent: {
+                    blue: '#2997ff', // Apple Blue
+                    purple: '#bf5af2', // Apple Purple
+                    teal: '#6ac4fa', // Soft Cyan
                 }
             },
             fontFamily: {
-                sans: ['Outfit', 'Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
-                mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-                heading: ['Cal Sans', 'Outfit', 'Inter', 'sans-serif'],
+                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'San Francisco', 'system-ui', 'sans-serif'],
+                display: ['SF Pro Display', 'Inter', 'sans-serif'],
+                mono: ['SF Mono', 'Menlo', 'monospace'],
+            },
+            boxShadow: {
+                'liquid-1': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+                'liquid-hover': '0 8px 40px 0 rgba(0, 0, 0, 0.45)',
+                'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
+            },
+            backdropBlur: {
+                'xs': '2px',
+                'md': '12px',
+                'lg': '24px',
+                'xl': '40px', // Heavy Apple-style blur
             },
             animation: {
-                'slow-spin': 'spin 3s linear infinite',
-                'float': 'float 6s ease-in-out infinite',
-                'pulse-glow': 'pulse-glow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'float': 'float 8s ease-in-out infinite',
+                'breathe': 'breathe 6s ease-in-out infinite',
             },
             keyframes: {
                 float: {
                     '0%, 100%': { transform: 'translateY(0)' },
                     '50%': { transform: 'translateY(-10px)' },
                 },
-                'pulse-glow': {
-                    '0%, 100%': { opacity: '1' },
-                    '50%': { opacity: '.5' },
+                breathe: {
+                    '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+                    '50%': { opacity: '1', transform: 'scale(1.02)' },
                 }
             },
             backgroundImage: {
-                'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-                'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-                'lumina-gradient': 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                'liquid-gradient': 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
             }
         },
     },

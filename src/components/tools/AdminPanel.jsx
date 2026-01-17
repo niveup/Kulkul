@@ -96,16 +96,8 @@ const AdminPanel = ({ isDarkMode }) => {
                     endpoint = '/api/todos/all';
                     break;
                 case 'conversations':
-                    // Delete all conversations (this will delete both active and trashed)
-                    await fetch('/api/conversations/trash/all', { method: 'DELETE' });
-                    // Also delete all active ones by fetching and deleting each
-                    const convRes = await fetch('/api/conversations');
-                    if (convRes.ok) {
-                        const convs = await convRes.json();
-                        for (const conv of convs) {
-                            await fetch(`/api/conversations/${conv.id}/permanent`, { method: 'DELETE' });
-                        }
-                    }
+                    // Delete all conversations (active and trash) via new bulk endpoint
+                    await fetch('/api/conversations/all', { method: 'DELETE' });
                     await fetchStats();
                     setDeleting(null);
                     setConfirmDelete(null);
@@ -446,24 +438,34 @@ const AdminPanel = ({ isDarkMode }) => {
                             </div>
                         </div>
                         <button
-                            onClick={() => {
+                            onClick={async () => {
                                 if (confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
-                                    Promise.all([
-                                        handleDelete('sessions'),
-                                        handleDelete('todos'),
-                                        handleDelete('conversations'),
-                                        handleDelete('conversationsTrash'),
-                                        handleDelete('srsTopics')
-                                    ]);
+                                    setDeleting('all');
+                                    try {
+                                        await Promise.all([
+                                            handleDelete('sessions'),
+                                            handleDelete('todos'),
+                                            handleDelete('conversations'),
+                                            handleDelete('srsTopics')
+                                        ]);
+                                    } catch (err) {
+                                        console.error('Error resetting all:', err);
+                                    }
+                                    setDeleting(null);
                                 }
                             }}
                             className={`
                                 px-4 py-2 rounded-xl font-semibold
                                 bg-red-500 text-white hover:bg-red-600
                                 transition-all flex items-center gap-2
+                                disabled:opacity-50 disabled:cursor-not-allowed
                             `}
                         >
-                            <Trash2 size={18} />
+                            {deleting === 'all' ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <Trash2 size={18} />
+                            )}
                             Reset All
                         </button>
                     </div>

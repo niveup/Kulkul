@@ -225,6 +225,13 @@ export default async function handler(req, res) {
         // DELETE REQUESTS
         // ═══════════════════════════════════════════════════════════════════════════
         if (req.method === 'DELETE') {
+            // DELETE /api/conversations/all - Delete ALL conversations (active and trash)
+            if (conversationId === 'all') {
+                await db.execute('DELETE FROM messages');
+                await db.execute('DELETE FROM conversations');
+                return res.status(200).json({ deleted: true, all: true });
+            }
+
             if (!conversationId) {
                 return res.status(400).json({ error: 'Conversation ID required' });
             }

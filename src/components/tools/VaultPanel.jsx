@@ -22,6 +22,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useVault, formatFileSize, formatRelativeTime } from '../../hooks/useVault';
 import PdfViewerModal from './PdfViewerModal';
+import { shouldUseLocalStorage } from '../../utils/authMode';
 
 // =============================================================================
 // FILE CARD COMPONENT
@@ -384,6 +385,47 @@ const VaultPanel = ({ isDarkMode }) => {
 
     // Calculate storage percentage
     const storagePercent = Math.round((storageInfo.used / storageInfo.total) * 100);
+
+    // Guest mode: Show offline message
+    if (shouldUseLocalStorage()) {
+        return (
+            <div className="min-h-screen pb-20 overflow-x-hidden pt-6">
+                <div className="max-w-7xl mx-auto px-6">
+                    <header className="mb-6">
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight mb-1">
+                                Vault
+                            </h1>
+                            <p className="text-white/40 font-medium text-sm">
+                                Secure PDF Cloud Storage
+                            </p>
+                        </motion.div>
+                    </header>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center py-20 rounded-3xl border border-dashed border-white/10 bg-white/[0.02]"
+                    >
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mb-6">
+                            <WifiOff size={32} className="text-amber-400" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white/90 mb-2">Offline Mode</h2>
+                        <p className="text-white/50 text-sm text-center max-w-md mb-6">
+                            Vault requires authentication to access cloud storage.
+                            Please log in with your password to upload and manage PDF files.
+                        </p>
+                        <div className="px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium">
+                            Files are stored securely on MEGA cloud
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen pb-20 overflow-x-hidden pt-6">

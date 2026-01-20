@@ -12,6 +12,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
     Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Sparkles, Cloud
 } from 'lucide-react';
+import { useAppStore } from '../../store';
 import {
     motion,
     useMotionValue,
@@ -119,7 +120,10 @@ const DockIcon = ({ item, mouseX, activeTab, onSelect }) => {
 export const Dock = ({ activeTab, onTabChange }) => {
     // Mouse X tracking for wave effect
     const mouseX = useMotionValue(Infinity);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Global Store State
+    const isCollapsed = useAppStore((state) => state.dockCollapsed);
+    const toggleDock = useAppStore((state) => state.toggleDock);
 
     // Position state
     const [position, setPosition] = useState(() => {
@@ -139,7 +143,7 @@ export const Dock = ({ activeTab, onTabChange }) => {
     }, []);
 
     // Draggable Logic for Collapsed State
-    const toggleCollapse = () => setIsCollapsed(prev => !prev);
+    // toggleDock is used directly instead of toggleCollapse local function
 
     return (
         <AnimatePresence mode="wait">
@@ -160,7 +164,7 @@ export const Dock = ({ activeTab, onTabChange }) => {
                     className="fixed bottom-6 right-6 z-[9990]" // Force bottom right if collapsed
                 >
                     <button
-                        onClick={toggleCollapse}
+                        onClick={toggleDock}
                         className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 
                                    flex items-center justify-center shadow-[0_8px_32px_rgba(79,70,229,0.4)]
                                    border-2 border-white/20 hover:scale-110 active:scale-90 transition-transform"
@@ -204,7 +208,7 @@ export const Dock = ({ activeTab, onTabChange }) => {
                         <motion.button
                             whileHover={{ scale: 1.1, backgroundColor: "rgba(255,255,255,0.15)" }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={toggleCollapse}
+                            onClick={toggleDock}
                             className="w-10 h-10 rounded-2xl flex items-center justify-center 
                                        bg-white/5 border border-white/10
                                        transition-colors self-center mb-1.5"

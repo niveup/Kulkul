@@ -48,7 +48,24 @@ const AI_MODELS = [
 // Main Component
 // =============================================================================
 
+import { useAppStore } from '../../../store';
+
 const AIChat = ({ isDarkMode }) => {
+    // Global Store
+    const setDockCollapsed = useAppStore((state) => state.setDockCollapsed);
+    const dockCollapsed = useAppStore((state) => state.dockCollapsed);
+
+    // Track previous state to restore on unmount
+    useEffect(() => {
+        const previousState = dockCollapsed;
+        setDockCollapsed(true); // Auto-collapse on enter
+
+        return () => {
+            // Optional: Restore previous state on exit
+            // setDockCollapsed(previousState);
+        };
+    }, []); // Run once on mount
+
     // State
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [conversations, setConversations] = useState([]);

@@ -35,6 +35,13 @@ export const useAppStore = create(
             toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
             // -------------------------------------------------------------------------
+            // Dock State (Global for auto-hide features)
+            // -------------------------------------------------------------------------
+            dockCollapsed: false,
+            setDockCollapsed: (collapsed) => set({ dockCollapsed: collapsed }),
+            toggleDock: () => set((state) => ({ dockCollapsed: !state.dockCollapsed })),
+
+            // -------------------------------------------------------------------------
             // Active Tab / Navigation
             // -------------------------------------------------------------------------
             activeTab: 'overview',
@@ -306,6 +313,7 @@ export const useTaskStore = create(
 export const selectIsDarkMode = (state) => state.isDarkMode;
 export const selectActiveTab = (state) => state.activeTab;
 export const selectSidebarCollapsed = (state) => state.sidebarCollapsed;
+export const selectDockCollapsed = (state) => state.dockCollapsed;
 export const selectCommandPaletteOpen = (state) => state.commandPaletteOpen;
 
 // =============================================================================

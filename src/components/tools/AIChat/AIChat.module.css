@@ -23,8 +23,8 @@
     position: relative;
     width: 100%;
     /* Fixed height to prevent page scrolling */
-    height: calc(100vh - 160px);
-    /* Account for dock and header padding */
+    height: 100vh;
+    /* Full viewport height */
     overflow: hidden;
     background: var(--nl-bg-base);
     color: white;

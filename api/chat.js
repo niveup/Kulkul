@@ -119,6 +119,35 @@ const PROVIDERS = {
         },
         getUrl: () => 'https://api.sambanova.ai/v1/chat/completions',
     },
+    mimo: {
+        name: 'MiMo',
+        getHeaders: (apiKey) => ({
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        }),
+        formatRequest: (messages, systemPrompt, overrideModel) => ({
+            model: overrideModel || 'mimo-v2-flash',
+            messages: [
+                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                ...messages.map(m => ({ role: m.role, content: m.content }))
+            ],
+            temperature: 0.3,
+            top_p: 0.95,
+            max_completion_tokens: 1024,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+        }),
+        parseResponse: (data) => {
+            if (data.choices?.[0]?.message?.content) {
+                return data.choices[0].message.content;
+            }
+            if (data.error) {
+                throw new Error(data.error.message || 'MiMo API error');
+            }
+            throw new Error('Invalid MiMo response');
+        },
+        getUrl: () => 'https://api.xiaomimimo.com/v1/chat/completions',
+    },
 };
 
 // =============================================================================
@@ -197,6 +226,9 @@ export default async function handler(req, res) {
         } else if (providerName === 'groq') {
             apiKey = process.env.GROQ_API_KEY;
             provider = PROVIDERS.groq;
+        } else if (providerName === 'mimo') {
+            apiKey = process.env.MIMO_API_KEY;
+            provider = PROVIDERS.mimo;
         } else {
             // Default to Cerebras
             apiKey = process.env.CEREBRAS_API_KEY;
@@ -217,6 +249,9 @@ export default async function handler(req, res) {
             } else if (process.env.GROQ_API_KEY) {
                 apiKey = process.env.GROQ_API_KEY;
                 provider = PROVIDERS.groq;
+            } else if (process.env.MIMO_API_KEY) {
+                apiKey = process.env.MIMO_API_KEY;
+                provider = PROVIDERS.mimo;
             } else {
                 return res.status(500).json({ error: 'No AI API key configured' });
             }

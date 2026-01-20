@@ -39,6 +39,9 @@ const AI_MODELS = [
 
     // GROQ - LPU inference engine
     { id: 'groq-llama', name: 'Llama 3.3 70B', icon: '💨', description: '70B params - Super fast', provider: 'groq', model: 'llama-3.3-70b-versatile' },
+
+    // XIAOMI - MiMo reasoning model
+    { id: 'mimo-flash', name: 'MiMo v2 Flash', icon: '🍊', description: 'Xiaomi - Fast reasoning', provider: 'mimo', model: 'mimo-v2-flash' },
 ];
 
 // =============================================================================

@@ -22,7 +22,9 @@
 
     position: relative;
     width: 100%;
-    height: 100%;
+    /* Fixed height to prevent page scrolling */
+    height: calc(100vh - 160px);
+    /* Account for dock and header padding */
     overflow: hidden;
     background: var(--nl-bg-base);
     color: white;
@@ -141,13 +143,11 @@
     -webkit-text-fill-color: transparent;
 }
 
-/* -- Input "Floating Capsule" -- */
+/* -- Input \"Floating Capsule\" -- */
 .inputWrapper {
-    position: fixed;
-    bottom: 80px;
-    /* Clear the system dock */
-    left: 72px;
-    /* Sidebar collapsed width */
+    position: absolute;
+    bottom: 0;
+    left: 0;
     right: 0;
     z-index: 100;
     padding: 16px 24px 24px 24px;

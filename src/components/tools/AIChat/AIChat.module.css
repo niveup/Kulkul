@@ -144,7 +144,8 @@
 /* -- Input "Floating Capsule" -- */
 .inputWrapper {
     position: fixed;
-    bottom: 0;
+    bottom: 80px;
+    /* Clear the system dock */
     left: 72px;
     /* Sidebar collapsed width */
     right: 0;
@@ -181,11 +182,11 @@
 }
 
 .inputCapsule:focus-within {
-    transform: translateY(-2px);
+    /* Static - no movement */
     background: rgba(20, 20, 25, 0.95);
     border-color: rgba(34, 211, 238, 0.4);
     box-shadow:
-        0 20px 60px -12px rgba(34, 211, 238, 0.15),
+        0 8px 32px -8px rgba(34, 211, 238, 0.15),
         0 0 0 2px rgba(34, 211, 238, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }

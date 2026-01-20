@@ -78,7 +78,7 @@ const ChatArea = ({ messages, isThinking }) => {
             </AnimatePresence>
 
             {/* Scroll anchor + spacer for fixed input bar */}
-            <div ref={bottomRef} className="h-24" />
+            <div ref={bottomRef} className="h-32" />
         </div>
     );
 };

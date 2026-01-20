@@ -233,8 +233,53 @@ const ChatSidebar = ({
             <div className={cn(styles.scrollContainer, "flex-1 px-2 pb-4")}>
                 {showTrash ? (
                     // Trash View
-                    <div className="flex flex-col items-center justify-center h-40 text-slate-500">
-                        <p className="text-sm">Trash functionality...</p>
+                    <div className="space-y-2 mt-4">
+                        {trashedConversations.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+                                <p className="text-sm">Trash is empty</p>
+                            </div>
+                        ) : (
+                            trashedConversations.map(conv => (
+                                <motion.div
+                                    key={conv.id}
+                                    layout
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className={cn(styles.conversationItem, "hover:bg-red-500/5 group")}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className={cn(styles.conversationTitle, 'truncate flex-1')}>
+                                            {conv.title || 'Untitled Chat'}
+                                        </p>
+                                        <span className="text-[10px] text-slate-500">
+                                            {formatDistanceToNow(new Date(conv.deleted_at || conv.timestamp), { addSuffix: true })}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
+                                        <button
+                                            onClick={() => onRestore(conv.id)}
+                                            className="px-2 py-1 text-xs font-medium text-green-600 bg-green-100 dark:bg-green-500/20 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-500/30 transition-colors"
+                                        >
+                                            Restore
+                                        </button>
+                                        <button
+                                            onClick={() => onPermanentDelete(conv.id)}
+                                            className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 dark:bg-red-500/20 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
+                                        >
+                                            Delete Forever
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))
+                        )}
+                        {trashedConversations.length > 0 && (
+                            <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 text-center">
+                                <p className="text-xs text-slate-500 mb-2">
+                                    Items in trash are deleted after 24 hours
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     // Chats View

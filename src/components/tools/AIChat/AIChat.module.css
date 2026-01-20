@@ -23,7 +23,7 @@
     position: relative;
     width: 100%;
     /* Fixed height to prevent page scrolling */
-    height: 100vh;
+    height: 96vh;
     /* Full viewport height */
     overflow: hidden;
     background: var(--nl-bg-base);
@@ -33,6 +33,17 @@
     /* Layout Fix: Side-by-side */
     display: flex;
     flex-direction: row;
+    overflow: hidden;
+    /* Prevent body scroll */
+}
+
+/* -- Main Chat Area Wrapper -- */
+.chatArea {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    /* Internal components handle scroll */
+    background: transparent;
 }
 
 /* -- Background Mesh -- */
@@ -146,7 +157,7 @@
 /* -- Input \"Floating Capsule\" -- */
 .inputWrapper {
     position: absolute;
-    bottom: 0;
+    bottom: 24px;
     left: 0;
     right: 0;
     z-index: 100;
@@ -356,7 +367,10 @@
 
 /* Scrollbar Helper */
 .scrollContainer {
+    /* Height handled by flex-1 in components */
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }

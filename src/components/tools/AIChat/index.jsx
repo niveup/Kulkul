@@ -61,8 +61,9 @@ const AIChat = ({ isDarkMode }) => {
         setDockCollapsed(true); // Auto-collapse on enter
 
         return () => {
-            // Optional: Restore previous state on exit
-            // setDockCollapsed(previousState);
+            // Restore previous state or force expand on exit
+            // For now, per user request, we force expand (reappear)
+            setDockCollapsed(false);
         };
     }, []); // Run once on mount
 

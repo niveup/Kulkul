@@ -14,7 +14,7 @@ import {
 } from './BuildingModels';
 import { Platform, Fence, InteractiveLake } from './EnvironmentAssets';
 // THREE is imported in BuildingModels.jsx
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // ============================================================================
 // HOLOGRAPHIC CONTROL BUTTON

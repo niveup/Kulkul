@@ -17,7 +17,7 @@ export const Workstation = ({
     sessions
 }) => {
     return (
-        <div className="h-[calc(100vh-6rem)] min-h-[600px] w-full p-4 lg:p-6 flex flex-col lg:flex-row gap-8 overflow-hidden">
+        <div className="h-screen w-full p-4 lg:p-6 flex flex-col lg:flex-row gap-8 overflow-hidden">
 
             {/* LEFT PANEL: FOCUS ORB (Fixed Width) */}
             <motion.div

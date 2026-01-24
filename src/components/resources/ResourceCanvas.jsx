@@ -34,8 +34,11 @@ import {
 import DraggableWidget from './DraggableWidget';
 import EditToolbar from './EditToolbar';
 import WidgetEditor from './WidgetEditor';
+import GraphPlayground from './GraphPlayground';
 import { cn } from '../../lib/utils';
-import { Search, ChevronDown, Atom, Calculator, Beaker, Clock, PieChart, Moon, Sun } from 'lucide-react';
+import { Search, ChevronDown, Atom, Calculator, Beaker, Clock, PieChart, Moon, Sun, X, Lightbulb, Sparkles, LineChart } from 'lucide-react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 // =============================================================================
 // ANIMATION VARIANTS
@@ -75,6 +78,8 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenu, setActiveMenu] = useState(null);
     const [editingWidget, setEditingWidget] = useState(null);
+    const [activeGraphWidget, setActiveGraphWidget] = useState(null);
+    const [viewingConcept, setViewingConcept] = useState(null);
     const [activeId, setActiveId] = useState(null);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -440,6 +445,8 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                                     subject={selectedSubject}
                                     topicKey={selectedTopic}
                                     onEdit={() => setEditingWidget(concept)}
+                                    onViewDetail={() => setViewingConcept(concept)}
+                                    onOpenGraph={() => setActiveGraphWidget(concept)}
                                 />
                             ))}
                         </motion.div>
@@ -481,6 +488,339 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                 subject={selectedSubject}
                 topicKey={selectedTopic}
             />
+
+            {/* ============ GRAPH PLAYGROUND MODAL ============ */}
+            <GraphPlayground
+                isOpen={!!activeGraphWidget}
+                onClose={() => setActiveGraphWidget(null)}
+                graphConfig={activeGraphWidget?.graph}
+                title={activeGraphWidget?.concept}
+                isDarkMode={isDarkMode}
+            />
+
+            {/* ============ DETAILED VIEW MODAL ============ */}
+            <AnimatePresence>
+                {viewingConcept && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8"
+                        onClick={() => setViewingConcept(null)}
+                    >
+                        {/* Backdrop */}
+                        <div
+                            className={cn(
+                                'absolute inset-0',
+                                isDarkMode ? 'bg-black/90' : 'bg-black/70'
+                            )}
+                            style={{ backdropFilter: 'blur(8px)' }}
+                        />
+
+                        {/* Modal Content */}
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                                'relative w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl p-8 md:p-10 shadow-2xl',
+                                isDarkMode
+                                    ? 'bg-slate-900 border border-slate-700'
+                                    : 'bg-white border border-slate-200'
+                            )}
+                        >
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setViewingConcept(null)}
+                                className={cn(
+                                    'absolute top-4 right-4 p-2.5 rounded-xl transition-all',
+                                    isDarkMode
+                                        ? 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
+                                        : 'bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200'
+                                )}
+                            >
+                                <X size={22} />
+                            </button>
+
+                            {/* Badges Row - JEE, Importance, Type */}
+                            <div className="flex flex-wrap items-center gap-2 mb-4">
+                                {/* JEE Badge */}
+                                {viewingConcept.isJeeFav && (
+                                    <div className={cn(
+                                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold',
+                                        isDarkMode
+                                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                            : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                                    )}>
+                                        <Sparkles size={14} />
+                                        JEE Favorite
+                                    </div>
+                                )}
+
+                                {/* JEE Importance Badge */}
+                                {viewingConcept.jeeImportance && (
+                                    <div className={cn(
+                                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold',
+                                        viewingConcept.jeeImportance === 'High'
+                                            ? isDarkMode
+                                                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                                : 'bg-red-100 text-red-700 border border-red-200'
+                                            : viewingConcept.jeeImportance === 'Medium'
+                                                ? isDarkMode
+                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                    : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                : isDarkMode
+                                                    ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                    )}>
+                                        {viewingConcept.jeeImportance === 'High' && '🔥'}
+                                        {viewingConcept.jeeImportance === 'Medium' && '⚡'}
+                                        {viewingConcept.jeeImportance === 'Low' && '📚'}
+                                        {' '}{viewingConcept.jeeImportance} Priority
+                                    </div>
+                                )}
+
+                                {/* Type Badge */}
+                                {viewingConcept.type && (
+                                    <div className={cn(
+                                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold capitalize',
+                                        isDarkMode
+                                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                                            : 'bg-cyan-100 text-cyan-700 border border-cyan-200'
+                                    )}>
+                                        {viewingConcept.type === 'formula' ? '📐' : '💡'} {viewingConcept.type}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Title */}
+                            <h2
+                                className={cn(
+                                    'text-3xl md:text-4xl font-bold mb-6 leading-tight',
+                                    isDarkMode ? 'text-white' : 'text-slate-900'
+                                )}
+                                style={{ fontFamily: "'Patrick Hand', cursive" }}
+                            >
+                                {viewingConcept.concept}
+                            </h2>
+
+                            {/* Theory */}
+                            {viewingConcept.theory && (
+                                <div
+                                    className={cn(
+                                        'text-xl md:text-2xl leading-relaxed mb-6',
+                                        isDarkMode ? 'text-slate-200' : 'text-slate-600'
+                                    )}
+                                    style={{ fontFamily: "'Patrick Hand', cursive" }}
+                                >
+                                    {viewingConcept.theory}
+                                </div>
+                            )}
+
+                            {/* Formula */}
+                            {viewingConcept.formula && (
+                                <div
+                                    className={cn(
+                                        'p-6 md:p-8 rounded-2xl overflow-x-auto flex items-center justify-center mb-6',
+                                        isDarkMode
+                                            ? 'bg-slate-800 border border-indigo-500/30'
+                                            : 'bg-gradient-to-br from-slate-50 to-indigo-50 border border-indigo-200/50'
+                                    )}
+                                >
+                                    <div
+                                        className={cn('scale-125', isDarkMode ? 'text-slate-100' : 'text-slate-800')}
+                                        ref={(el) => {
+                                            if (el && viewingConcept.formula) {
+                                                try {
+                                                    katex.render(viewingConcept.formula, el, {
+                                                        throwOnError: false,
+                                                        displayMode: true,
+                                                        trust: true
+                                                    });
+                                                } catch (e) {
+                                                    el.textContent = viewingConcept.formula;
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Details */}
+                            {viewingConcept.details && (
+                                <div
+                                    className={cn(
+                                        'text-lg leading-relaxed mb-6',
+                                        isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                                    )}
+                                    style={{ fontFamily: "'Patrick Hand', cursive" }}
+                                >
+                                    {viewingConcept.details}
+                                </div>
+                            )}
+
+                            {/* Interactive Graph Button */}
+                            {viewingConcept.graph && (
+                                <button
+                                    onClick={() => {
+                                        setViewingConcept(null);
+                                        setActiveGraphWidget(viewingConcept);
+                                    }}
+                                    className={cn(
+                                        'w-full p-4 rounded-xl flex items-center justify-between transition-all mb-6',
+                                        isDarkMode
+                                            ? 'bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30'
+                                            : 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            'p-2 rounded-lg',
+                                            isDarkMode ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-100 text-indigo-600'
+                                        )}>
+                                            <LineChart size={20} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className={cn(
+                                                'font-bold',
+                                                isDarkMode ? 'text-indigo-300' : 'text-indigo-700'
+                                            )}>
+                                                📊 Interactive Graph
+                                            </p>
+                                            <p className={cn(
+                                                'text-sm',
+                                                isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                                            )}>
+                                                {viewingConcept.graph.yLabel} vs {viewingConcept.graph.xLabel}
+                                            </p>
+                                            {viewingConcept.graph.question && (
+                                                <p className={cn(
+                                                    'text-xs mt-1 italic',
+                                                    isDarkMode ? 'text-amber-400' : 'text-amber-600'
+                                                )}>
+                                                    💡 {viewingConcept.graph.question}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </button>
+                            )}
+
+                            {/* Question Types Asked */}
+                            {viewingConcept.questionTypes && viewingConcept.questionTypes.length > 0 && (
+                                <div
+                                    className={cn(
+                                        'p-5 rounded-2xl mb-4',
+                                        isDarkMode
+                                            ? 'bg-purple-500/10 border border-purple-500/30'
+                                            : 'bg-purple-50 border border-purple-200/50'
+                                    )}
+                                >
+                                    <h4 className={cn(
+                                        'font-bold text-sm uppercase tracking-wider mb-3 flex items-center gap-2',
+                                        isDarkMode ? 'text-purple-400' : 'text-purple-600'
+                                    )}>
+                                        📝 Types of Questions Asked
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {viewingConcept.questionTypes.map((q, idx) => (
+                                            <li key={idx} className={cn(
+                                                'flex items-start gap-2 text-base',
+                                                isDarkMode ? 'text-purple-200' : 'text-purple-800'
+                                            )}>
+                                                <span className="text-purple-500 mt-1">•</span>
+                                                <span style={{ fontFamily: "'Patrick Hand', cursive" }}>{q}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Common Mistakes */}
+                            {viewingConcept.commonMistakes && viewingConcept.commonMistakes.length > 0 && (
+                                <div
+                                    className={cn(
+                                        'p-5 rounded-2xl mb-4',
+                                        isDarkMode
+                                            ? 'bg-red-500/10 border border-red-500/30'
+                                            : 'bg-red-50 border border-red-200/50'
+                                    )}
+                                >
+                                    <h4 className={cn(
+                                        'font-bold text-sm uppercase tracking-wider mb-3 flex items-center gap-2',
+                                        isDarkMode ? 'text-red-400' : 'text-red-600'
+                                    )}>
+                                        ⚠️ Common Mistakes to Avoid
+                                    </h4>
+                                    <ul className="space-y-2">
+                                        {viewingConcept.commonMistakes.map((m, idx) => (
+                                            <li key={idx} className={cn(
+                                                'flex items-start gap-2 text-base',
+                                                isDarkMode ? 'text-red-200' : 'text-red-800'
+                                            )}>
+                                                <span className="text-red-500 mt-1">✗</span>
+                                                <span style={{ fontFamily: "'Patrick Hand', cursive" }}>{m}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Tips/Strategy */}
+                            {viewingConcept.tips && (
+                                <div
+                                    className={cn(
+                                        'p-5 rounded-2xl mb-4',
+                                        isDarkMode
+                                            ? 'bg-emerald-500/10 border border-emerald-500/30'
+                                            : 'bg-emerald-50 border border-emerald-200/50'
+                                    )}
+                                >
+                                    <h4 className={cn(
+                                        'font-bold text-sm uppercase tracking-wider mb-3 flex items-center gap-2',
+                                        isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
+                                    )}>
+                                        💡 Pro Tips & Shortcuts
+                                    </h4>
+                                    <p
+                                        className={cn(
+                                            'text-lg leading-relaxed',
+                                            isDarkMode ? 'text-emerald-200' : 'text-emerald-800'
+                                        )}
+                                        style={{ fontFamily: "'Patrick Hand', cursive" }}
+                                    >
+                                        {viewingConcept.tips}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Shortcut/Tip (legacy field) */}
+                            {viewingConcept.shortcut && (
+                                <div
+                                    className={cn(
+                                        'p-5 rounded-2xl flex items-start gap-3',
+                                        isDarkMode
+                                            ? 'bg-amber-500/10 border border-amber-500/30'
+                                            : 'bg-amber-50 border border-amber-200/50'
+                                    )}
+                                >
+                                    <Lightbulb size={24} className={isDarkMode ? 'text-amber-400 mt-0.5' : 'text-amber-600 mt-0.5'} />
+                                    <p
+                                        className={cn(
+                                            'text-lg md:text-xl italic',
+                                            isDarkMode ? 'text-amber-200' : 'text-amber-800'
+                                        )}
+                                        style={{ fontFamily: "'Patrick Hand', cursive" }}
+                                    >
+                                        {viewingConcept.shortcut}
+                                    </p>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

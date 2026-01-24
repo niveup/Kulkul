@@ -802,7 +802,9 @@ function App() {
         <main className={cn(
           'flex-1 transition-all duration-300',
           'ml-0 w-full',
-          'pl-[104px] pr-8 py-8' // Global content padding (Sidebar: 80px + Gap: 24px)
+          activeTab === 'ai-assistant' || activeTab === 'study-tools'
+            ? 'pl-[104px] pr-0 py-0 overflow-hidden h-screen' // Immersive Mode: No padding, full height
+            : 'pl-[104px] pr-8 py-8' // Standard Mode: Normal padding
           // Window scrolling enabled
         )}>
           {/* Animated Page Content */}

@@ -5,7 +5,7 @@ import formulas11 from '../../data/formulas_11.json';
 import formulas12 from '../../data/formulas_12.json';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
-import { Search, ChevronDown, Atom, Calculator, Beaker, PieChart, Moon, Sun, Clock, Sparkles, BookOpen, Lightbulb, X, Maximize2 } from 'lucide-react';
+import { Search, ChevronDown, Atom, Calculator, Beaker, PieChart, Moon, Sun, Clock, Sparkles, BookOpen, Lightbulb, X, Maximize2, Pencil, Check } from 'lucide-react';
 import TopicAnalysisModal from './TopicAnalysisModal';
 import { shouldUseLocalStorage } from '../../utils/authMode';
 
@@ -180,15 +180,38 @@ const SubjectIcon = ({ subject, isActive, isDarkMode }) => {
 // ============================================================================
 // CONCEPT CARD COMPONENT (Clickable)
 // ============================================================================
-const ConceptCard = ({ concept, index, isDarkMode, onClick }) => {
+const ConceptCard = ({ concept, index, isDarkMode, onClick, onEdit }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedConcept, setEditedConcept] = useState({
+        concept: concept.concept || '',
+        theory: concept.theory || '',
+        formula: concept.formula || '',
+        details: concept.details || '',
+        shortcut: concept.shortcut || ''
+    });
+
+    const handleEditClick = (e) => {
+        e.stopPropagation();
+        if (isEditing) {
+            // Save changes
+            if (onEdit) {
+                onEdit({ ...concept, ...editedConcept });
+            }
+        }
+        setIsEditing(!isEditing);
+    };
+
+    const handleFieldChange = (field, value) => {
+        setEditedConcept(prev => ({ ...prev, [field]: value }));
+    };
 
     return (
         <motion.div
             variants={cardVariants}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={onClick}
+            onClick={isEditing ? undefined : onClick}
             className={`
                 relative overflow-hidden rounded-2xl p-5
                 backdrop-blur-xl border cursor-pointer
@@ -225,49 +248,109 @@ const ConceptCard = ({ concept, index, isDarkMode, onClick }) => {
             {/* Content */}
             <div className="relative z-10">
                 {/* Concept Title */}
-                <h3
-                    className={`text-xl font-bold mb-3 leading-tight pr-16 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-                    style={{ fontFamily: "'Patrick Hand', cursive" }}
-                >
-                    {concept.concept}
-                </h3>
-
-                {/* Theory/Content */}
-                {(concept.theory || concept.content || concept.details) && (
-                    <div
-                        className={`text-base leading-relaxed mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}
+                {isEditing ? (
+                    <input
+                        type="text"
+                        value={editedConcept.concept}
+                        onChange={(e) => handleFieldChange('concept', e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`
+                            w-full text-xl font-bold mb-3 leading-tight pr-16 rounded-lg px-2 py-1
+                            border-2 outline-none transition-colors
+                            ${isDarkMode
+                                ? 'bg-slate-800 text-white border-blue-500/50 focus:border-blue-400'
+                                : 'bg-white text-slate-900 border-blue-300 focus:border-blue-500'
+                            }
+                        `}
+                        style={{ fontFamily: "'Patrick Hand', cursive" }}
+                    />
+                ) : (
+                    <h3
+                        className={`text-xl font-bold mb-3 leading-tight pr-16 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
                         style={{ fontFamily: "'Patrick Hand', cursive" }}
                     >
-                        {concept.theory && <MixedTextRenderer text={concept.theory} isDarkMode={isDarkMode} />}
-                        {concept.content && (
-                            <div className="mt-2 whitespace-pre-line">
-                                <MixedTextRenderer text={concept.content} isDarkMode={isDarkMode} />
-                            </div>
-                        )}
-                        {concept.details && (
-                            <div className="mt-2">
-                                <MixedTextRenderer text={concept.details} isDarkMode={isDarkMode} />
-                            </div>
-                        )}
-                    </div>
+                        {concept.concept}
+                    </h3>
+                )}
+
+                {/* Theory/Content */}
+                {isEditing ? (
+                    <textarea
+                        value={editedConcept.theory}
+                        onChange={(e) => handleFieldChange('theory', e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder="Theory description..."
+                        rows={2}
+                        className={`
+                            w-full text-base leading-relaxed mb-4 rounded-lg px-2 py-1 resize-none
+                            border-2 outline-none transition-colors
+                            ${isDarkMode
+                                ? 'bg-slate-800 text-slate-300 border-slate-600 focus:border-blue-400 placeholder-slate-500'
+                                : 'bg-white text-slate-600 border-slate-200 focus:border-blue-400 placeholder-slate-400'
+                            }
+                        `}
+                        style={{ fontFamily: "'Patrick Hand', cursive" }}
+                    />
+                ) : (
+                    (concept.theory || concept.content || concept.details) && (
+                        <div
+                            className={`text-base leading-relaxed mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}
+                            style={{ fontFamily: "'Patrick Hand', cursive" }}
+                        >
+                            {concept.theory && <MixedTextRenderer text={concept.theory} isDarkMode={isDarkMode} />}
+                            {concept.content && (
+                                <div className="mt-2 whitespace-pre-line">
+                                    <MixedTextRenderer text={concept.content} isDarkMode={isDarkMode} />
+                                </div>
+                            )}
+                            {concept.details && (
+                                <div className="mt-2">
+                                    <MixedTextRenderer text={concept.details} isDarkMode={isDarkMode} />
+                                </div>
+                            )}
+                        </div>
+                    )
                 )}
 
                 {/* Formula - Premium Display */}
-                {concept.formula && (
-                    <div
-                        className={`
-                            relative p-4 rounded-xl overflow-x-auto
-                            flex items-center justify-center
-                            ${isDarkMode
-                                ? 'bg-gradient-to-br from-slate-800/80 to-blue-900/20 border border-blue-500/20'
-                                : 'bg-gradient-to-br from-slate-50 to-blue-50/80 border border-blue-200/50'
-                            }
-                        `}
-                    >
-                        <div className={isDarkMode ? 'text-slate-100' : 'text-slate-800'}>
-                            <KatexRenderer latex={concept.formula} />
-                        </div>
+                {isEditing ? (
+                    <div className="mb-4">
+                        <label className={`text-xs font-semibold mb-1 block ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                            Formula (KaTeX)
+                        </label>
+                        <textarea
+                            value={editedConcept.formula}
+                            onChange={(e) => handleFieldChange('formula', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="E = mc^2"
+                            rows={2}
+                            className={`
+                                w-full text-sm font-mono leading-relaxed rounded-lg px-3 py-2 resize-none
+                                border-2 outline-none transition-colors
+                                ${isDarkMode
+                                    ? 'bg-slate-900 text-slate-200 border-blue-500/30 focus:border-blue-400 placeholder-slate-500'
+                                    : 'bg-slate-50 text-slate-700 border-blue-200/50 focus:border-blue-400 placeholder-slate-400'
+                                }
+                            `}
+                        />
                     </div>
+                ) : (
+                    concept.formula && (
+                        <div
+                            className={`
+                                relative p-4 rounded-xl overflow-x-auto
+                                flex items-center justify-center
+                                ${isDarkMode
+                                    ? 'bg-gradient-to-br from-slate-800/80 to-blue-900/20 border border-blue-500/20'
+                                    : 'bg-gradient-to-br from-slate-50 to-blue-50/80 border border-blue-200/50'
+                                }
+                            `}
+                        >
+                            <div className={isDarkMode ? 'text-slate-100' : 'text-slate-800'}>
+                                <KatexRenderer latex={concept.formula} />
+                            </div>
+                        </div>
+                    )
                 )}
 
                 {/* Shortcut/Tip Badge */}
@@ -292,9 +375,10 @@ const ConceptCard = ({ concept, index, isDarkMode, onClick }) => {
                 )}
 
                 {/* JEE Favorite Badge */}
+                {/* JEE Favorite Badge */}
                 {concept.isJeeFav && (
                     <div className={`
-                        absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold
+                        absolute top-3 ${isEditing ? 'right-14' : 'right-10'} px-2 py-1 rounded-full text-xs font-bold
                         flex items-center gap-1
                         ${isDarkMode
                             ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
@@ -305,6 +389,27 @@ const ConceptCard = ({ concept, index, isDarkMode, onClick }) => {
                         JEE
                     </div>
                 )}
+
+                {/* Edit Pencil Icon */}
+                <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isHovered || isEditing ? 1 : 0 }}
+                    onClick={handleEditClick}
+                    className={`
+                        absolute top-3 right-3 p-1.5 rounded-lg z-20 transition-colors
+                        ${isEditing
+                            ? isDarkMode
+                                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                : 'bg-green-100 text-green-600 hover:bg-green-200'
+                            : isDarkMode
+                                ? 'bg-slate-800/80 text-slate-400 hover:text-blue-400 hover:bg-slate-700'
+                                : 'bg-white/80 text-slate-500 hover:text-blue-600 hover:bg-slate-100'
+                        }
+                    `}
+                    title={isEditing ? 'Save changes' : 'Edit concept'}
+                >
+                    {isEditing ? <Check size={14} /> : <Pencil size={14} />}
+                </motion.button>
             </div>
         </motion.div>
     );

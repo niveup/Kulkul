@@ -23,7 +23,7 @@
     position: relative;
     width: 100%;
     /* Fixed height to prevent page scrolling */
-    height: 96vh;
+    height: 100vh;
     /* Full viewport height */
     overflow: hidden;
     background: var(--nl-bg-base);

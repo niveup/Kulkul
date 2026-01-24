@@ -10,9 +10,10 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import {
-    Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Sparkles, Cloud
+    Home, BookOpen, PieChart, LayoutGrid, Bot, Shield, X, Cloud
 } from 'lucide-react';
 import { useAppStore } from '../../store';
+import LuminaOrb from '../ui/LuminaOrb';
 import {
     motion,
     useMotionValue,
@@ -165,11 +166,13 @@ export const Dock = ({ activeTab, onTabChange }) => {
                 >
                     <button
                         onClick={toggleDock}
-                        className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 
-                                   flex items-center justify-center shadow-[0_8px_32px_rgba(79,70,229,0.4)]
-                                   border-2 border-white/20 hover:scale-110 active:scale-90 transition-transform"
+                        className="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-950 
+                                   flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.5)]
+                                   border-2 border-white/20 hover:scale-110 active:scale-90 transition-transform overflow-hidden relative"
                     >
-                        <Sparkles className="text-white drop-shadow-md" />
+                        {/* Deep Space Background for Orb */}
+                        <div className="absolute inset-0 bg-black/40" />
+                        <LuminaOrb size={28} className="relative z-10" />
                     </button>
                     <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-white/40 whitespace-nowrap">Dock</span>
                 </motion.div>

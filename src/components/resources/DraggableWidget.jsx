@@ -23,7 +23,8 @@ import {
     Edit3,
     Trash2,
     Sparkles,
-    Lightbulb
+    Lightbulb,
+    LineChart
 } from 'lucide-react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -85,7 +86,9 @@ const DraggableWidget = ({
     classLevel,
     subject,
     topicKey,
-    onEdit
+    onEdit,
+    onViewDetail,
+    onOpenGraph
 }) => {
     const { updateWidgetStyle } = useResourceActions();
     const [isHovered, setIsHovered] = useState(false);
@@ -203,17 +206,24 @@ const DraggableWidget = ({
                         </div>
                     )}
 
-                    {/* Expand hint */}
-                    <motion.div
+                    {/* Pencil Edit Icon */}
+                    <motion.button
                         initial={{ opacity: 0 }}
                         animate={{ opacity: isHovered ? 1 : 0 }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit?.();
+                        }}
                         className={cn(
-                            'absolute top-3 right-3 p-1.5 rounded-lg z-20',
-                            isDarkMode ? 'bg-slate-800/80 text-indigo-400' : 'bg-white/80 text-indigo-600'
+                            'absolute top-3 right-3 p-1.5 rounded-lg z-20 transition-colors',
+                            isDarkMode
+                                ? 'bg-slate-800/80 text-indigo-400 hover:bg-slate-700 hover:text-indigo-300'
+                                : 'bg-white/80 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
                         )}
+                        title="Edit concept"
                     >
-                        <Maximize2 size={14} />
-                    </motion.div>
+                        <Edit3 size={14} />
+                    </motion.button>
 
                     {/* JEE Badge */}
                     {concept.isJeeFav && (
@@ -229,7 +239,7 @@ const DraggableWidget = ({
                     )}
 
                     {/* Content */}
-                    <div className="relative z-10" onClick={() => !isEditMode && onEdit?.()}>
+                    <div className="relative z-10" onClick={() => !isEditMode && onViewDetail?.()}>
                         {/* Title */}
                         <h3
                             className={cn(
@@ -270,16 +280,56 @@ const DraggableWidget = ({
                             </div>
                         )}
 
-                        {/* Interactive Graph */}
+                        {/* Interactive Graph Trigger */}
                         {concept.graph && (
-                            <InteractiveGraph
-                                formula={concept.graph.fn}
-                                range={concept.graph.domain}
-                                step={concept.graph.step}
-                                xLabel={concept.graph.xLabel}
-                                yLabel={concept.graph.yLabel}
-                                isDarkMode={isDarkMode}
-                            />
+                            <div className="mt-4">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenGraph?.();
+                                    }}
+                                    className={cn(
+                                        "w-full group relative overflow-hidden rounded-xl p-3 flex items-center justify-between transition-all duration-300",
+                                        isDarkMode
+                                            ? "bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700 hover:border-indigo-500/50"
+                                            : "bg-white/60 hover:bg-white/80 border border-indigo-100 hover:border-indigo-300/50"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "p-2 rounded-lg transition-colors group-hover:scale-105",
+                                            isDarkMode ? "bg-indigo-500/20 text-indigo-400" : "bg-indigo-100 text-indigo-600"
+                                        )}>
+                                            <LineChart size={18} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className={cn(
+                                                "text-sm font-bold",
+                                                isDarkMode ? "text-slate-200" : "text-slate-700"
+                                            )}>
+                                                Interactive Graph
+                                            </p>
+                                            <p className={cn(
+                                                "text-xs",
+                                                isDarkMode ? "text-slate-400" : "text-slate-500"
+                                            )}>
+                                                Visualize {concept.graph.yLabel} vs {concept.graph.xLabel}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Arrow Icon */}
+                                    <div className={cn(
+                                        "p-1.5 rounded-full transition-all opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0",
+                                        isDarkMode ? "bg-slate-700 text-indigo-400" : "bg-indigo-50 text-indigo-600"
+                                    )}>
+                                        <Maximize2 size={14} />
+                                    </div>
+
+                                    {/* Shine Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none" />
+                                </button>
+                            </div>
                         )}
 
                         {/* Shortcut/Tip */}

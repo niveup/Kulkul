@@ -9,11 +9,61 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { electrostatics } from '../data/electrostatics';
 
-// Load electrostatics for Class 12
-const formulas11 = [];
-const formulas12 = [electrostatics]; // Add electrostatics chapter
+// Class 11 Physics Chapters - JEE Complete Syllabus
+import { unitsDimensions } from '../data/units-dimensions';
+import { kinematics } from '../data/kinematics';
+import { lawsOfMotion } from '../data/laws-of-motion';
+import { workEnergyPower } from '../data/work-energy-power';
+import { rotationalMotion } from '../data/rotational-motion';
+import { gravitation } from '../data/gravitation';
+import { propertiesOfMatter } from '../data/properties-of-matter';
+import { thermodynamics } from '../data/thermodynamics';
+import { kineticTheory } from '../data/kinetic-theory';
+import { oscillationsWaves } from '../data/oscillations-waves';
+
+// Class 12 Physics Chapters - JEE Complete Syllabus
+import { electrostatics } from '../data/electrostatics';
+import { capacitor } from '../data/capacitor';
+import { currentElectricity } from '../data/current-electricity';
+import { magnetism } from '../data/magnetism';
+import { electromagneticInduction } from '../data/electromagnetic-induction';
+import { alternatingCurrent } from '../data/alternating-current';
+import { electromagneticWaves } from '../data/electromagnetic-waves';
+import { rayOptics } from '../data/ray-optics';
+import { waveOptics } from '../data/wave-optics';
+import { dualNature } from '../data/dual-nature';
+import { atomsNuclei } from '../data/atoms-nuclei';
+import { semiconductors } from '../data/semiconductors';
+
+// Load physics chapters - Complete JEE Physics Syllabus
+const formulas11 = [
+    unitsDimensions,
+    kinematics,
+    lawsOfMotion,
+    workEnergyPower,
+    rotationalMotion,
+    gravitation,
+    propertiesOfMatter,
+    thermodynamics,
+    kineticTheory,
+    oscillationsWaves
+]; // Class 11 Physics chapters - All 10 JEE topics
+
+const formulas12 = [
+    electrostatics,
+    capacitor,
+    currentElectricity,
+    magnetism,
+    electromagneticInduction,
+    alternatingCurrent,
+    electromagneticWaves,
+    rayOptics,
+    waveOptics,
+    dualNature,
+    atomsNuclei,
+    semiconductors
+]; // Class 12 Physics chapters - All 12 JEE topics
 
 // =============================================================================
 // CONSTANTS

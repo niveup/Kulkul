@@ -182,7 +182,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                 {/* Content Overlay */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
                     {/* Time Display Row with Controls */}
-                    <div className="flex items-center gap-6 pointer-events-auto">
+                    <div className="flex items-center gap-12 pointer-events-auto">
                         {/* Decrease Button - Only visible when idle */}
                         {!isActive && !isCompleted && !isFailed && (
                             <IconButton

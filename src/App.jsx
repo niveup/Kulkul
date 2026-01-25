@@ -38,6 +38,7 @@ const AIChat = React.lazy(() => import('./components/tools/AIChat'));
 
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
 const VaultPanel = React.lazy(() => import('./components/tools/VaultPanel'));
+const NotionPanel = React.lazy(() => import('./components/notion/NotionPanel'));
 import AddAppModal from './components/AddAppModal';
 import { useCustomApps } from './hooks/useCustomApps';
 
@@ -962,6 +963,26 @@ function App() {
                     <p className="text-lg font-medium">Practice Test</p>
                     <p className="text-sm">Coming soon...</p>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* =================================================================
+              NOTION TAB (NOTION INTEGRATION)
+              ================================================================= */}
+            {activeTab === 'notion' && (
+              <motion.div
+                key="notion"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={pageTransition}
+              >
+                <div className="max-w-4xl mx-auto">
+                  <Suspense fallback={<PageLoadingSkeleton />}>
+                    <NotionPanel className="h-[calc(100vh-8rem)]" />
+                  </Suspense>
                 </div>
               </motion.div>
             )}

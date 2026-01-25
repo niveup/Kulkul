@@ -74,6 +74,7 @@ const STORAGE_KEY = 'resource-hub-store';
 // =============================================================================
 // UTILITY: Deep merge changes onto base
 // =============================================================================
+// eslint-disable-next-line no-unused-vars
 const deepMerge = (base, changes) => {
     if (!changes || typeof changes !== 'object') return base;
     if (Array.isArray(changes)) return changes;

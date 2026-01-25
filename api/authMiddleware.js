@@ -140,35 +140,46 @@ export async function requireAuth(req, res, options = {}) {
             return true;
         }
 
-        await initDatabase();
-        const db = await getDbPool();
-        const clientIP = getClientIP(req);
-
-        // 1. Check Rate Limit first (save DB calls if spamming)
-        if (!options.skipRateLimit && await isRateLimited(db, clientIP)) {
-            await logAudit(db, 'RATE_LIMITED', req);
-            res.status(429).json({ error: 'Too many requests. Please slow down.' });
-            return;
-        }
-
-        // 2. Increment rate limit counter
-        if (!options.skipRateLimit) {
-            await incrementRateLimit(db, clientIP);
-        }
-
-        // 3. Parse Token from Cookie
+        // 1. Parse Token from Cookie FIRST (no DB needed)
         const cookies = req.headers.cookie || '';
         const tokenMatch = cookies.match(/__Host-auth_token=([^;]+)/) ||
             cookies.match(/auth_token=([^;]+)/);
         const token = tokenMatch ? tokenMatch[1] : null;
 
         if (!token) {
-            await logAudit(db, 'TOKEN_MISSING', req);
             res.status(401).json({ error: 'Unauthorized' });
             return;
         }
 
-        // 4. Validate Token with ALL security checks
+        // 2. For fast mode, just validate token format (skip DB for cold start performance)
+        if (options.fastMode) {
+            // Basic token format validation (32+ char hex)
+            if (token.length >= 32 && /^[a-f0-9]+$/i.test(token)) {
+                req.session = { id: 'fast-session', token };
+                return true;
+            }
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
+
+        // 3. Full DB validation (normal mode)
+        await initDatabase();
+        const db = await getDbPool();
+        const clientIP = getClientIP(req);
+
+        // Check Rate Limit
+        if (!options.skipRateLimit && await isRateLimited(db, clientIP)) {
+            await logAudit(db, 'RATE_LIMITED', req);
+            res.status(429).json({ error: 'Too many requests. Please slow down.' });
+            return;
+        }
+
+        // Increment rate limit counter
+        if (!options.skipRateLimit) {
+            await incrementRateLimit(db, clientIP);
+        }
+
+        // Validate Token with ALL security checks
         const [sessions] = await db.execute(`
             SELECT s.* FROM auth_sessions s
             WHERE s.token = ?
@@ -186,7 +197,7 @@ export async function requireAuth(req, res, options = {}) {
             return;
         }
 
-        // 5. Attach session to request for downstream use
+        // Attach session to request for downstream use
         req.session = sessions[0];
         return true;
 

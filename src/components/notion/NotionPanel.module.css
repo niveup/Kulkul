@@ -1,0 +1,1081 @@
+/**
+ * NotionPanel Styles - Premium Dark Theme
+ * 
+ * Custom Notion-inspired design with:
+ * - Gradient borders
+ * - Glassmorphism effects
+ * - Smooth animations
+ * - Skeleton loading
+ */
+
+/* =============================================================================
+   Panel Container
+============================================================================= */
+
+.notionPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(135deg,
+      rgba(25, 25, 28, 0.95) 0%,
+      rgba(18, 18, 21, 0.98) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* =============================================================================
+   Header
+============================================================================= */
+
+.header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.notionLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.02em;
+}
+
+.logoSvg {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.createBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.9) 0%,
+      rgba(139, 92, 246, 0.9) 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.createBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.createBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =============================================================================
+   Search
+============================================================================= */
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 40px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.searchInput::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.clearBtn {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* =============================================================================
+   Content Area
+============================================================================= */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* =============================================================================
+   Page Card
+============================================================================= */
+
+.pageCard {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.pageCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.pageCard:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 2px;
+}
+
+.pageCardGlow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.15) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      transparent 100%);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.pageCard:hover .pageCardGlow {
+  opacity: 1;
+}
+
+.pageCardContent {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.pageIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.iconSvg {
+  width: 20px;
+  height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pageInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.pageMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+  display: block;
+}
+
+.chevron {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.pageCard:hover .chevron {
+  transform: translateX(3px);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* =============================================================================
+   Skeleton Loading
+============================================================================= */
+
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+}
+
+.skeletonIcon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 100%);
+  background-size: 200% 100%;
+  border-radius: 10px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonTitle {
+  height: 14px;
+  width: 70%;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 100%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonMeta {
+  height: 10px;
+  width: 40%;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 100%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite;
+  animation-delay: 0.2s;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* =============================================================================
+   Empty State
+============================================================================= */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.15) 0%,
+      rgba(139, 92, 246, 0.1) 100%);
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.sparklesIcon {
+  width: 32px;
+  height: 32px;
+  color: rgba(139, 92, 246, 0.8);
+}
+
+.emptyState h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.emptyState p {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 240px;
+  line-height: 1.5;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refreshBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* =============================================================================
+   Error State
+============================================================================= */
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.errorIcon {
+  width: 40px;
+  height: 40px;
+  color: rgba(239, 68, 68, 0.8);
+  margin-bottom: 12px;
+}
+
+.errorState p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 260px;
+}
+
+.retryBtn {
+  padding: 10px 20px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: rgba(239, 68, 68, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retryBtn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* =============================================================================
+   Load More Button
+============================================================================= */
+
+.loadMoreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadMoreBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.loadMoreBtn:disabled {
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* =============================================================================
+   Modal
+============================================================================= */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(135deg,
+      rgba(30, 30, 35, 0.98) 0%,
+      rgba(22, 22, 26, 0.99) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modalForm {
+  padding: 24px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.formGroup input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.formGroup select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+.formGroup select option {
+  background: #1a1a1e;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.formError {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  color: rgba(239, 68, 68, 0.9);
+  font-size: 13px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.9) 0%,
+      rgba(139, 92, 246, 0.9) 100%);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =============================================================================
+   Page Editor
+============================================================================= */
+
+.pageEditor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.editorTitle {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editorActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editBtn,
+.saveBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.editBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.saveBtn {
+  background: linear-gradient(135deg,
+      rgba(34, 197, 94, 0.9) 0%,
+      rgba(16, 185, 129, 0.9) 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+.saveBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.editorContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.editorLoading,
+.editorError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 200px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.editorError {
+  color: rgba(239, 68, 68, 0.8);
+}
+
+.editorTextarea {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  line-height: 1.7;
+  resize: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editorTextarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.editorTextarea:focus {
+  outline: none;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.editorPreview {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.editorPreview pre {
+  margin: 0;
+  font-size: 14px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.emptyContent {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+/* =============================================================================
+   Notion-Style Preview
+============================================================================= */
+
+.notionPreview {
+  padding: 4px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.notionH1 {
+  margin: 24px 0 8px;
+  padding: 3px 2px;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.notionH1:first-child {
+  margin-top: 0;
+}
+
+.notionH2 {
+  margin: 20px 0 6px;
+  padding: 3px 2px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+
+.notionH3 {
+  margin: 16px 0 4px;
+  padding: 3px 2px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+}
+
+.notionParagraph {
+  margin: 2px 0;
+  padding: 3px 2px;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.65;
+}
+
+.notionSpacer {
+  height: 16px;
+}
+
+.notionBullet,
+.notionNumbered {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 2px;
+  margin: 2px 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.65;
+}
+
+.bullet {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.2em;
+  line-height: 1.4;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.number {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: right;
+}
+
+.notionTodo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 2px;
+  margin: 2px 0;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.65;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  accent-color: #2383e2;
+  cursor: default;
+}
+
+.todoChecked {
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.notionCode {
+  margin: 8px 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.notionCode code {
+  font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.notionQuote {
+  margin: 8px 0;
+  padding: 4px 16px;
+  border-left: 3px solid rgba(255, 255, 255, 0.25);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  line-height: 1.65;
+}
+
+.notionCallout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.65;
+}
+
+.calloutIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.notionDivider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.saveStatus {
+  padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: rgba(34, 197, 94, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

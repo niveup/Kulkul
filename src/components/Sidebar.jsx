@@ -11,7 +11,8 @@ import {
     Sun,
     Monitor,
     UserCircle2,
-    Cloud
+    Cloud,
+    FileText
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAppStore } from '../store';
@@ -28,7 +29,8 @@ const MENU_ITEMS = [
     { id: 'resources', icon: Layers, label: 'Library', shortcut: '4' },
     { id: 'ai-assistant', icon: MessageSquare, label: 'Neural Link', shortcut: '5' },
     { id: 'vault', icon: Cloud, label: 'Vault', shortcut: '6' },
-    { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '7' },
+    { id: 'notion', icon: FileText, label: 'Notion', shortcut: '7' },
+    { id: 'admin', icon: ShieldCheck, label: 'System', shortcut: '8' },
 ];
 
 export const Sidebar = () => {
@@ -43,7 +45,8 @@ export const Sidebar = () => {
     useHotkey('4', () => setActiveTab('resources'), [setActiveTab]);
     useHotkey('5', () => setActiveTab('ai-assistant'), [setActiveTab]);
     useHotkey('6', () => setActiveTab('vault'), [setActiveTab]);
-    useHotkey('7', () => setActiveTab('admin'), [setActiveTab]);
+    useHotkey('7', () => setActiveTab('notion'), [setActiveTab]);
+    useHotkey('8', () => setActiveTab('admin'), [setActiveTab]);
 
     // Mouse Tracking for Spotlight
     useEffect(() => {

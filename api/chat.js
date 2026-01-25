@@ -151,21 +151,42 @@ const PROVIDERS = {
 };
 
 // =============================================================================
-// System Prompt
+// System Prompt (Dynamic with User Context)
 // =============================================================================
 
-const SYSTEM_PROMPT = `You are StudyHub AI, a helpful, friendly, and knowledgeable study assistant. You help students with:
+import { getUserContextString } from './user-context.js';
+
+const BASE_SYSTEM_PROMPT = `You are StudyHub AI, a helpful, friendly, and knowledgeable **personalized** study assistant. You have access to the user's current study data and can provide tailored advice.
+
+You help students with:
 - Physics, Chemistry, and Mathematics (especially JEE/NEET preparation)
 - Explaining complex concepts in simple terms
 - Solving problems step by step
-- Creating study plans and providing motivation
+- Creating study plans based on their ACTUAL progress and pending tasks
+- Providing motivation based on their streaks and achievements
 
 Guidelines:
 - Be concise but thorough
 - Use markdown formatting (bold, lists, code blocks) for clarity
 - Include relevant formulas when discussing science/math
 - Be encouraging and supportive
+- Reference their actual data (todos, focus time, due topics) when relevant
+- If asked about their progress, use the context provided below
 - If you don't know something, say so honestly`;
+
+/**
+ * Builds a personalized system prompt with user's current data
+ * @returns {Promise<string>} Complete system prompt with user context
+ */
+async function buildSystemPrompt() {
+    try {
+        const userContext = await getUserContextString();
+        return `${BASE_SYSTEM_PROMPT}\n\n${userContext}`;
+    } catch (error) {
+        console.error('[AI Chat] Error building context:', error);
+        return BASE_SYSTEM_PROMPT; // Fallback to base prompt
+    }
+}
 
 // =============================================================================
 // Main Handler
@@ -257,10 +278,14 @@ export default async function handler(req, res) {
             }
         }
 
+        // Build dynamic system prompt with user context
+        const systemPrompt = await buildSystemPrompt();
+        console.log(`[AI Chat] Context injected (${systemPrompt.length} chars)`);
+
         // Make request to AI provider
         const url = provider.getUrl ? provider.getUrl(apiKey) : provider.baseUrl;
         const headers = provider.getHeaders(apiKey);
-        const body = provider.formatRequest(messages, SYSTEM_PROMPT, overrideModel);
+        const body = provider.formatRequest(messages, systemPrompt, overrideModel);
 
         console.log(`[AI Chat] Using provider: ${provider.name}, model: ${overrideModel || 'default'}`);
 

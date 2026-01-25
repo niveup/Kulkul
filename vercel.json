@@ -15,7 +15,15 @@
             "maxDuration": 60,
             "memory": 1024
         },
+        "api/user-context.js": {
+            "maxDuration": 10,
+            "memory": 256
+        },
         "api/conversations/[[...slug]].js": {
+            "maxDuration": 10,
+            "memory": 256
+        },
+        "api/notion/[[...slug]].js": {
             "maxDuration": 10,
             "memory": 256
         }
@@ -76,6 +84,14 @@
         {
             "source": "/api/conversations",
             "destination": "/api/conversations/[[...slug]]"
+        },
+        {
+            "source": "/api/notion/:slug*",
+            "destination": "/api/notion/[[...slug]]"
+        },
+        {
+            "source": "/api/notion",
+            "destination": "/api/notion/[[...slug]]"
         },
         {
             "source": "/((?!api/).*)",

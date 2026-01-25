@@ -366,13 +366,22 @@ export default async function handler(req, res) {
         }
 
         // Build dynamic system prompt with user context
-        const systemPrompt = await buildSystemPrompt();
-        console.log(`[AI Chat] Context injected (${systemPrompt.length} chars)`);
+        const userContext = await fetchUserContext();
+        const systemPrompt = BASE_SYSTEM_PROMPT;
+        console.log(`[AI Chat] Context fetched: ${userContext.substring(0, 50)}...`);
+
+        // CRITICAL: Inject context as first message to ensure ALL providers see it
+        const contextMessage = {
+            role: 'user',
+            content: `[CONTEXT - This is my current study data, please use it when answering questions about my progress]\n\n${userContext}\n\n---\n\n`
+        };
+        const messagesWithContext = [contextMessage, ...messages];
+        console.log(`[AI Chat] Messages with context: ${messagesWithContext.length} messages`);
 
         // Make request to AI provider
         const url = provider.getUrl ? provider.getUrl(apiKey) : provider.baseUrl;
         const headers = provider.getHeaders(apiKey);
-        const body = provider.formatRequest(messages, systemPrompt, overrideModel);
+        const body = provider.formatRequest(messagesWithContext, systemPrompt, overrideModel);
 
         console.log(`[AI Chat] Using provider: ${provider.name}, model: ${overrideModel || 'default'}`);
 

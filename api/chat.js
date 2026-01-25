@@ -151,8 +151,72 @@ const PROVIDERS = {
 };
 
 // =============================================================================
+// User Context Fetching (Inlined to avoid serverless import issues)
+// =============================================================================
 
-import { getUserContextString } from './user-context.js';
+import { getDbPool, initDatabase } from './db.js';
+
+function getLocalDateStr(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatDate(date) {
+    return new Date(date).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+    });
+}
+
+async function fetchUserContext() {
+    try {
+        await initDatabase();
+        const db = await getDbPool();
+        const today = getLocalDateStr();
+
+        // Parallel fetch: todos, sessions, SRS
+        const [todosResult, sessionsResult, srsResult] = await Promise.all([
+            db.execute('SELECT text, completed FROM todos ORDER BY created_at DESC LIMIT 10'),
+            db.execute(`SELECT elapsed_seconds, status FROM pomodoro_sessions WHERE DATE(created_at) = ? ORDER BY created_at DESC`, [today]),
+            db.execute(`SELECT topic_name FROM srs_topic_reviews WHERE next_review_date <= ? ORDER BY next_review_date ASC LIMIT 5`, [today])
+        ]);
+
+        const todos = todosResult[0];
+        const sessions = sessionsResult[0];
+        const srsTopics = srsResult[0];
+
+        // Format todos
+        const completedTodos = todos.filter(t => t.completed).length;
+        const pendingTodos = todos.filter(t => !t.completed).slice(0, 3);
+        const pendingList = pendingTodos.length > 0
+            ? pendingTodos.map(t => `"${t.text.slice(0, 30)}"`).join(', ')
+            : 'All done!';
+        const todosLine = `${completedTodos}/${todos.length} completed. Pending: ${pendingList}`;
+
+        // Format sessions
+        const todayMinutes = sessions.reduce((sum, s) => sum + (s.elapsed_seconds || 0) / 60, 0);
+        const completedSessions = sessions.filter(s => s.status === 'completed').length;
+        const sessionsLine = `${(todayMinutes / 60).toFixed(1)}h focused today (${completedSessions} sessions)`;
+
+        // Format SRS
+        const srsLine = srsTopics.length > 0
+            ? `${srsTopics.length} topics due: ${srsTopics.map(t => t.topic_name).join(', ')}`
+            : 'No topics due for review';
+
+        return `## Your User's Current State (${formatDate(new Date())})
+
+📋 TODOS: ${todosLine}
+
+⏱️ FOCUS: ${sessionsLine}
+
+📚 SRS REVIEW: ${srsLine}`;
+
+    } catch (error) {
+        console.error('[AI Chat] Context fetch error:', error.message);
+        return '## User Context\n(Data temporarily unavailable - please try again)';
+    }
+}
 
 const BASE_SYSTEM_PROMPT = `You are StudyHub AI, a **personalized** study assistant with REAL-TIME ACCESS to this user's actual study data.
 
@@ -167,10 +231,9 @@ const BASE_SYSTEM_PROMPT = `You are StudyHub AI, a **personalized** study assist
 **IMPORTANT**: Below this prompt, you will see "## Your User's Current State" with their ACTUAL data including:
 - Their pending todos (real task names)
 - Today's focus time (real hours/sessions)
-- Their study streak (real consecutive days)
 - SRS topics due for review (real topic names)
 
-**YOU MUST USE THIS DATA when answering questions about their progress, streak, todos, or study habits.**
+**YOU MUST USE THIS DATA when answering questions about their progress, todos, or study habits.**
 **DO NOT say you don't have access - THE DATA IS PROVIDED BELOW.**
 
 ## Response Guidelines
@@ -183,17 +246,11 @@ const BASE_SYSTEM_PROMPT = `You are StudyHub AI, a **personalized** study assist
 
 /**
  * Builds a personalized system prompt with user's current data
- * @returns {Promise<string>} Complete system prompt with user context
  */
 async function buildSystemPrompt() {
-    try {
-        const userContext = await getUserContextString();
-        console.log('[AI Chat] User context loaded:', userContext.substring(0, 100) + '...');
-        return `${BASE_SYSTEM_PROMPT}\n\n${userContext}`;
-    } catch (error) {
-        console.error('[AI Chat] Error building context:', error);
-        return BASE_SYSTEM_PROMPT; // Fallback to base prompt
-    }
+    const userContext = await fetchUserContext();
+    console.log('[AI Chat] Context built:', userContext.substring(0, 80) + '...');
+    return `${BASE_SYSTEM_PROMPT}\n\n${userContext}`;
 }
 
 

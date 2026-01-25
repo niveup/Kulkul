@@ -403,6 +403,8 @@ export default async function handler(req, res) {
         const headers = provider.getHeaders(apiKey);
         const body = provider.formatRequest(messagesWithContext, systemPrompt, overrideModel);
 
+        // DEBUG: Log the actual first message to verify context is included
+        console.log(`[AI Chat] BODY FIRST MSG:`, JSON.stringify(body.messages?.[0]?.content?.substring(0, 300) || body.contents?.[0]?.parts?.[0]?.text?.substring(0, 300) || 'Unknown format'));
         console.log(`[AI Chat] Using provider: ${provider.name}, model: ${overrideModel || 'default'}`);
 
         const response = await fetch(url, {

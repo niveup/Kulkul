@@ -193,7 +193,9 @@ async function fetchUserContext() {
         console.log('[AI Chat] Data fetched:', {
             todos: todosResult[0]?.length || 0,
             sessions: sessionsResult[0]?.length || 0,
-            srs: srsResult[0]?.length || 0
+            srs: srsResult[0]?.length || 0,
+            firstTodo: todosResult[0]?.[0]?.text || 'NONE',
+            query_date: today
         });
 
         const todos = todosResult[0] || [];

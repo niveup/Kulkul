@@ -170,9 +170,12 @@ function formatDate(date) {
 }
 
 async function fetchUserContext() {
+    console.log('[AI Chat] fetchUserContext() called');
     try {
+        console.log('[AI Chat] Initializing database...');
         await initDatabase();
         const db = await getDbPool();
+        console.log('[AI Chat] DB connected, fetching data...');
         const today = getLocalDateStr();
 
         // Parallel fetch: todos, sessions, SRS
@@ -182,20 +185,28 @@ async function fetchUserContext() {
             db.execute(`SELECT topic_name FROM srs_topic_reviews WHERE next_review_date <= ? ORDER BY next_review_date ASC LIMIT 5`, [today])
         ]);
 
-        const todos = todosResult[0];
-        const sessions = sessionsResult[0];
-        const srsTopics = srsResult[0];
+        console.log('[AI Chat] Data fetched:', {
+            todos: todosResult[0]?.length || 0,
+            sessions: sessionsResult[0]?.length || 0,
+            srs: srsResult[0]?.length || 0
+        });
+
+        const todos = todosResult[0] || [];
+        const sessions = sessionsResult[0] || [];
+        const srsTopics = srsResult[0] || [];
 
         // Format todos
         const completedTodos = todos.filter(t => t.completed).length;
         const pendingTodos = todos.filter(t => !t.completed).slice(0, 3);
         const pendingList = pendingTodos.length > 0
-            ? pendingTodos.map(t => `"${t.text.slice(0, 30)}"`).join(', ')
+            ? pendingTodos.map(t => `"${t.text?.slice(0, 30) || 'Unknown'}"`).join(', ')
             : 'All done!';
-        const todosLine = `${completedTodos}/${todos.length} completed. Pending: ${pendingList}`;
+        const todosLine = todos.length > 0
+            ? `${completedTodos}/${todos.length} completed. Pending: ${pendingList}`
+            : 'No todos yet';
 
         // Format sessions
-        const todayMinutes = sessions.reduce((sum, s) => sum + (s.elapsed_seconds || 0) / 60, 0);
+        const todayMinutes = sessions.reduce((sum, s) => sum + ((s.elapsed_seconds || 0) / 60), 0);
         const completedSessions = sessions.filter(s => s.status === 'completed').length;
         const sessionsLine = `${(todayMinutes / 60).toFixed(1)}h focused today (${completedSessions} sessions)`;
 
@@ -204,17 +215,27 @@ async function fetchUserContext() {
             ? `${srsTopics.length} topics due: ${srsTopics.map(t => t.topic_name).join(', ')}`
             : 'No topics due for review';
 
-        return `## Your User's Current State (${formatDate(new Date())})
+        const context = `## Your User's Current State (${formatDate(new Date())})
 
 📋 TODOS: ${todosLine}
 
 ⏱️ FOCUS: ${sessionsLine}
 
-📚 SRS REVIEW: ${srsLine}`;
+📚 SRS REVIEW: ${srsLine}
+
+[DATA_LOADED_SUCCESSFULLY]`;
+
+        console.log('[AI Chat] Context built successfully');
+        return context;
 
     } catch (error) {
-        console.error('[AI Chat] Context fetch error:', error.message);
-        return '## User Context\n(Data temporarily unavailable - please try again)';
+        console.error('[AI Chat] Context fetch FAILED:', error.message, error.stack);
+        // Return a debug context so we know the injection works but DB failed
+        return `## User Context (DB Error)
+
+⚠️ Could not load user data: ${error.message}
+
+[DEBUG: fetchUserContext ran but DB failed]`;
     }
 }
 

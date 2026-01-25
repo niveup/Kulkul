@@ -159,7 +159,7 @@ const PROVIDERS = {
 // User Context Fetching (Inlined to avoid serverless import issues)
 // =============================================================================
 
-import { getDbPool, initDatabase } from './db.js';
+import { getDbPool, initDatabase, generateId } from './db.js';
 
 function getLocalDateStr(d = new Date()) {
     const year = d.getFullYear();
@@ -281,10 +281,187 @@ async function buildSystemPrompt() {
     return `${BASE_SYSTEM_PROMPT}\n\n${userContext}`;
 }
 
+// =============================================================================
+// AI Memory System - Persistent User Knowledge
+// =============================================================================
 
-// =============================================================================
-// Main Handler
-// =============================================================================
+/**
+ * Fetches all active memories for the user
+ * @returns {Promise<Array>} Array of memory objects
+ */
+async function fetchUserMemories() {
+    try {
+        await initDatabase();
+        const db = await getDbPool();
+
+        const [memories] = await db.execute(
+            `SELECT category, content, confidence 
+             FROM ai_user_memories 
+             WHERE is_active = TRUE 
+             ORDER BY category, updated_at DESC 
+             LIMIT 30`
+        );
+
+        console.log(`[AI Memory] Loaded ${memories.length} memories`);
+        return memories;
+    } catch (error) {
+        console.error('[AI Memory] Fetch error:', error.message);
+        return [];
+    }
+}
+
+/**
+ * Formats memories into a readable section for the AI prompt
+ */
+function formatMemoriesForPrompt(memories) {
+    if (!memories || memories.length === 0) {
+        return '';
+    }
+
+    // Group by category
+    const grouped = {};
+    for (const m of memories) {
+        if (!grouped[m.category]) grouped[m.category] = [];
+        grouped[m.category].push(m.content);
+    }
+
+    // Category display names
+    const categoryLabels = {
+        exam_goal: '🎯 Exam Goals',
+        weak_subject: '📉 Weak Areas',
+        strong_subject: '💪 Strengths',
+        study_preference: '📚 Study Preferences',
+        schedule: '📅 Schedule',
+        milestone: '🏆 Achievements',
+        personal: '👤 Personal Info',
+        insight: '💡 Observations',
+        interest: '✨ Interests',
+        learning_style: '🧠 Learning Style',
+        challenge: '⚠️ Challenges',
+        motivation: '🔥 Motivation',
+        custom: '📝 Notes'
+    };
+
+    let output = '## 🧠 What I Remember About You\n\n';
+
+    for (const [category, items] of Object.entries(grouped)) {
+        const label = categoryLabels[category] || category;
+        output += `**${label}:** ${items.join('; ')}\n`;
+    }
+
+    return output;
+}
+
+/**
+ * Extracts and saves new memories from the conversation
+ * This runs AFTER the AI response to learn from the conversation
+ */
+async function extractAndSaveMemories(userMessage, aiResponse, conversationId) {
+    try {
+        // Only extract if the user shared personal information
+        const memoryTriggers = [
+            'i am', "i'm", 'my goal', 'i want', 'i need', 'i struggle',
+            'i prefer', 'i like', 'i hate', 'my schedule', 'my exam',
+            'i finished', 'i completed', 'weak in', 'strong in', 'good at',
+            'preparing for', 'my class', 'my board', 'coaching', 'target'
+        ];
+
+        const lowerMsg = userMessage.toLowerCase();
+        const shouldExtract = memoryTriggers.some(t => lowerMsg.includes(t));
+
+        if (!shouldExtract) {
+            return; // Skip extraction for non-personal messages
+        }
+
+        console.log('[AI Memory] Extracting from message...');
+
+        // Use simple pattern matching for common categories
+        const extractions = [];
+
+        // Exam goals
+        if (/jee|neet|board|exam|iit|nit|aiims/i.test(lowerMsg)) {
+            const match = lowerMsg.match(/(jee\s*(main|advanced)?|neet|board\s*exam|iit|aiims)/i);
+            if (match) {
+                extractions.push({ category: 'exam_goal', content: match[0].toUpperCase() });
+            }
+        }
+
+        // Class/Personal info
+        if (/class\s*1[012]|12th|11th|grade\s*1[012]/i.test(lowerMsg)) {
+            const match = lowerMsg.match(/class\s*1[012]|12th|11th|grade\s*1[012]/i);
+            if (match) {
+                extractions.push({ category: 'personal', content: match[0] });
+            }
+        }
+
+        // Weak subjects
+        if (/weak|struggle|difficult|hard|can't understand|confused/i.test(lowerMsg)) {
+            const subjects = lowerMsg.match(/(physics|chemistry|math|organic|inorganic|mechanics|calculus|thermodynamics)/gi);
+            if (subjects) {
+                subjects.forEach(s => {
+                    extractions.push({ category: 'weak_subject', content: s });
+                });
+            }
+        }
+
+        // Strong subjects
+        if (/strong|good at|love|enjoy|easy|confident/i.test(lowerMsg)) {
+            const subjects = lowerMsg.match(/(physics|chemistry|math|algebra|geometry|kinematics)/gi);
+            if (subjects) {
+                subjects.forEach(s => {
+                    extractions.push({ category: 'strong_subject', content: s });
+                });
+            }
+        }
+
+        // Schedule mentions
+        if (/morning|evening|night|hours|schedule|coaching/i.test(lowerMsg)) {
+            if (/morning/i.test(lowerMsg)) {
+                extractions.push({ category: 'study_preference', content: 'Morning studier' });
+            }
+            if (/coaching/i.test(lowerMsg)) {
+                const match = lowerMsg.match(/coaching\s*(on\s*)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)/gi);
+                if (match) {
+                    extractions.push({ category: 'schedule', content: match[0] });
+                }
+            }
+        }
+
+        // Save extractions to DB
+        if (extractions.length > 0) {
+            await initDatabase();
+            const db = await getDbPool();
+
+            for (const e of extractions) {
+                const id = generateId();
+                try {
+                    await db.execute(
+                        `INSERT INTO ai_user_memories (id, category, content, source_conversation_id) 
+                         VALUES (?, ?, ?, ?)
+                         ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = CURRENT_TIMESTAMP`,
+                        [id, e.category, e.content, conversationId || null]
+                    );
+                    console.log(`[AI Memory] Saved: ${e.category} = "${e.content}"`);
+                } catch (err) {
+                    // Ignore duplicate key errors
+                    if (!err.message.includes('Duplicate')) {
+                        console.error('[AI Memory] Save error:', err.message);
+                    }
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('[AI Memory] Extraction error:', error.message);
+        // Don't throw - memory extraction is non-blocking
+    }
+}
+
+// Helper to generate UUID (imported from db.js but defined here for safety)
+function generateMemoryId() {
+    return 'mem-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 9);
+}
+
 
 import { requireAuth } from './authMiddleware.js';
 
@@ -374,28 +551,43 @@ export default async function handler(req, res) {
 
         // Build dynamic system prompt with user context
         let userContext;
+        let memoryContext = '';
         try {
-            userContext = await fetchUserContext();
+            // Fetch both current state and memories in parallel for speed
+            const [contextResult, memories] = await Promise.all([
+                fetchUserContext().catch(e => {
+                    console.error('[AI Chat] Context fetch error:', e.message);
+                    return null;
+                }),
+                fetchUserMemories()
+            ]);
+
+            userContext = contextResult || `## Your User's Current State
+(Data temporarily unavailable)`;
+
+            // Format memories if any exist
+            if (memories && memories.length > 0) {
+                memoryContext = formatMemoriesForPrompt(memories);
+                console.log(`[AI Chat] Including ${memories.length} memories in context`);
+            }
+
             console.log(`[AI Chat] DB Context: ${userContext.substring(0, 50)}...`);
         } catch (err) {
-            console.error('[AI Chat] DB fetch failed, using test context:', err.message);
-            userContext = `## Your User's Current State (TEST DATA)
-
-📋 TODOS: 2/5 completed. Pending: "Physics revision", "Math practice"
-
-⏱️ FOCUS: 1.5h focused today (3 sessions)
-
-📚 SRS REVIEW: 2 topics due: Kinematics, Electrostatics
-
-[TEST_CONTEXT_INJECTED]`;
+            console.error('[AI Chat] DB fetch failed:', err.message);
+            userContext = `## Your User's Current State (Unavailable)`;
         }
 
         const systemPrompt = BASE_SYSTEM_PROMPT;
 
+        // Build full context: memories + current state
+        const fullContext = memoryContext
+            ? `${memoryContext}\n\n${userContext}`
+            : userContext;
+
         // CRITICAL: Inject context as first message to ensure ALL providers see it
         const contextMessage = {
             role: 'user',
-            content: `[IMPORTANT CONTEXT - My study data is below. You MUST use this when I ask about my progress, todos, streak, or study time.]\n\n${userContext}\n\n---\nNow here is my actual question:`
+            content: `[IMPORTANT CONTEXT - My study data and what you remember about me is below. Use this when answering questions about my progress, goals, or preferences.]\n\n${fullContext}\n\n---\nNow here is my actual question:`
         };
         const messagesWithContext = [contextMessage, ...messages];
         console.log(`[AI Chat] Sending ${messagesWithContext.length} messages to AI`);
@@ -405,8 +597,7 @@ export default async function handler(req, res) {
         const headers = provider.getHeaders(apiKey);
         const body = provider.formatRequest(messagesWithContext, systemPrompt, overrideModel);
 
-        // DEBUG: Log the actual first message to verify context is included
-        console.log(`[AI Chat] BODY FIRST MSG:`, JSON.stringify(body.messages?.[0]?.content?.substring(0, 300) || body.contents?.[0]?.parts?.[0]?.text?.substring(0, 300) || 'Unknown format'));
+        // DEBUG: Log first message preview
         console.log(`[AI Chat] Using provider: ${provider.name}, model: ${overrideModel || 'default'}`);
 
         const response = await fetch(url, {
@@ -426,6 +617,12 @@ export default async function handler(req, res) {
 
         const data = await response.json();
         const content = provider.parseResponse(data);
+
+        // Extract memories from the conversation (non-blocking, runs in background)
+        const lastUserMessage = messages[messages.length - 1]?.content || '';
+        const conversationId = req.body.conversationId || null;
+        extractAndSaveMemories(lastUserMessage, content, conversationId)
+            .catch(e => console.error('[AI Memory] Background extraction error:', e.message));
 
         return res.status(200).json({
             role: 'assistant',

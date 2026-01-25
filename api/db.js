@@ -218,6 +218,24 @@ export async function initDatabase() {
             )
         `);
 
+        // AI User Memories - Persistent memory for AI personalization
+        // Stores facts the AI learns about the user over time
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS ai_user_memories (
+                id VARCHAR(36) PRIMARY KEY,
+                category VARCHAR(50) NOT NULL,
+                content TEXT NOT NULL,
+                confidence DECIMAL(3,2) DEFAULT 1.00,
+                source_conversation_id VARCHAR(36),
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_category (category),
+                INDEX idx_active (is_active),
+                INDEX idx_updated (updated_at)
+            )
+        `);
+
         // Run cleanup on init: delete daily data older than 24h
         await connection.execute(`
             DELETE FROM daily_todos WHERE created_at < NOW() - INTERVAL 1 DAY

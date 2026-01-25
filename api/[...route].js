@@ -147,6 +147,37 @@ export default async function handler(req, res) {
             return res.status(405).json({ error: 'Method not allowed for custom-apps' });
         }
 
+        // Route: /api/ai-memories
+        if (route === 'ai-memories') {
+            if (req.method === 'GET') {
+                const [memories] = await db.execute(
+                    `SELECT id, category, content, confidence, created_at, updated_at 
+                     FROM ai_user_memories 
+                     WHERE is_active = TRUE 
+                     ORDER BY category, updated_at DESC`
+                );
+                return res.status(200).json({
+                    count: memories.length,
+                    memories: memories
+                });
+            }
+
+            if (req.method === 'DELETE') {
+                const memoryId = subRoute || null;
+                if (memoryId === 'all') {
+                    await db.execute('DELETE FROM ai_user_memories');
+                    return res.status(200).json({ deleted: 'all' });
+                }
+                if (memoryId) {
+                    await db.execute('DELETE FROM ai_user_memories WHERE id = ?', [memoryId]);
+                    return res.status(200).json({ deleted: memoryId });
+                }
+                return res.status(400).json({ error: 'Provide memory id or use /all' });
+            }
+
+            return res.status(405).json({ error: 'Method not allowed for ai-memories' });
+        }
+
         return res.status(404).json({ error: `Route ${route} not found` });
     } catch (error) {
         console.error('[Unified API] Error:', error);

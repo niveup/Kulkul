@@ -295,10 +295,10 @@ async function fetchUserMemories() {
         const db = await getDbPool();
 
         const [memories] = await db.execute(
-            `SELECT category, content, confidence 
+            `SELECT category, content, confidence, source 
              FROM ai_user_memories 
              WHERE is_active = TRUE 
-             ORDER BY category, updated_at DESC 
+             ORDER BY source DESC, category, updated_at DESC 
              LIMIT 30`
         );
 
@@ -436,8 +436,8 @@ async function extractAndSaveMemories(userMessage, aiResponse, conversationId) {
                 const id = generateId();
                 try {
                     await db.execute(
-                        `INSERT INTO ai_user_memories (id, category, content, source_conversation_id) 
-                         VALUES (?, ?, ?, ?)
+                        `INSERT INTO ai_user_memories (id, category, content, source, source_conversation_id) 
+                         VALUES (?, ?, ?, 'ai', ?)
                          ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = CURRENT_TIMESTAMP`,
                         [id, e.category, e.content, conversationId || null]
                     );

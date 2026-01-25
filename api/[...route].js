@@ -151,10 +151,10 @@ export default async function handler(req, res) {
         if (route === 'ai-memories') {
             if (req.method === 'GET') {
                 const [memories] = await db.execute(
-                    `SELECT id, category, content, confidence, created_at, updated_at 
+                    `SELECT id, category, content, confidence, source, created_at, updated_at 
                      FROM ai_user_memories 
                      WHERE is_active = TRUE 
-                     ORDER BY category, updated_at DESC`
+                     ORDER BY source DESC, category, updated_at DESC`
                 );
                 return res.status(200).json({
                     count: memories.length,
@@ -162,16 +162,69 @@ export default async function handler(req, res) {
                 });
             }
 
+            // POST: User manually adds a memory
+            if (req.method === 'POST') {
+                const { category, content } = req.body;
+                if (!category || !content) {
+                    return res.status(400).json({ error: 'category and content required' });
+                }
+
+                // Valid categories for user-added memories
+                const validCategories = [
+                    'exam_goal', 'weak_subject', 'strong_subject', 'study_preference',
+                    'schedule', 'milestone', 'personal', 'custom'
+                ];
+
+                if (!validCategories.includes(category)) {
+                    return res.status(400).json({
+                        error: 'Invalid category',
+                        validCategories
+                    });
+                }
+
+                const newId = generateId();
+                await db.execute(
+                    `INSERT INTO ai_user_memories (id, category, content, source) VALUES (?, ?, ?, 'user')`,
+                    [newId, category, content]
+                );
+
+                return res.status(201).json({
+                    id: newId,
+                    category,
+                    content,
+                    source: 'user',
+                    message: 'Memory added successfully'
+                });
+            }
+
+            // DELETE: Users can only delete user-created memories (not AI-created)
             if (req.method === 'DELETE') {
                 const memoryId = subRoute || null;
+
                 if (memoryId === 'all') {
-                    await db.execute('DELETE FROM ai_user_memories');
-                    return res.status(200).json({ deleted: 'all' });
+                    // Only delete user-created memories
+                    const [result] = await db.execute("DELETE FROM ai_user_memories WHERE source = 'user'");
+                    return res.status(200).json({ deleted: 'all user memories', count: result.affectedRows });
                 }
+
                 if (memoryId) {
+                    // Check if it's a user-created memory before deleting
+                    const [check] = await db.execute('SELECT source FROM ai_user_memories WHERE id = ?', [memoryId]);
+
+                    if (check.length === 0) {
+                        return res.status(404).json({ error: 'Memory not found' });
+                    }
+
+                    if (check[0].source === 'ai') {
+                        return res.status(403).json({
+                            error: 'Cannot delete AI-created memories. Only the AI can manage its own memories.'
+                        });
+                    }
+
                     await db.execute('DELETE FROM ai_user_memories WHERE id = ?', [memoryId]);
                     return res.status(200).json({ deleted: memoryId });
                 }
+
                 return res.status(400).json({ error: 'Provide memory id or use /all' });
             }
 

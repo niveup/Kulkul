@@ -226,15 +226,24 @@ export async function initDatabase() {
                 category VARCHAR(50) NOT NULL,
                 content TEXT NOT NULL,
                 confidence DECIMAL(3,2) DEFAULT 1.00,
+                source ENUM('user', 'ai') DEFAULT 'ai',
                 source_conversation_id VARCHAR(36),
                 is_active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_category (category),
                 INDEX idx_active (is_active),
+                INDEX idx_source (source),
                 INDEX idx_updated (updated_at)
             )
         `);
+
+        // Migration: Add source column if it doesn't exist (for existing tables)
+        try {
+            await connection.execute(`ALTER TABLE ai_user_memories ADD COLUMN source ENUM('user', 'ai') DEFAULT 'ai' AFTER confidence`);
+        } catch (e) {
+            // Column already exists, ignore
+        }
 
         // Run cleanup on init: delete daily data older than 24h
         await connection.execute(`

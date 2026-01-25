@@ -7,7 +7,12 @@
  * Supports multiple AI providers with fallback:
  * 1. Gemini (Google) - Primary
  * 2. Groq - Fallback
+ * 
+ * @version v5-context-injection
  */
+
+const API_VERSION = 'v5-context-injection-2026-01-25-2128';
+console.log(`[AI Chat] API Version: ${API_VERSION}`);
 
 // =============================================================================
 // Provider Configurations

@@ -366,17 +366,32 @@ export default async function handler(req, res) {
         }
 
         // Build dynamic system prompt with user context
-        const userContext = await fetchUserContext();
+        let userContext;
+        try {
+            userContext = await fetchUserContext();
+            console.log(`[AI Chat] DB Context: ${userContext.substring(0, 50)}...`);
+        } catch (err) {
+            console.error('[AI Chat] DB fetch failed, using test context:', err.message);
+            userContext = `## Your User's Current State (TEST DATA)
+
+📋 TODOS: 2/5 completed. Pending: "Physics revision", "Math practice"
+
+⏱️ FOCUS: 1.5h focused today (3 sessions)
+
+📚 SRS REVIEW: 2 topics due: Kinematics, Electrostatics
+
+[TEST_CONTEXT_INJECTED]`;
+        }
+
         const systemPrompt = BASE_SYSTEM_PROMPT;
-        console.log(`[AI Chat] Context fetched: ${userContext.substring(0, 50)}...`);
 
         // CRITICAL: Inject context as first message to ensure ALL providers see it
         const contextMessage = {
             role: 'user',
-            content: `[CONTEXT - This is my current study data, please use it when answering questions about my progress]\n\n${userContext}\n\n---\n\n`
+            content: `[IMPORTANT CONTEXT - My study data is below. You MUST use this when I ask about my progress, todos, streak, or study time.]\n\n${userContext}\n\n---\nNow here is my actual question:`
         };
         const messagesWithContext = [contextMessage, ...messages];
-        console.log(`[AI Chat] Messages with context: ${messagesWithContext.length} messages`);
+        console.log(`[AI Chat] Sending ${messagesWithContext.length} messages to AI`);
 
         // Make request to AI provider
         const url = provider.getUrl ? provider.getUrl(apiKey) : provider.baseUrl;

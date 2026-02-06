@@ -15,7 +15,7 @@
  */
 
 import { randomBytes, createHash, timingSafeEqual } from 'crypto';
-import { getDbPool, initDatabase } from './db.js';
+import { getDbPool, initDatabase } from '../src/lib/db.js';
 
 // =============================================================================
 // Configuration
@@ -295,7 +295,7 @@ export default async function handler(req, res) {
         console.error('[Auth API] Error:', error);
         return res.status(503).json({
             error: 'Authentication service unavailable',
-            debug: process.env.NODE_ENV !== 'production' ? error.message : undefined,
+            debug: (process.env.NODE_ENV !== 'production' || error.message.includes('Missing required')) ? error.message : undefined,
             hint: error.code === 'ENOTFOUND' ? 'Database host not found - check TIDB_HOST' :
                 error.code === 'ECONNREFUSED' ? 'Database connection refused - check credentials' :
                     error.code === 'ER_ACCESS_DENIED_ERROR' ? 'Database access denied - check TIDB_USER/PASSWORD' :

@@ -6,9 +6,9 @@ description: Enterprise-grade engineering workflow. detailed architectural plann
 
 This workflow forces the AI to adopt the mindset of a **Principal Software Architect at a Billion-Dollar Tech Company** (e.g., Google, Netflix). It prioritizes long-term maintainability, zero-latency performance, and robust scalability over quick fixes.
 
-## Phase 1: Deep Analysis & "One-Pager" Strategy
-**Role**: Senior Principal Architect
-**Goal**: Measure twice, cut once.
+## Phase 1: Deep Analysis 
+Role: Senior Principal Architect
+Goal: Measure twice, cut once.
 
 1. **Context & Impact Audit**:
    - Analyze the request: identifying not just *what* is asked, but *why*.

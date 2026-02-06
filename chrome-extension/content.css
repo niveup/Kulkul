@@ -1,0 +1,602 @@
+/* StudyHub Quick Capture - Content Script Styles */
+
+#studyhub-capture-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999999;
+    cursor: crosshair;
+}
+
+.studyhub-capture-instructions {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1000000;
+}
+
+#studyhub-fullpage-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+#studyhub-fullpage-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+#studyhub-selection-box {
+    position: fixed;
+    border: 2px dashed #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    z-index: 999998;
+    display: none;
+    pointer-events: none;
+}
+
+/* Preview Modal */
+#studyhub-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.studyhub-preview-container {
+    background: linear-gradient(145deg, #1e1e2e 0%, #252540 100%);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.studyhub-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.studyhub-preview-header h3 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.studyhub-close-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.studyhub-close-btn:hover {
+    background: rgba(239, 68, 68, 0.8);
+}
+
+.studyhub-preview-image-container {
+    flex: 1;
+    overflow: auto;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    max-height: 50vh;
+}
+
+#studyhub-preview-img {
+    max-width: 100%;
+    display: block;
+}
+
+.studyhub-preview-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#studyhub-title {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+#studyhub-title::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+#studyhub-title:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+#studyhub-note-select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+#studyhub-note-select option {
+    background: #1e1e2e;
+    color: #fff;
+}
+
+.studyhub-preview-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.studyhub-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.studyhub-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.studyhub-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.studyhub-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+}
+
+.studyhub-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+.studyhub-status {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.studyhub-status-loading {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.studyhub-status-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.studyhub-status-error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Toggle Buttons */
+.studyhub-destination-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.studyhub-toggle-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.studyhub-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.studyhub-toggle-btn.active {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+/* Section container */
+.studyhub-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Search Input */
+.studyhub-search {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+}
+
+.studyhub-search:focus {
+    border-color: #10b981;
+}
+
+.studyhub-search::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Multi-line select */
+#studyhub-note-select[size] {
+    height: 120px;
+    padding: 8px;
+}
+
+#studyhub-note-select[size] option {
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+}
+
+#studyhub-note-select[size] option:checked {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Subject select */
+#studyhub-subject {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+#studyhub-subject option {
+    background: #1e1e2e;
+    color: #fff;
+}
+
+/* New title input */
+#studyhub-new-title {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+}
+
+#studyhub-new-title:focus {
+    border-color: #10b981;
+}
+
+#studyhub-new-title::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Description textarea */
+#studyhub-description {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+    min-height: 50px;
+    font-family: inherit;
+}
+
+#studyhub-description:focus {
+    border-color: #10b981;
+}
+
+#studyhub-description::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* === WEBAPP-MATCHING NEW NOTE FORM === */
+
+/* Type Pills Container */
+.studyhub-type-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.studyhub-type-pill {
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.studyhub-type-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Active states by color */
+.studyhub-type-pill.active[data-color="emerald"] {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.studyhub-type-pill.active[data-color="blue"] {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.studyhub-type-pill.active[data-color="amber"] {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.studyhub-type-pill.active[data-color="red"] {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.studyhub-type-pill.active[data-color="purple"] {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: #a855f7;
+    color: #a855f7;
+}
+
+.studyhub-type-pill.active[data-color="cyan"] {
+    background: rgba(6, 182, 212, 0.2);
+    border-color: #06b6d4;
+    color: #06b6d4;
+}
+
+/* Form Row Layout */
+.studyhub-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.studyhub-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.studyhub-form-group-small {
+    max-width: 120px;
+}
+
+/* Labels */
+.studyhub-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+}
+
+/* All form inputs in new section */
+#studyhub-new-section input[type="text"],
+#studyhub-new-section select,
+#studyhub-new-section textarea {
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#studyhub-new-section input[type="text"]:focus,
+#studyhub-new-section select:focus,
+#studyhub-new-section textarea:focus {
+    border-color: #10b981;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#studyhub-new-section input::placeholder,
+#studyhub-new-section textarea::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+#studyhub-new-section select option {
+    background: #1e1e2e;
+    color: #fff;
+}
+
+/* Priority select colors - removed as field is gone */
+
+/* Description specific */
+#studyhub-new-section textarea {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* Links Section */
+.studyhub-links-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.studyhub-link-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.studyhub-link-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
+    /* Match other inputs */
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px !important;
+    /* Force override */
+    padding: 8px 10px !important;
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.studyhub-link-input:focus {
+    border-color: #3b82f6;
+    /* Blue for links */
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.studyhub-remove-link {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.studyhub-remove-link:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.studyhub-add-btn {
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    /* Blue */
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 4px;
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.studyhub-add-btn:hover {
+    text-decoration: underline;
+}
+
+/* Image Name Input - Always visible at top */
+.studyhub-image-name-group {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.studyhub-image-name-group .studyhub-label {
+    color: #f59e0b;
+}
+
+.studyhub-image-name-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+
+.studyhub-image-name-input:focus {
+    border-color: #f59e0b;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.studyhub-image-name-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}

@@ -14,7 +14,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useMotionTemplate } from 'framer-motion';
 import {
     ExternalLink, Youtube, Calculator, Plus, GraduationCap,
-    Heart, MoreHorizontal, Edit2, Trash2, Link2, X
+    LayoutGrid, MoreHorizontal, Edit2, Trash2, Link2, X
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -32,12 +32,12 @@ const ICON_MAP = {
 
 const getRandomGradient = (id) => {
     const gradients = [
-        'from-violet-600 via-purple-600 to-indigo-600',
-        'from-blue-600 via-cyan-600 to-teal-600',
-        'from-emerald-600 via-green-600 to-teal-600',
-        'from-orange-600 via-amber-600 to-yellow-600',
-        'from-pink-600 via-rose-600 to-red-600',
-        'from-indigo-600 via-blue-600 to-cyan-600',
+        'from-amber-600 via-amber-500 to-orange-600',
+        'from-indigo-600 via-indigo-500 to-blue-600',
+        'from-slate-600 via-slate-500 to-slate-400',
+        'from-sky-600 via-sky-500 to-indigo-600',
+        'from-blue-600 via-blue-500 to-indigo-600',
+        'from-orange-600 via-orange-500 to-amber-600',
     ];
     const hash = id?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0;
     return gradients[hash % gradients.length];
@@ -98,9 +98,10 @@ const ContextMenu = ({ x, y, onClose, onEdit, onDelete, appTitle }) => {
             </button>
             <button
                 onClick={(e) => {
+                    console.log('ContextMenu: Remove clicked');
                     e.stopPropagation();
-                    onClose();
                     onDelete();
+                    onClose();
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors group"
             >
@@ -196,11 +197,11 @@ const QuickApp = React.memo(({ title, name, icon: Icon, color, image, url, id, o
             x: e.clientX,
             y: e.clientY,
             appId: id,
-            appTitle: title,
+            appTitle: displayTitle,
             onEdit: () => onEdit(),
             onDelete: () => onDelete()
         });
-    }, [id, title, onEdit, onDelete, setContextMenu]);
+    }, [id, displayTitle, onEdit, onDelete, setContextMenu]);
 
     // Icon Normalization Helper
     const ValidIcon = useMemo(() => {
@@ -369,7 +370,7 @@ const AddAppButton = ({ onClick }) => {
                 {isHovered && (
                     <motion.div
                         layoutId="glow"
-                        className="absolute inset-0 rounded-[24%] bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-md"
+                        className="absolute inset-0 rounded-[24%] bg-gradient-to-tr from-amber-500/20 to-orange-500/20 blur-md"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -431,10 +432,10 @@ export const QuickAccess = ({ apps = [], onAddApp, onEditApp, onDeleteApp }) => 
     const [contextMenu, setContextMenu] = useState(null);
 
     const defaultApps = [
-        { id: 'physics', title: 'Physics', icon: GraduationCap, color: 'from-blue-600 to-indigo-600' },
-        { id: 'updates', title: 'Updates', icon: ExternalLink, color: 'from-violet-600 to-purple-600' },
+        { id: 'physics', title: 'Physics', icon: GraduationCap, color: 'from-amber-600 to-orange-600' },
+        { id: 'updates', title: 'Updates', icon: ExternalLink, color: 'from-indigo-600 to-blue-600' },
         { id: 'calculator', title: 'Calculator', icon: Calculator, color: 'from-slate-600 to-slate-500' },
-        { id: 'youtube', title: 'YouTube', icon: Youtube, color: 'from-red-600 to-rose-600' },
+        { id: 'youtube', title: 'YouTube', icon: Youtube, color: 'from-red-600 to-rose-700' },
     ];
 
     const displayApps = apps.length > 0 ? apps : defaultApps;
@@ -444,8 +445,8 @@ export const QuickAccess = ({ apps = [], onAddApp, onEditApp, onDeleteApp }) => 
             {/* Header */}
             <div className="flex justify-between items-center mb-6 px-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-white/10 shadow-[inner_0_0_10px_rgba(244,63,94,0.2)]">
-                        <Heart size={16} className="text-pink-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]" fill="currentColor" />
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-white/10 shadow-[inner_0_0_10px_rgba(245,158,11,0.2)]">
+                        <LayoutGrid size={16} className="text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -459,8 +460,9 @@ export const QuickAccess = ({ apps = [], onAddApp, onEditApp, onDeleteApp }) => 
                 </div>
             </div>
 
-            {/* Spotlight Grid */}
-            <SpotlightGrid className="rounded-3xl border border-white/5 bg-black/20 p-6 backdrop-blur-sm">
+            {/* Spotlight Grid - Study Studio Card Style */}
+            <SpotlightGrid className="rounded-3xl border border-white/[0.05] bg-[#0c0e14]/40 p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-6">
                     <AnimatePresence mode='popLayout'>
                         {displayApps.map((app, index) => (

@@ -170,7 +170,28 @@ async function initDatabase() {
       )
     `);
 
-    console.log('✅ TiDB tables initialized (including SRS, Active Timer, Custom Apps)');
+    // Learning Notes table - Personal Knowledge Bank
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS learning_notes (
+        id VARCHAR(36) PRIMARY KEY,
+        type ENUM('concept', 'question', 'formula', 'trick', 'mistake', 'doubt', 'resource') NOT NULL,
+        subject VARCHAR(50) NOT NULL,
+        topic VARCHAR(255),
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        tags TEXT,
+        priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
+        source VARCHAR(500),
+        is_revised BOOLEAN DEFAULT FALSE,
+        revision_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_subject (subject),
+        INDEX idx_type (type)
+      )
+    `);
+
+    console.log('✅ TiDB tables initialized (including SRS, Active Timer, Custom Apps, Learning Notes)');
     isDbInitialized = true;
   } finally {
     connection.release();
@@ -1202,14 +1223,39 @@ export default defineConfig({
               console.log('[Vault] Cleanup skipped:', cleanupErr.message);
             }
 
+            // Create vault_folders table
+            try {
+              await db.execute(`
+                CREATE TABLE IF NOT EXISTS vault_folders (
+                  id VARCHAR(36) PRIMARY KEY,
+                  name VARCHAR(255) NOT NULL,
+                  parent_id VARCHAR(36) NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (parent_id) REFERENCES vault_folders(id) ON DELETE CASCADE
+                )
+              `);
+
+              // Add folder_id to pdf_uploads if not exists
+              try {
+                await db.execute(`ALTER TABLE pdf_uploads ADD COLUMN folder_id VARCHAR(36) NULL`);
+                await db.execute(`ALTER TABLE pdf_uploads ADD CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES vault_folders(id) ON DELETE SET NULL`);
+              } catch (e) { /* Column or constraint already exists */ }
+            } catch (e) { /* Table exists */ }
+
             if (req.method === 'GET' && (action === 'list' || action === '')) {
               // List active files (not in trash)
               const [rows] = await db.execute(`
-                SELECT id, filename, size_bytes, mega_node_id, mega_download_url, created_at
+                SELECT id, filename, size_bytes, mega_node_id, mega_download_url, created_at, folder_id
                 FROM pdf_uploads
                 WHERE deleted_at IS NULL
                 ORDER BY created_at DESC
               `);
+
+              // Get folders
+              const [folderRows] = await db.execute(`
+                SELECT id, name, parent_id, created_at FROM vault_folders ORDER BY name ASC
+              `);
+
 
               res.statusCode = 200;
               res.end(JSON.stringify({
@@ -1220,6 +1266,17 @@ export default defineConfig({
                   size: row.size_bytes,
                   megaNodeId: row.mega_node_id,
                   downloadUrl: row.mega_download_url,
+                  name: row.filename,
+                  size: row.size_bytes,
+                  megaNodeId: row.mega_node_id,
+                  downloadUrl: row.mega_download_url,
+                  createdAt: row.created_at,
+                  folderId: row.folder_id
+                })),
+                folders: folderRows.map(row => ({
+                  id: row.id,
+                  name: row.name,
+                  parentId: row.parent_id,
                   createdAt: row.created_at
                 }))
               }));
@@ -1365,12 +1422,165 @@ export default defineConfig({
                 megaNodeId: megaNodeId // Client should use this to delete from MEGA
               }));
 
+            } else if (req.method === 'POST' && action === 'folders') {
+              // Folder Management (create, delete, rename)
+              // Sub-action in query or body? Let's use body 'type'
+              const { type } = body;
+
+              if (type === 'create') {
+                const { name, parentId } = body;
+                const newId = crypto.randomUUID();
+                await db.execute(
+                  'INSERT INTO vault_folders (id, name, parent_id) VALUES (?, ?, ?)',
+                  [newId, name, parentId || null]
+                );
+                res.statusCode = 201;
+                res.end(JSON.stringify({ success: true, folder: { id: newId, name, parentId } }));
+
+              } else if (type === 'delete') {
+                const { id } = body;
+                await db.execute('DELETE FROM vault_folders WHERE id = ?', [id]);
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true, id }));
+              }
+
+            } else if (req.method === 'POST' && action === 'move') {
+              // Move file to folder
+              const { fileId, folderId } = body;
+
+              if (!fileId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'fileId required' }));
+                return;
+              }
+
+              await db.execute(
+                'UPDATE pdf_uploads SET folder_id = ? WHERE id = ?',
+                [folderId || null, fileId]
+              );
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, fileId, folderId }));
+
             } else {
               res.statusCode = 405;
               res.end(JSON.stringify({ error: `Method ${req.method} or action ${action} not allowed` }));
             }
           } catch (error) {
             console.error('[Vault API] Error:', error);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
+        // Learning Notes API middleware
+        server.middlewares.use('/api/notes', async (req, res, next) => {
+          console.log('[Notes API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            // Extract query parameters manually
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const noteId = url.searchParams.get('id');
+
+            // Parse body for POST/PUT requests
+            let body = {};
+            if (req.method === 'POST' || req.method === 'PUT') {
+              const chunks = [];
+              for await (const chunk of req) chunks.push(chunk);
+              const raw = Buffer.concat(chunks).toString();
+              if (raw) body = JSON.parse(raw);
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+
+            if (req.method === 'GET') {
+              if (noteId) {
+                const [notes] = await db.execute('SELECT * FROM learning_notes WHERE id = ?', [noteId]);
+                if (notes.length === 0) {
+                  res.statusCode = 404;
+                  res.end(JSON.stringify({ error: 'Note not found' }));
+                } else {
+                  res.statusCode = 200;
+                  res.end(JSON.stringify(notes[0]));
+                }
+              } else {
+                const [notes] = await db.execute('SELECT * FROM learning_notes ORDER BY created_at DESC');
+                res.statusCode = 200;
+                res.end(JSON.stringify(notes));
+              }
+            } else if (req.method === 'POST') {
+              const { id, type, subject, topic, title, description, tags, priority, source } = body;
+              const newId = id || crypto.randomUUID();
+
+              await db.execute(
+                `INSERT INTO learning_notes (id, type, subject, topic, title, description, tags, priority, source) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [newId, type, subject, topic, title, description, tags, priority, source]
+              );
+
+              res.statusCode = 201;
+              res.end(JSON.stringify({ id: newId, message: 'Note created successfully' }));
+            } else if (req.method === 'PUT') {
+              if (!noteId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Note ID required' }));
+                return;
+              }
+
+              const { type, subject, topic, title, description, tags, priority, source, is_revised, revision_count } = body;
+
+              const [existing] = await db.execute('SELECT * FROM learning_notes WHERE id = ?', [noteId]);
+              if (existing.length === 0) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: 'Note not found' }));
+                return;
+              }
+
+              // Build dynamic update to only change provided fields if needed, 
+              // but for now we follow the simple pattern of existing APIs
+              await db.execute(
+                `UPDATE learning_notes SET 
+                  type = ?, subject = ?, topic = ?, title = ?, 
+                  description = ?, tags = ?, priority = ?, source = ?, 
+                  is_revised = ?, revision_count = ?
+                 WHERE id = ?`,
+                [
+                  type || existing[0].type,
+                  subject || existing[0].subject,
+                  topic || existing[0].topic,
+                  title || existing[0].title,
+                  description || existing[0].description,
+                  tags || existing[0].tags,
+                  priority || existing[0].priority,
+                  source || existing[0].source,
+                  is_revised !== undefined ? is_revised : existing[0].is_revised,
+                  revision_count !== undefined ? revision_count : existing[0].revision_count,
+                  noteId
+                ]
+              );
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({ id: noteId, message: 'Note updated successfully' }));
+            } else if (req.method === 'DELETE') {
+              if (!noteId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Note ID required' }));
+                return;
+              }
+
+              await db.execute('DELETE FROM learning_notes WHERE id = ?', [noteId]);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ message: 'Note deleted successfully' }));
+            } else {
+              res.statusCode = 405;
+              res.end(JSON.stringify({ error: `Method ${req.method} not allowed` }));
+            }
+          } catch (error) {
+            console.error('[Notes API] Error:', error);
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: error.message }));

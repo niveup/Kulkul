@@ -298,7 +298,7 @@ const PdfViewerModal = ({ file, onClose, pdfCache }) => {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2 shrink-0">
                     {/* Page navigation */}
                     {numPages && (
                         <div className="flex items-center gap-1 mr-2 px-2 py-1 rounded-lg bg-white/5 border border-white/5">

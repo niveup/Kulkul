@@ -2,39 +2,21 @@
  * ResourceCanvas - Main Grid Container
  * 
  * Features:
- * - DndKit drag-and-drop
- * - Glassmorphism 3.0 aesthetics
- * - Edit mode with visual grid
+ * - Emerald/Teal aesthetics
+ * - Hierarchy-based navigation (Breadcrumbs)
+ * - Subtopic filtering
  * - Mouse-tracking spotlight effect
  */
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    DragOverlay
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    rectSortingStrategy
-} from '@dnd-kit/sortable';
-import {
     useResourceStore,
-    useIsEditMode,
     useTheme,
     useResourceActions
 } from '../../store/resourceStore';
-import DraggableWidget from './DraggableWidget';
-import EditToolbar from './EditToolbar';
-import WidgetEditor from './WidgetEditor';
-import GraphPlayground from './GraphPlayground';
+import ConceptCard from './ConceptCard';
+import Breadcrumb from './Breadcrumb';
 import { cn } from '../../lib/utils';
 import { Search, ChevronDown, Atom, Calculator, Beaker, Clock, PieChart, Moon, Sun, X, Lightbulb, Sparkles, LineChart } from 'lucide-react';
 import katex from 'katex';
@@ -44,17 +26,16 @@ import 'katex/dist/katex.min.css';
 // ANIMATION VARIANTS
 // =============================================================================
 const containerVariants = {
-    hidden: { opacity: 0 },
+    hidden: { scale: 0.98 },
     visible: {
-        opacity: 1,
+        scale: 1,
         transition: { staggerChildren: 0.04, delayChildren: 0.1 }
     }
 };
 
 const itemVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    hidden: { y: 20, scale: 0.95 },
     visible: {
-        opacity: 1,
         y: 0,
         scale: 1,
         transition: { type: 'spring', stiffness: 300, damping: 24 }
@@ -66,21 +47,16 @@ const itemVariants = {
 // =============================================================================
 const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
     const resources = useResourceStore((s) => s.resources);
-    const layouts = useResourceStore((s) => s.layouts);
-    const isEditMode = useIsEditMode();
     const theme = useTheme();
     const actions = useResourceActions();
 
-    // Local state
     const [selectedClass, setSelectedClass] = useState('12');
     const [selectedSubject, setSelectedSubject] = useState('Physics');
     const [selectedTopic, setSelectedTopic] = useState(null);
+    const [selectedSubtopic, setSelectedSubtopic] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenu, setActiveMenu] = useState(null);
-    const [editingWidget, setEditingWidget] = useState(null);
-    const [activeGraphWidget, setActiveGraphWidget] = useState(null);
     const [viewingConcept, setViewingConcept] = useState(null);
-    const [activeId, setActiveId] = useState(null);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     // Refs
@@ -88,14 +64,7 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
     const canvasRef = useRef(null);
     const topicStartTimeRef = useRef(Date.now());
 
-    // Mouse tracking for spotlight effect
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-    // DndKit sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
 
     // Timer effect
     useEffect(() => {
@@ -131,14 +100,31 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
 
     // Filtered concepts
     const filteredConcepts = useMemo(() => {
-        if (!searchTerm.trim()) return concepts;
+        let result = concepts;
+
+        // Subtopic filter
+        if (selectedSubtopic !== 'All') {
+            result = result.filter(c => c.subtopic === selectedSubtopic);
+        }
+
+        if (!searchTerm.trim()) return result;
         const term = searchTerm.toLowerCase();
-        return concepts.filter(c =>
+        return result.filter(c =>
             c.concept?.toLowerCase().includes(term) ||
             c.theory?.toLowerCase().includes(term) ||
-            c.formula?.toLowerCase().includes(term)
+            c.formula?.toLowerCase().includes(term) ||
+            c.tags?.some(t => t.toLowerCase().includes(term))
         );
-    }, [concepts, searchTerm]);
+    }, [concepts, searchTerm, selectedSubtopic]);
+
+    // Available subtopics for current topic
+    const subtopics = useMemo(() => {
+        const subs = new Set(['All']);
+        concepts.forEach(c => {
+            if (c.subtopic) subs.add(c.subtopic);
+        });
+        return Array.from(subs);
+    }, [concepts]);
 
     // Handle topic change
     const handleTopicChange = useCallback((topicKey) => {
@@ -148,32 +134,7 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
         setActiveMenu(null);
     }, []);
 
-    // Handle drag end
-    const handleDragEnd = useCallback((event) => {
-        const { active, over } = event;
-        setActiveId(null);
 
-        if (active.id !== over?.id && isEditMode) {
-            // Reorder logic would go here
-            // For now, we'll just update the layout
-            console.log('Reorder:', active.id, 'to', over?.id);
-        }
-    }, [isEditMode]);
-
-    // Handle drag start
-    const handleDragStart = useCallback((event) => {
-        setActiveId(event.active.id);
-    }, []);
-
-    // Mouse move handler for spotlight
-    const handleMouseMove = useCallback((e) => {
-        if (!canvasRef.current) return;
-        const rect = canvasRef.current.getBoundingClientRect();
-        setMousePos({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        });
-    }, []);
 
     // Click outside menu
     useEffect(() => {
@@ -198,39 +159,12 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
     return (
         <div
             ref={canvasRef}
-            onMouseMove={handleMouseMove}
             className={cn(
                 'min-h-screen w-full transition-colors duration-500 relative',
                 isDarkMode ? 'bg-slate-950' : 'bg-slate-50'
             )}
         >
-            {/* Spotlight Effect (visible in edit mode) */}
-            {isEditMode && (
-                <div
-                    className="pointer-events-none absolute inset-0 z-0 opacity-30"
-                    style={{
-                        background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, ${isDarkMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)'
-                            }, transparent 40%)`
-                    }}
-                />
-            )}
-
-            {/* Edit Mode Grid Pattern */}
-            {isEditMode && (
-                <div
-                    className={cn(
-                        'absolute inset-0 z-0 pointer-events-none',
-                        isDarkMode ? 'opacity-10' : 'opacity-5'
-                    )}
-                    style={{
-                        backgroundImage: `
-              linear-gradient(${isDarkMode ? '#6366f1' : '#6366f1'} 1px, transparent 1px),
-              linear-gradient(90deg, ${isDarkMode ? '#6366f1' : '#6366f1'} 1px, transparent 1px)
-            `,
-                        backgroundSize: '40px 40px'
-                    }}
-                />
-            )}
+            {/* Edit Mode Grid Pattern - Removed for clarity */}
 
             {/* ============ NAVIGATION BAR ============ */}
             <nav
@@ -242,264 +176,234 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                         : 'bg-white/80 border-slate-200/50'
                 )}
             >
-                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                    {/* Left: Class & Subject Selectors */}
-                    <div className="flex items-center gap-2">
-                        {['11', '12'].map((cls) => (
-                            <div key={cls} className="relative">
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setActiveMenu(activeMenu === cls ? null : cls)}
-                                    className={cn(
-                                        'flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all',
-                                        activeMenu === cls
-                                            ? isDarkMode
-                                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
-                                                : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                            : isDarkMode
-                                                ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
-                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                    )}
-                                >
-                                    Class {cls}
-                                    <motion.div animate={{ rotate: activeMenu === cls ? 180 : 0 }}>
-                                        <ChevronDown size={16} />
-                                    </motion.div>
-                                </motion.button>
-
-                                {/* Dropdown */}
-                                <AnimatePresence>
-                                    {activeMenu === cls && (
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                            className={cn(
-                                                'absolute top-full left-0 mt-2 w-[500px] p-4 rounded-2xl border shadow-2xl backdrop-blur-2xl z-50 grid grid-cols-12 gap-4',
-                                                isDarkMode
-                                                    ? 'bg-slate-900/95 border-slate-700/50'
-                                                    : 'bg-white/95 border-slate-200/50'
-                                            )}
-                                        >
-                                            {/* Subjects */}
-                                            <div className={cn('col-span-4 border-r pr-4', isDarkMode ? 'border-slate-700/50' : 'border-slate-200')}>
-                                                <h4 className={cn('text-xs font-bold uppercase tracking-wider mb-3', isDarkMode ? 'text-indigo-400' : 'text-indigo-600')}>
-                                                    Subjects
-                                                </h4>
-                                                <div className="space-y-1">
-                                                    {['Physics', 'Chemistry', 'Math'].map(subj => (
-                                                        <button
-                                                            key={subj}
-                                                            onClick={() => {
-                                                                setSelectedClass(cls);
-                                                                setSelectedSubject(subj);
-                                                                setSelectedTopic(null);
-                                                            }}
-                                                            className={cn(
-                                                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left font-medium transition-all',
-                                                                selectedSubject === subj && selectedClass === cls
-                                                                    ? isDarkMode ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
-                                                                    : isDarkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                                            )}
-                                                        >
-                                                            <SubjectIcon subject={subj} />
-                                                            {subj}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Topics */}
-                                            <div className="col-span-8 max-h-[300px] overflow-y-auto">
-                                                <h4 className={cn('text-xs font-bold uppercase tracking-wider mb-3 sticky top-0 py-1 backdrop-blur-sm', isDarkMode ? 'text-indigo-400 bg-slate-900/80' : 'text-indigo-600 bg-white/80')}>
-                                                    Topics
-                                                </h4>
-                                                <div className="grid grid-cols-2 gap-1">
-                                                    {topics.map((topic) => (
-                                                        <button
-                                                            key={topic.key}
-                                                            onClick={() => handleTopicChange(topic.key)}
-                                                            className={cn(
-                                                                'text-left px-3 py-2 rounded-lg text-sm font-medium transition-all truncate',
-                                                                selectedTopic === topic.key
-                                                                    ? isDarkMode ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
-                                                                    : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-indigo-500/20' : 'text-slate-600 hover:text-indigo-700 hover:bg-indigo-50'
-                                                            )}
-                                                        >
-                                                            {topic.name}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
+                <div className="max-w-7xl mx-auto flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-4">
+                        {/* Left: Class & Subject Selectors */}
+                        <div className="flex items-center gap-2">
+                            {['11', '12'].map((cls) => (
+                                <div key={cls} className="relative">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setActiveMenu(activeMenu === cls ? null : cls)}
+                                        className={cn(
+                                            'flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all',
+                                            activeMenu === cls
+                                                ? isDarkMode
+                                                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                                                    : 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                                                : isDarkMode
+                                                    ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        )}
+                                    >
+                                        Class {cls}
+                                        <motion.div animate={{ rotate: activeMenu === cls ? 180 : 0 }}>
+                                            <ChevronDown size={16} />
                                         </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        ))}
+                                    </motion.button>
 
-                        {/* Current Topic Badge */}
-                        <div className={cn('h-6 w-px mx-2', isDarkMode ? 'bg-slate-700' : 'bg-slate-300')} />
-                        {selectedTopic && (
+                                    {/* Dropdown */}
+                                    <AnimatePresence>
+                                        {activeMenu === cls && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                className={cn(
+                                                    'absolute top-full left-0 mt-2 w-[500px] p-4 rounded-2xl border shadow-2xl backdrop-blur-2xl z-50 grid grid-cols-12 gap-4',
+                                                    isDarkMode
+                                                        ? 'bg-slate-900/95 border-slate-700/50'
+                                                        : 'bg-white/95 border-slate-200/50'
+                                                )}
+                                            >
+                                                {/* Subjects */}
+                                                <div className={cn('col-span-4 border-r pr-4', isDarkMode ? 'border-slate-700/50' : 'border-slate-200')}>
+                                                    <h4 className={cn('text-xs font-bold uppercase tracking-wider mb-3', isDarkMode ? 'text-emerald-400' : 'text-emerald-600')}>
+                                                        Subjects
+                                                    </h4>
+                                                    <div className="space-y-1">
+                                                        {['Physics', 'Chemistry', 'Math'].map(subj => (
+                                                            <button
+                                                                key={subj}
+                                                                onClick={() => {
+                                                                    setSelectedClass(cls);
+                                                                    setSelectedSubject(subj);
+                                                                    setSelectedTopic(null);
+                                                                    setSelectedSubtopic('All');
+                                                                }}
+                                                                className={cn(
+                                                                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left font-medium transition-all',
+                                                                    selectedSubject === subj && selectedClass === cls
+                                                                        ? isDarkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                                                                        : isDarkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                                                )}
+                                                            >
+                                                                <SubjectIcon subject={subj} />
+                                                                {subj}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Topics */}
+                                                <div className="col-span-8 max-h-[300px] overflow-y-auto">
+                                                    <h4 className={cn('text-xs font-bold uppercase tracking-wider mb-3 sticky top-0 py-1 backdrop-blur-sm', isDarkMode ? 'text-emerald-400 bg-slate-900/80' : 'text-emerald-600 bg-white/80')}>
+                                                        Topics
+                                                    </h4>
+                                                    <div className="grid grid-cols-2 gap-1">
+                                                        {topics.map((topic) => (
+                                                            <button
+                                                                key={topic.key}
+                                                                onClick={() => {
+                                                                    handleTopicChange(topic.key);
+                                                                    setSelectedSubtopic('All');
+                                                                }}
+                                                                className={cn(
+                                                                    'text-left px-3 py-2 rounded-lg text-sm font-medium transition-all truncate',
+                                                                    selectedTopic === topic.key
+                                                                        ? isDarkMode ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
+                                                                        : isDarkMode ? 'text-slate-400 hover:text-white hover:bg-emerald-500/20' : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50'
+                                                                )}
+                                                            >
+                                                                {topic.name}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            ))}
+
+                            {/* Breadcrumbs */}
+                            <div className={cn('h-6 w-px mx-2', isDarkMode ? 'bg-slate-800' : 'bg-slate-200')} />
+                            <Breadcrumb
+                                items={[
+                                    { label: selectedSubject, onClick: () => setActiveMenu(selectedClass) },
+                                    { label: resources[selectedClass]?.[selectedSubject]?.[selectedTopic]?.name || selectedTopic, onClick: () => setActiveMenu(selectedClass) }
+                                ]}
+                                isDarkMode={isDarkMode}
+                                showHome={false}
+                            />
+
+                            {/* Timer */}
                             <motion.div
-                                key={selectedTopic}
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                animate={{
+                                    backgroundColor: elapsedSeconds >= 300
+                                        ? isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)'
+                                        : isDarkMode ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 1)'
+                                }}
                                 className={cn(
-                                    'px-3 py-1.5 rounded-lg text-sm font-semibold',
-                                    isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'
+                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold ml-2',
+                                    elapsedSeconds >= 300
+                                        ? isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
+                                        : isDarkMode ? 'text-slate-400' : 'text-slate-500'
                                 )}
                             >
-                                {resources[selectedClass]?.[selectedSubject]?.[selectedTopic]?.name || selectedTopic}
+                                <Clock size={12} />
+                                <span>{String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}</span>
+                                {elapsedSeconds >= 300 && <span className="text-[10px]">✓</span>}
                             </motion.div>
-                        )}
-
-                        {/* Timer */}
-                        <motion.div
-                            animate={{
-                                backgroundColor: elapsedSeconds >= 300
-                                    ? isDarkMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.1)'
-                                    : isDarkMode ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 1)'
-                            }}
-                            className={cn(
-                                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold',
-                                elapsedSeconds >= 300
-                                    ? isDarkMode ? 'text-green-400' : 'text-green-600'
-                                    : isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                            )}
-                        >
-                            <Clock size={12} />
-                            <span>{String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:{String(elapsedSeconds % 60).padStart(2, '0')}</span>
-                            {elapsedSeconds >= 300 && <span className="text-[10px]">✓</span>}
-                        </motion.div>
-                    </div>
-
-                    {/* Right: Controls */}
-                    <div className="flex items-center gap-3">
-                        {/* Search */}
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search size={16} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search concepts..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className={cn(
-                                    'w-48 pl-9 pr-3 py-2 rounded-xl text-sm border transition-all',
-                                    isDarkMode
-                                        ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-500 focus:border-indigo-500'
-                                        : 'bg-white border-slate-200 text-slate-700 placeholder:text-slate-400 focus:border-indigo-500'
-                                )}
-                            />
                         </div>
 
-                        {/* Theme Toggle */}
-                        <motion.button
-                            whileHover={{ scale: 1.1, rotate: 15 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={onToggleTheme}
-                            className={cn(
-                                'p-2 rounded-xl transition-colors',
-                                isDarkMode
-                                    ? 'bg-slate-800 text-yellow-400 hover:bg-slate-700'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            )}
-                        >
-                            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-                        </motion.button>
+                        {/* Right: Controls */}
+                        <div className="flex items-center gap-3">
+                            {/* Search */}
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search size={16} className={cn('transition-colors', isDarkMode ? 'text-slate-500 group-focus-within:text-emerald-400' : 'text-slate-400 group-focus-within:text-emerald-500')} />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search concepts..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className={cn(
+                                        'w-64 pl-9 pr-3 py-2 rounded-xl text-sm border transition-all',
+                                        isDarkMode
+                                            ? 'bg-slate-900 border-slate-800 text-slate-200 placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50'
+                                            : 'bg-white border-slate-200 text-slate-700 placeholder:text-slate-400 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50'
+                                    )}
+                                />
+                            </div>
+                        </div>
                     </div>
+                    {/* Subtopic Filters */}
+                    {subtopics.length > 1 && (
+                        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+                            <Sparkles size={14} className={isDarkMode ? 'text-emerald-500/50' : 'text-emerald-600/50'} />
+                            <div className="flex items-center gap-1">
+                                {subtopics.map(sub => (
+                                    <button
+                                        key={sub}
+                                        onClick={() => setSelectedSubtopic(sub)}
+                                        className={cn(
+                                            'px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all border',
+                                            selectedSubtopic === sub
+                                                ? isDarkMode
+                                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                                    : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                                                : isDarkMode
+                                                    ? 'bg-slate-900/50 text-slate-500 border-slate-800 hover:text-slate-300 hover:border-slate-700'
+                                                    : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-slate-700 hover:border-slate-300'
+                                        )}
+                                    >
+                                        {sub}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </nav>
 
-            {/* ============ EDIT TOOLBAR ============ */}
-            <EditToolbar isDarkMode={isDarkMode} />
-
             {/* ============ MAIN CONTENT GRID ============ */}
             <main className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
-                    <SortableContext
-                        items={filteredConcepts.map(c => c.id)}
-                        strategy={rectSortingStrategy}
-                    >
+                    {filteredConcepts.map((concept, index) => (
                         <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                            key={concept.id}
+                            variants={itemVariants}
+                            layout
                         >
-                            {filteredConcepts.map((concept, index) => (
-                                <DraggableWidget
-                                    key={concept.id}
-                                    concept={concept}
-                                    index={index}
-                                    isDarkMode={isDarkMode}
-                                    isEditMode={isEditMode}
-                                    classLevel={selectedClass}
-                                    subject={selectedSubject}
-                                    topicKey={selectedTopic}
-                                    onEdit={() => setEditingWidget(concept)}
-                                    onViewDetail={() => setViewingConcept(concept)}
-                                    onOpenGraph={() => setActiveGraphWidget(concept)}
-                                />
-                            ))}
+                            <ConceptCard
+                                concept={concept}
+                                index={index}
+                                isDarkMode={isDarkMode}
+                                onClick={() => setViewingConcept(concept)}
+                            />
                         </motion.div>
-                    </SortableContext>
-
-                    {/* Drag Overlay */}
-                    <DragOverlay>
-                        {activeId && (
-                            <div className={cn(
-                                'p-4 rounded-2xl shadow-2xl',
-                                isDarkMode ? 'bg-slate-800 border border-indigo-500' : 'bg-white border border-indigo-400'
-                            )}>
-                                Dragging...
-                            </div>
-                        )}
-                    </DragOverlay>
-                </DndContext>
+                    ))}
+                </motion.div>
 
                 {/* Empty State */}
-                {filteredConcepts.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-20"
-                    >
-                        <p className={cn('text-lg', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-                            {searchTerm ? 'No concepts found matching your search.' : 'No concepts available for this topic.'}
-                        </p>
-                    </motion.div>
-                )}
-            </main>
+                {
+                    filteredConcepts.length === 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center py-20"
+                        >
+                            <p className={cn('text-lg', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+                                {searchTerm ? 'No concepts found matching your search.' : 'No concepts available for this topic.'}
+                            </p>
+                        </motion.div>
+                    )
+                }
+            </main >
 
-            {/* ============ WIDGET EDITOR MODAL ============ */}
-            <WidgetEditor
-                widget={editingWidget}
-                onClose={() => setEditingWidget(null)}
-                isDarkMode={isDarkMode}
-                classLevel={selectedClass}
-                subject={selectedSubject}
-                topicKey={selectedTopic}
-            />
+            {/* WIDGET EDITOR MODAL - Removed */}
 
-            {/* ============ GRAPH PLAYGROUND MODAL ============ */}
-            <GraphPlayground
-                isOpen={!!activeGraphWidget}
-                onClose={() => setActiveGraphWidget(null)}
-                graphConfig={activeGraphWidget?.graph}
-                title={activeGraphWidget?.concept}
-                isDarkMode={isDarkMode}
-            />
 
             {/* ============ DETAILED VIEW MODAL ============ */}
-            <AnimatePresence>
+            < AnimatePresence >
                 {viewingConcept && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -543,44 +447,8 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                                 <X size={22} />
                             </button>
 
-                            {/* Badges Row - JEE, Importance, Type */}
+                            {/* Badges Row - Type */}
                             <div className="flex flex-wrap items-center gap-2 mb-4">
-                                {/* JEE Badge */}
-                                {viewingConcept.isJeeFav && (
-                                    <div className={cn(
-                                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold',
-                                        isDarkMode
-                                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                                            : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
-                                    )}>
-                                        <Sparkles size={14} />
-                                        JEE Favorite
-                                    </div>
-                                )}
-
-                                {/* JEE Importance Badge */}
-                                {viewingConcept.jeeImportance && (
-                                    <div className={cn(
-                                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold',
-                                        viewingConcept.jeeImportance === 'High'
-                                            ? isDarkMode
-                                                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                                                : 'bg-red-100 text-red-700 border border-red-200'
-                                            : viewingConcept.jeeImportance === 'Medium'
-                                                ? isDarkMode
-                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                                    : 'bg-amber-100 text-amber-700 border border-amber-200'
-                                                : isDarkMode
-                                                    ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
-                                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                    )}>
-                                        {viewingConcept.jeeImportance === 'High' && '🔥'}
-                                        {viewingConcept.jeeImportance === 'Medium' && '⚡'}
-                                        {viewingConcept.jeeImportance === 'Low' && '📚'}
-                                        {' '}{viewingConcept.jeeImportance} Priority
-                                    </div>
-                                )}
-
                                 {/* Type Badge */}
                                 {viewingConcept.type && (
                                     <div className={cn(
@@ -624,8 +492,8 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                                     className={cn(
                                         'p-6 md:p-8 rounded-2xl overflow-x-auto flex items-center justify-center mb-6',
                                         isDarkMode
-                                            ? 'bg-slate-800 border border-indigo-500/30'
-                                            : 'bg-gradient-to-br from-slate-50 to-indigo-50 border border-indigo-200/50'
+                                            ? 'bg-slate-800 border border-emerald-500/30'
+                                            : 'bg-gradient-to-br from-slate-50 to-emerald-50 border border-emerald-200/50'
                                     )}
                                 >
                                     <div
@@ -670,21 +538,21 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                                     className={cn(
                                         'w-full p-4 rounded-xl flex items-center justify-between transition-all mb-6',
                                         isDarkMode
-                                            ? 'bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30'
-                                            : 'bg-indigo-50 hover:bg-indigo-100 border border-indigo-200'
+                                            ? 'bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30'
+                                            : 'bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
                                     )}
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             'p-2 rounded-lg',
-                                            isDarkMode ? 'bg-indigo-500/30 text-indigo-300' : 'bg-indigo-100 text-indigo-600'
+                                            isDarkMode ? 'bg-emerald-500/30 text-emerald-300' : 'bg-emerald-100 text-emerald-600'
                                         )}>
                                             <LineChart size={20} />
                                         </div>
                                         <div className="text-left">
                                             <p className={cn(
                                                 'font-bold',
-                                                isDarkMode ? 'text-indigo-300' : 'text-indigo-700'
+                                                isDarkMode ? 'text-emerald-300' : 'text-emerald-700'
                                             )}>
                                                 📊 Interactive Graph
                                             </p>
@@ -820,8 +688,8 @@ const ResourceCanvas = ({ isDarkMode, onToggleTheme }) => {
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
-        </div>
+            </AnimatePresence >
+        </div >
     );
 };
 

@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
+import { validators } from '../../utils/apiErrorHandler';
+
+// Notification helper
+const showNotification = (title, body, icon) => {
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            new Notification(title, {
+                body,
+                icon,
+                badge: icon,
+                tag: 'pomodoro-timer',
+                requireInteraction: true
+            });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    new Notification(title, {
+                        body,
+                        icon,
+                        badge: icon,
+                        tag: 'pomodoro-timer',
+                        requireInteraction: true
+                    });
+                }
+            });
+        }
+    }
+};
 
 // ============================================================================
 // DESIGN SYSTEM - LIQUID BUTTONS & CONTROLS
@@ -109,6 +137,39 @@ const ProgressRing = ({ progress, isFailed, isActive, isCompleted }) => {
 
 const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
+    const previousCompleted = useRef(false);
+    const previousFailed = useRef(false);
+
+    // Request notification permission on mount
+    useEffect(() => {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    // Show notification when session completes
+    useEffect(() => {
+        if (isCompleted && !previousCompleted.current) {
+            showNotification(
+                '🎉 Session Completed!',
+                `Great job! You completed your ${Math.floor(initialTime / 60)} minute focus session.`,
+                '/icon/pomodoro.png'
+            );
+        }
+        previousCompleted.current = isCompleted;
+    }, [isCompleted, initialTime]);
+
+    // Show notification when session fails
+    useEffect(() => {
+        if (isFailed && !previousFailed.current) {
+            showNotification(
+                '⚠️ Session Failed',
+                `You ended your ${Math.floor(initialTime / 60)} minute focus session early.`,
+                '/icon/pomodoro.png'
+            );
+        }
+        previousFailed.current = isFailed;
+    }, [isFailed, initialTime]);
 
     // Helper to calculate progress (0 to 1)
     // Note: progress goes from 0 (start) to 1 (end). 
@@ -129,7 +190,16 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
 
     const handleDurationChange = (change) => {
         const newDuration = Math.max(5, Math.min(999, duration + change)); // Cap at 999 mins
-        onAction('SET_DURATION', newDuration);
+        
+        // Validate the new duration
+        const validation = validators.validateTimerDuration(newDuration);
+        if (!validation.isValid) {
+            // In a real app, you might want to show this error to the user
+            console.error('Invalid duration:', validation.error);
+            return;
+        }
+        
+        onAction('SET_DURATION', validation.value);
     };
 
     return (
@@ -142,19 +212,19 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                         relative flex items-center gap-3 px-5 py-2 rounded-full border transition-all duration-500
                         backdrop-blur-xl shadow-lg
                         ${isFailed
-                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-rose-500/10'
+                            ? 'bg-rose-500/10 border-rose-500/20 text-rose-300'
                             : isCompleted
-                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/10'
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
                                 : isActive
-                                    ? 'bg-white/10 border-white/20 text-white shadow-white/5 animate-pulse-glow'
-                                    : `bg-black/20 border-white/10 ${buildingConfig.color} shadow-${buildingConfig.id === 'landmark' ? 'sky' : 'indigo'}-500/10`
+                                    ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-400 animate-pulse'
+                                    : 'bg-white/[0.03] border-white/[0.08] text-white/60'
                         }
                     `}
                 >
                     {/* Icon Container */}
                     <div className={`
-                        flex items-center justify-center w-6 h-6 rounded-full 
-                        ${isFailed ? 'bg-rose-500/20' : isCompleted ? 'bg-emerald-500/20' : isActive ? 'bg-white/20' : 'bg-white/5'}
+                        flex items-center justify-center w-6 h-6 rounded-lg 
+                        ${isFailed ? 'bg-rose-500/10' : isCompleted ? 'bg-emerald-500/10' : isActive ? 'bg-emerald-500/10' : 'bg-white/5'}
                     `}>
                         {isCompleted ? <CheckCircle2 size={12} /> : isFailed ? <AlertTriangle size={12} /> : <TargetIcon size={12} />}
                     </div>
@@ -196,8 +266,8 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                         {/* Main Time */}
                         <motion.div
                             layout
-                            className="text-7xl font-light tracking-tighter text-white tabular-nums drop-shadow-2xl select-none"
-                            style={{ fontFamily: '"Outfit", sans-serif' }}
+                            className="text-8xl font-medium tracking-tighter text-white tabular-nums select-none"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
                         >
                             {formatTime(timeLeft)}
                         </motion.div>
@@ -244,13 +314,20 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                                     className="px-8 min-w-[160px]"
                                 />
                             ) : (
-                                <LiquidButton
+                                <button
                                     onClick={() => onAction('START')}
-                                    label="Start Focus"
-                                    icon={Play}
-                                    variant="primary"
-                                    className="px-8 min-w-[160px]"
-                                />
+                                    className="animated-start-btn"
+                                >
+                                    <span className="svg-wrapper">
+                                        <svg className="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M6 4H10V20H6V4ZM14 4H18V20H14V4Z" fill="currentColor"/>
+                                        </svg>
+                                        <svg className="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                                        </svg>
+                                    </span>
+                                    <span>Start Focus</span>
+                                </button>
                             )}
                         </motion.div>
                     ) : (

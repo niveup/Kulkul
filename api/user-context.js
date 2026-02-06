@@ -15,8 +15,8 @@
  * @architecture Parallel DB queries with Promise.all for O(1) latency
  */
 
-import { getDbPool, initDatabase } from './db.js';
-import { requireAuth } from './authMiddleware.js';
+import { getDbPool, initDatabase } from '../src/lib/db.js';
+import { requireAuth } from '../src/lib/authMiddleware.js';
 
 // =============================================================================
 // In-Memory Cache (30 second TTL)

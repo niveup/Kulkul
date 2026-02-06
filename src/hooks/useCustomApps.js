@@ -83,6 +83,7 @@ export const useCustomApps = () => {
 
     // Remove an app by id
     const removeApp = useCallback(async (id) => {
+        console.log('useCustomApps: removeApp called for ID:', id);
         // Optimistic update
         setCustomApps(prev => prev.filter(app => app.id !== id));
 

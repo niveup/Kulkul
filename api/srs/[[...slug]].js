@@ -1,5 +1,5 @@
 // Vercel Serverless Function - Spaced Repetition System API (Catch-all)
-import { getDbPool, initDatabase } from '../db.js';
+import { getDbPool, initDatabase } from '../../src/lib/db.js';
 
 export default async function handler(req, res) {
     try {

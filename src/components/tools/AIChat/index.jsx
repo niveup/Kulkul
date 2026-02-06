@@ -30,7 +30,6 @@ import styles from './AIChat.module.css';
 const AI_MODELS = [
     // CEREBRAS - Ultra-fast inference on Wafer-Scale Engine
     { id: 'cerebras-zai', name: 'Z.ai GLM 4.7', icon: '👑', description: '355B params - Largest!', provider: 'cerebras', model: 'zai-glm-4.7' },
-    { id: 'cerebras-qwen235b', name: 'Qwen 3 235B', icon: '🏆', description: '235B params - Massive', provider: 'cerebras', model: 'qwen-3-235b-a22b-instruct-2507' },
     { id: 'cerebras-gptoss', name: 'GPT-OSS 120B', icon: '🎯', description: '120B params - Open Source', provider: 'cerebras', model: 'gpt-oss-120b' },
     { id: 'cerebras-qwen32b', name: 'Qwen 3 32B', icon: '🌟', description: '32B params - Balanced', provider: 'cerebras', model: 'qwen-3-32b' },
 
@@ -39,9 +38,6 @@ const AI_MODELS = [
 
     // GROQ - LPU inference engine
     { id: 'groq-llama', name: 'Llama 3.3 70B', icon: '💨', description: '70B params - Super fast', provider: 'groq', model: 'llama-3.3-70b-versatile' },
-
-    // XIAOMI - MiMo reasoning model
-    { id: 'mimo-flash', name: 'MiMo v2 Flash', icon: '🍊', description: 'Xiaomi - Fast reasoning', provider: 'mimo', model: 'mimo-v2-flash' },
 ];
 
 // =============================================================================

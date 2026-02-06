@@ -153,13 +153,40 @@ const PROVIDERS = {
         },
         getUrl: () => 'https://api.xiaomimimo.com/v1/chat/completions',
     },
+    huggingface: {
+        name: 'Hugging Face',
+        getHeaders: (apiKey) => ({
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        }),
+        formatRequest: (messages, systemPrompt, overrideModel) => ({
+            model: overrideModel || 'moltbot/molty-lobster',
+            messages: [
+                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                ...messages.map(m => ({ role: m.role, content: m.content }))
+            ],
+            max_tokens: 2048,
+            temperature: 0.7,
+        }),
+        parseResponse: (data) => {
+            if (data.choices?.[0]?.message?.content) {
+                return data.choices[0].message.content;
+            }
+            if (data.error) {
+                throw new Error(data.error.message || 'Hugging Face API error');
+            }
+            throw new Error('Invalid Hugging Face response');
+        },
+        getUrl: () => 'https://router.huggingface.co/v1/chat/completions',
+    },
 };
 
 // =============================================================================
 // User Context Fetching (Inlined to avoid serverless import issues)
 // =============================================================================
 
-import { getDbPool, initDatabase, generateId } from './db.js';
+import { getDbPool, initDatabase, generateId } from '../src/lib/db.js';
+import { requireAuth } from '../src/lib/authMiddleware.js';
 
 function getLocalDateStr(d = new Date()) {
     const year = d.getFullYear();
@@ -463,7 +490,7 @@ function generateMemoryId() {
 }
 
 
-import { requireAuth } from './authMiddleware.js';
+
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -521,6 +548,9 @@ export default async function handler(req, res) {
         } else if (providerName === 'mimo') {
             apiKey = process.env.MIMO_API_KEY;
             provider = PROVIDERS.mimo;
+        } else if (providerName === 'huggingface') {
+            apiKey = process.env.HF_TOKEN;
+            provider = PROVIDERS.huggingface;
         } else {
             // Default to Cerebras
             apiKey = process.env.CEREBRAS_API_KEY;
@@ -544,6 +574,9 @@ export default async function handler(req, res) {
             } else if (process.env.MIMO_API_KEY) {
                 apiKey = process.env.MIMO_API_KEY;
                 provider = PROVIDERS.mimo;
+            } else if (process.env.HF_TOKEN) {
+                apiKey = process.env.HF_TOKEN;
+                provider = PROVIDERS.huggingface;
             } else {
                 return res.status(500).json({ error: 'No AI API key configured' });
             }
@@ -592,49 +625,119 @@ export default async function handler(req, res) {
         const messagesWithContext = [contextMessage, ...messages];
         console.log(`[AI Chat] Sending ${messagesWithContext.length} messages to AI`);
 
-        // Make request to AI provider
-        const url = provider.getUrl ? provider.getUrl(apiKey) : provider.baseUrl;
-        const headers = provider.getHeaders(apiKey);
-        const body = provider.formatRequest(messagesWithContext, systemPrompt, overrideModel);
+        // Helper to try a provider execution
+        const tryProvider = async (providerKey, overrideModelName = null) => {
+            console.log(`[AI Chat] Attempting provider: ${providerKey}...`);
+            let currentApiKey, currentProvider;
 
-        // DEBUG: Log first message preview
-        console.log(`[AI Chat] Using provider: ${provider.name}, model: ${overrideModel || 'default'}`);
+            if (providerKey === 'cerebras') {
+                currentApiKey = process.env.CEREBRAS_API_KEY;
+                currentProvider = PROVIDERS.cerebras;
+            } else if (providerKey === 'sambanova') {
+                currentApiKey = process.env.SAMBANOVA_API_KEY;
+                currentProvider = PROVIDERS.sambanova;
+            } else if (providerKey === 'gemini') {
+                currentApiKey = process.env.GEMINI_API_KEY;
+                currentProvider = PROVIDERS.gemini;
+            } else if (providerKey === 'groq') {
+                currentApiKey = process.env.GROQ_API_KEY;
+                currentProvider = PROVIDERS.groq;
+            } else if (providerKey === 'mimo') {
+                currentApiKey = process.env.MIMO_API_KEY;
+                currentProvider = PROVIDERS.mimo;
+            } else if (providerKey === 'huggingface') {
+                currentApiKey = process.env.HF_TOKEN;
+                currentProvider = PROVIDERS.huggingface;
+            }
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(body),
-        });
+            if (!currentApiKey) throw new Error(`MISSING_KEY:${providerKey}`);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[AI Chat] ${provider.name} error:`, errorText);
-            return res.status(response.status).json({
-                error: `${provider.name} API error`,
-                details: errorText
-            });
+            const url = currentProvider.getUrl ? currentProvider.getUrl(currentApiKey, overrideModelName) : currentProvider.baseUrl;
+            const headers = currentProvider.getHeaders(currentApiKey);
+            const body = currentProvider.formatRequest(messagesWithContext, systemPrompt, overrideModelName);
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API_ERROR:${response.status}:${errorText}`);
+                }
+
+                const data = await response.json();
+                return currentProvider.parseResponse(data);
+            } catch (err) {
+                clearTimeout(timeout);
+                throw err;
+            }
+        };
+
+        // Failover Strategy
+        const strategies = [
+            { provider: providerName, model: overrideModel }, // 1. Primary choice
+            { provider: 'cerebras', model: 'llama-3.3-70b' }, // 2. Fallback Cerebras
+            { provider: 'gemini', model: 'gemini-2.0-flash' }, // 3. Fallback Gemini (Very reliable)
+            { provider: 'groq', model: 'llama-3.3-70b-versatile' } // 4. Fallback Groq
+        ];
+
+        // Filter out duplicates and invalid start points
+        const attempts = strategies.filter((s, index, self) =>
+            index === self.findIndex((t) => (t.provider === s.provider))
+        );
+
+        let lastError = null;
+        let successContent = null;
+        let usedProviderName = null;
+
+        for (const strategy of attempts) {
+            try {
+                // Skip if primary was this strategy and it failed? No, we just try in order.
+                // But avoid retrying the SAME failed provider if we can checks keys exist
+                successContent = await tryProvider(strategy.provider, strategy.model);
+                usedProviderName = PROVIDERS[strategy.provider].name;
+                break; // Success!
+            } catch (error) {
+                console.warn(`[AI Chat] Provider ${strategy.provider} failed:`, error.message);
+                lastError = error;
+                // If error is "MISSING_KEY", continue safely
+                // If error is 429 or 5xx, continue
+            }
         }
 
-        const data = await response.json();
-        const content = provider.parseResponse(data);
+        if (!successContent) {
+            console.error(`[AI Chat] All providers failed. Last error:`, lastError);
+            return res.status(502).json({
+                error: 'All AI providers unavailable',
+                details: lastError ? lastError.message : 'Unknown error'
+            });
+        }
 
         // Extract memories from the conversation (non-blocking, runs in background)
         const lastUserMessage = messages[messages.length - 1]?.content || '';
         const conversationId = req.body.conversationId || null;
-        extractAndSaveMemories(lastUserMessage, content, conversationId)
+        extractAndSaveMemories(lastUserMessage, successContent, conversationId)
             .catch(e => console.error('[AI Memory] Background extraction error:', e.message));
 
         return res.status(200).json({
             role: 'assistant',
-            content,
-            model: provider.name,
+            content: successContent,
+            model: usedProviderName,
         });
 
     } catch (error) {
         console.error('[AI Chat] Error:', error);
         return res.status(500).json({
-            error: 'Internal server error',
-            message: error.message
+            error: error.message, // DEBUG: Sending actual error to frontend
+            stack: error.stack
         });
     }
 }

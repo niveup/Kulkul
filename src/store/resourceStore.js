@@ -134,20 +134,10 @@ const buildDefaultState = () => {
                 name: chapter.topic,
                 concepts: chapter.concepts?.map((concept, idx) => ({
                     id: `${classLevel}-${topicKey}-${idx}`,
-                    ...concept,
-                    style: {
-                        bgGradient: 'default',
-                        borderRadius: 16,
-                        size: '1x1' // 1x1, 2x1, 2x2, full
-                    }
+                    ...concept
                 })) || []
             };
 
-            // Default grid layout for this topic
-            layoutByTopic[`${classLevel}-Physics-${topicKey}`] = {
-                columns: 3,
-                gap: 16
-            };
         });
     });
 
@@ -155,11 +145,11 @@ const buildDefaultState = () => {
         resources,
         layouts: layoutByTopic,
         theme: {
-            accent: '#6366f1', // Indigo
+            accent: '#10b981', // Emerald
             glassIntensity: 0.8,
-            borderRadius: 16,
-            density: 'comfortable' // compact, comfortable, spacious
-        }
+            borderRadius: 16
+        },
+        mastery: {} // { 'concept-id': 0-100 }
     };
 };
 
@@ -183,174 +173,14 @@ export const useResourceStore = create(
             // Change tracking
             deltas: [], // Current applied changes
             history: [], // Previous change sets (for undo/history)
+            mastery: {}, // Persistent mastery levels
 
-            // UI State
-            isEditMode: false,
-            selectedWidgetId: null,
+            mastery: {}, // Persistent mastery levels
 
             // =======================================================================
             // ACTIONS
             // =======================================================================
 
-            setEditMode: (enabled) => set({ isEditMode: enabled }),
-
-            selectWidget: (widgetId) => set({ selectedWidgetId: widgetId }),
-
-            // Update a specific widget's style (color, size, etc.)
-            updateWidgetStyle: (classLevel, subject, topicKey, conceptId, styleChanges) => {
-                const state = get();
-                const currentResources = state.resources;
-
-                // Find and update the concept
-                const topic = currentResources[classLevel]?.[subject]?.[topicKey];
-                if (!topic) return;
-
-                const conceptIndex = topic.concepts.findIndex(c => c.id === conceptId);
-                if (conceptIndex === -1) return;
-
-                const oldStyle = topic.concepts[conceptIndex].style || {};
-                const newStyle = { ...oldStyle, ...styleChanges };
-
-                // Create the delta
-                const delta = {
-                    type: 'WIDGET_STYLE',
-                    path: `${classLevel}.${subject}.${topicKey}.${conceptId}`,
-                    changes: styleChanges,
-                    timestamp: Date.now()
-                };
-
-                // Update resources
-                const newConcepts = [...topic.concepts];
-                newConcepts[conceptIndex] = {
-                    ...newConcepts[conceptIndex],
-                    style: newStyle
-                };
-
-                set({
-                    resources: {
-                        ...currentResources,
-                        [classLevel]: {
-                            ...currentResources[classLevel],
-                            [subject]: {
-                                ...currentResources[classLevel][subject],
-                                [topicKey]: {
-                                    ...topic,
-                                    concepts: newConcepts
-                                }
-                            }
-                        }
-                    },
-                    deltas: [...state.deltas, delta]
-                });
-            },
-
-            // Update widget content (text, formula, etc.)
-            updateWidgetContent: (classLevel, subject, topicKey, conceptId, contentChanges) => {
-                const state = get();
-                const currentResources = state.resources;
-
-                const topic = currentResources[classLevel]?.[subject]?.[topicKey];
-                if (!topic) return;
-
-                const conceptIndex = topic.concepts.findIndex(c => c.id === conceptId);
-                if (conceptIndex === -1) return;
-
-                // Archive old value to history
-                const oldConcept = topic.concepts[conceptIndex];
-                const historyEntry = {
-                    type: 'CONTENT_CHANGE',
-                    path: `${classLevel}.${subject}.${topicKey}.${conceptId}`,
-                    oldValue: { ...oldConcept },
-                    timestamp: Date.now()
-                };
-
-                // Create the delta for current state
-                const delta = {
-                    type: 'WIDGET_CONTENT',
-                    path: `${classLevel}.${subject}.${topicKey}.${conceptId}`,
-                    changes: contentChanges,
-                    timestamp: Date.now()
-                };
-
-                const newConcepts = [...topic.concepts];
-                newConcepts[conceptIndex] = {
-                    ...newConcepts[conceptIndex],
-                    ...contentChanges
-                };
-
-                // Clean expired history before adding new entry
-                const cleanedHistory = cleanExpiredHistory(state.history);
-
-                set({
-                    resources: {
-                        ...currentResources,
-                        [classLevel]: {
-                            ...currentResources[classLevel],
-                            [subject]: {
-                                ...currentResources[classLevel][subject],
-                                [topicKey]: {
-                                    ...topic,
-                                    concepts: newConcepts
-                                }
-                            }
-                        }
-                    },
-                    deltas: [...state.deltas, delta],
-                    history: [...cleanedHistory, historyEntry]
-                });
-            },
-
-            // Update global theme
-            updateTheme: (themeChanges) => {
-                const state = get();
-                const oldTheme = state.theme;
-
-                // Archive old theme value
-                const historyEntry = {
-                    type: 'THEME_CHANGE',
-                    path: 'theme',
-                    oldValue: { ...oldTheme },
-                    timestamp: Date.now()
-                };
-
-                const delta = {
-                    type: 'THEME',
-                    changes: themeChanges,
-                    timestamp: Date.now()
-                };
-
-                const cleanedHistory = cleanExpiredHistory(state.history);
-
-                set({
-                    theme: { ...oldTheme, ...themeChanges },
-                    deltas: [...state.deltas, delta],
-                    history: [...cleanedHistory, historyEntry]
-                });
-            },
-
-            // Update layout for a topic
-            updateLayout: (layoutKey, layoutChanges) => {
-                const state = get();
-                const currentLayouts = state.layouts;
-
-                const delta = {
-                    type: 'LAYOUT',
-                    path: layoutKey,
-                    changes: layoutChanges,
-                    timestamp: Date.now()
-                };
-
-                set({
-                    layouts: {
-                        ...currentLayouts,
-                        [layoutKey]: {
-                            ...currentLayouts[layoutKey],
-                            ...layoutChanges
-                        }
-                    },
-                    deltas: [...state.deltas, delta]
-                });
-            },
 
             // Reset everything to default
             resetToDefault: () => {
@@ -358,9 +188,7 @@ export const useResourceStore = create(
                 set({
                     ...defaultState,
                     deltas: [],
-                    history: [],
-                    isEditMode: false,
-                    selectedWidgetId: null
+                    history: []
                 });
             },
 
@@ -368,6 +196,17 @@ export const useResourceStore = create(
             getRecentHistory: () => {
                 const state = get();
                 return cleanExpiredHistory(state.history);
+            },
+
+            // Update mastery for a concept
+            updateMastery: (conceptId, level) => {
+                const state = get();
+                const newMastery = {
+                    ...state.mastery,
+                    [conceptId]: Math.min(100, Math.max(0, level))
+                };
+
+                set({ mastery: newMastery });
             },
 
             // Cleanup on store hydration
@@ -383,10 +222,7 @@ export const useResourceStore = create(
             name: STORAGE_KEY,
             partialize: (state) => ({
                 // Only persist the deltas and changed state, not default data
-                deltas: state.deltas,
-                history: state.history,
-                theme: state.theme,
-                layouts: state.layouts,
+                mastery: state.mastery,
                 resources: state.resources
             }),
             onRehydrateStorage: () => (state) => {
@@ -402,28 +238,14 @@ export const useResourceStore = create(
 // =============================================================================
 // SELECTORS
 // =============================================================================
-export const useIsEditMode = () => useResourceStore((s) => s.isEditMode);
 export const useTheme = () => useResourceStore((s) => s.theme);
 export const useResources = () => useResourceStore((s) => s.resources);
-export const useLayouts = () => useResourceStore((s) => s.layouts);
+export const useLayouts = () => ({});
+export const useMastery = () => useResourceStore((s) => s.mastery);
 
 // Get individual actions directly from store to avoid creating new object every render
 export const useResourceActions = () => {
-    const setEditMode = useResourceStore((s) => s.setEditMode);
-    const selectWidget = useResourceStore((s) => s.selectWidget);
-    const updateWidgetStyle = useResourceStore((s) => s.updateWidgetStyle);
-    const updateWidgetContent = useResourceStore((s) => s.updateWidgetContent);
-    const updateTheme = useResourceStore((s) => s.updateTheme);
-    const updateLayout = useResourceStore((s) => s.updateLayout);
-    const resetToDefault = useResourceStore((s) => s.resetToDefault);
-
     return {
-        setEditMode,
-        selectWidget,
-        updateWidgetStyle,
-        updateWidgetContent,
-        updateTheme,
-        updateLayout,
-        resetToDefault
+        updateMastery: useResourceStore((s) => s.updateMastery)
     };
 };

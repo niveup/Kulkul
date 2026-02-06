@@ -1,6 +1,6 @@
 // Vercel Serverless Function - Conversations API (Catch-all)
 // Handles all /api/conversations/* routes
-import { getDbPool, initDatabase, generateId } from '../db.js';
+import { getDbPool, initDatabase, generateId } from '../../src/lib/db.js';
 
 const MAX_CONVERSATIONS = 50;
 const TRASH_RETENTION_DAYS = 1;

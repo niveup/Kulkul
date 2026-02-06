@@ -84,6 +84,7 @@ const Toast = ({ id, type = 'info', title, message, duration = 5000, onDismiss }
                 <button
                     onClick={() => onDismiss(id)}
                     className="flex-shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    title="Dismiss"
                 >
                     <X size={16} />
                 </button>

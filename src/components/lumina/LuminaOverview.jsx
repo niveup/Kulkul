@@ -81,9 +81,9 @@ const getLevenshteinDistance = (a, b) => {
 };
 
 const fuzzyMatch = (query, target) => {
-    if (!target) return 0;
-    const q = query.toLowerCase().trim();
-    const t = target.toLowerCase();
+    if (!target || !query) return 0;
+    const q = (query || '').toLowerCase().trim();
+    const t = (target || '').toLowerCase();
 
     // 1. Exact Includes (Highest Priority)
     if (t.includes(q)) return 100 - (t.length - q.length); // Favor shorter target matches
@@ -214,14 +214,14 @@ export const LuminaOverview = ({
 
             {/* Premium Ambient Background - Optimized Performance */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-void">
-                {/* Top Left: Purple Ambiance */}
-                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-indigo-500/10 rounded-full blur-[120px] mix-blend-screen animate-pulse-glow" />
+                {/* Top Right: Warm Amber Glow (Desk Lamp feel) */}
+                <div className="absolute top-[-10%] right-[-5%] w-[60vw] h-[60vw] bg-amber-500/[0.03] rounded-full blur-[120px] mix-blend-screen" />
 
-                {/* Bottom Right: Blue Depth */}
-                <div className="absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen" />
+                {/* Top Left: Calm Indigo */}
+                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-indigo-500/[0.05] rounded-full blur-[120px] mix-blend-screen animate-pulse-glow" />
 
                 {/* Top Center: Ambient Light Source */}
-                <div className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] bg-violet-500/5 rounded-full blur-[150px] mix-blend-screen" />
+                <div className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] bg-white/5 rounded-full blur-[150px] mix-blend-screen" />
 
                 {/* Noise Texture */}
                 <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
@@ -243,23 +243,28 @@ export const LuminaOverview = ({
                 >
                     {/* Animated Background Curtain */}
                     {isScrolled && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-50 pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-slate-500/5 opacity-50 pointer-events-none" />
                     )}
 
-                    <div className={`transition-all duration-500 ${isScrolled ? 'translate-x-1' : ''}`}>
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                        className={`transition-all duration-500 ${isScrolled ? 'translate-x-1' : ''}`}
+                    >
                         <p className={`
-                            text-white/50 text-xs mb-0.5 font-semibold tracking-wider uppercase pl-1 transition-all duration-500
+                            text-white/40 text-[10px] mb-1 font-bold tracking-[0.2em] uppercase pl-1 transition-all duration-500
                             ${isScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}
                         `}>
                             {getFormattedDate()}
                         </p>
                         <h1 className={`
-                            font-bold text-white tracking-tight drop-shadow-lg transition-all duration-500
-                            ${isScrolled ? 'text-xl' : 'text-3xl'}
+                            font-bold text-white tracking-tight transition-all duration-700
+                            ${isScrolled ? 'text-lg' : 'text-2xl md:text-3xl'}
                         `}>
-                            {getGreeting()}, <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">{userName}</span>
+                            {getGreeting()}, <span className="text-white/60">{userName}</span>
                         </h1>
-                    </div>
+                    </motion.div>
 
                     <div className="flex items-center gap-4 relative z-10">
                         {/* Premium Global Search Bar */}
@@ -270,38 +275,18 @@ export const LuminaOverview = ({
                                 ${isScrolled ? 'w-64' : 'w-80'}
                             `}
                         >
-                            <div className={`
-                                relative overflow-hidden rounded-2xl transition-all duration-300
-                                ${searchFocused
-                                    ? 'bg-obsidian shadow-[0_0_40px_-5px_rgba(99,102,241,0.3)] ring-1 ring-indigo-500/30'
-                                    : isScrolled
-                                        ? 'bg-white/5 ring-1 ring-white/5 hover:bg-white/10'
-                                        : 'bg-white/5 hover:bg-white/10 ring-1 ring-white/5 hover:ring-white/10'
-                                }
-                            `}>
-                                {/* Input Container */}
-                                <div className="relative flex items-center">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Search size={18} className={`transition-colors duration-300 ${searchFocused ? 'text-indigo-400' : 'text-white/40'}`} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        onFocus={() => setSearchFocused(true)}
-                                        placeholder={isScrolled ? "Search..." : "Search apps, tasks, sections..."}
-                                        className="
-                                            pl-12 pr-12 py-3.5 w-full bg-transparent border-none
-                                            text-sm text-white placeholder-white/30 
-                                            focus:outline-none focus:ring-0
-                                        "
-                                    />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 h-6 border border-white/10 rounded-lg text-[10px] font-bold text-white/30 bg-white/5">
-                                            <Command size={10} /> K
-                                        </kbd>
-                                    </div>
-                                </div>
+                            <div className="input-group">
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onFocus={() => setSearchFocused(true)}
+                                    required
+                                    className="input"
+                                />
+                                <label className="user-label">
+                                    {isScrolled ? "Search..." : "Search apps, tasks, sections..."}
+                                </label>
                             </div>
 
                             {/* Floating Results Dropdown - Absolute Overlay */}
@@ -373,20 +358,40 @@ export const LuminaOverview = ({
                     </div>
                 </header>
 
-                {/* Quote Section - Clean, borderless design */}
-                <div className="mb-10">
-                    <div className="p-10 relative overflow-hidden min-h-[140px] flex items-center">
-                        {/* Subtle background gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-blue-500/5 rounded-3xl" />
+                {/* Daily Motivation - Apple Studio Greeting Card */}
+                {!isScrolled && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+                        className="mb-12"
+                    >
+                        <div className="relative group p-12 rounded-[2.5rem] overflow-hidden">
+                            {/* Card Background - Deep Glass with shimmer */}
+                            <div className="absolute inset-0 bg-white/[0.02] border border-white/[0.05] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] backdrop-blur-3xl rounded-[2.5rem]" />
 
-                        <div className="relative z-10 max-w-3xl">
-                            <p className="text-2xl md:text-3xl bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent font-medium leading-relaxed tracking-tight">
-                                "{quote}"
-                            </p>
-                            <p className="mt-4 text-sm text-white/40 font-medium tracking-wide">— Daily Wisdom</p>
+                            {/* Animated Shimmer Beam */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-emerald-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] cubic-bezier(0.4, 0, 0.2, 1)" />
+
+                            {/* Content */}
+                            <div className="relative z-10">
+                                <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-8">
+                                    Current Focus
+                                </span>
+                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mb-6">
+                                    "{quote}"
+                                </h2>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-px w-8 bg-white/20" />
+                                    <p className="text-xs text-white/40 font-medium tracking-widest uppercase">The Lumina Way</p>
+                                </div>
+                            </div>
+
+                            {/* Decorative Edge Glow */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                )}
 
                 {/* Statistics Row */}
                 <StatsGroup
@@ -401,14 +406,14 @@ export const LuminaOverview = ({
                 <div className="mb-8">
                     {/* Large Gradient Card - No external image for performance */}
                     <GlassCard className="p-0 h-[350px] relative overflow-hidden" hoverEffect={false}>
-                        {/* Pure CSS gradient background instead of external image */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                        {/* Soft Editorial Gradient - Study Studio */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#121826] via-[#0a0d14] to-[#080a10]" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                         <div className="absolute bottom-0 left-0 p-10 w-full">
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="px-3 py-1 rounded-full bg-blue-500/20 backdrop-blur-md border border-blue-500/30 text-xs font-semibold text-blue-200">
-                                    Today's Focus
+                                <span className="px-3 py-1 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 text-xs font-semibold text-indigo-200">
+                                    Study Session
                                 </span>
                             </div>
                             <h2 className="text-5xl font-bold text-white mb-3 tracking-tighter drop-shadow-xl">

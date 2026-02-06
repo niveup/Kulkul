@@ -28,3 +28,6 @@ export { default as ChapterGraphs } from './ChapterGraphs';
 // Utilities
 export { default as CropEditorModal } from './CropEditorModal';
 export { default as FullPageViewer } from './FullPageViewer';
+
+// Telegram Videos
+export { default as TelegramVideos } from './TelegramVideos';

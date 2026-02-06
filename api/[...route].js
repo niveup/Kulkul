@@ -1,7 +1,9 @@
 // Unified API Router - Single endpoint to handle all API routes
 // This reduces serverless function count while handling all routes
-import { getDbPool, initDatabase, generateId } from './db.js';
-import { requireAuth } from './authMiddleware.js';
+import { getDbPool, initDatabase, generateId } from '../src/lib/db.js';
+import { requireAuth } from '../src/lib/authMiddleware.js';
+import { getUserContextData } from '../src/lib/user-context-logic.js';
+import { getActiveTimer, updateActiveTimer, deleteActiveTimer } from '../src/lib/active-timer-logic.js';
 
 export default async function handler(req, res) {
     // Enable CORS
@@ -98,6 +100,73 @@ export default async function handler(req, res) {
             }
 
             return res.status(405).json({ error: 'Method not allowed for sessions' });
+        }
+
+        // Route: /api/user-context
+        if (route === 'user-context') {
+            if (req.method === 'GET') {
+                const data = await getUserContextData();
+                return res.status(200).json(data);
+            }
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Route: /api/active-timer
+        if (route === 'active-timer') {
+            if (req.method === 'GET') {
+                const result = await getActiveTimer();
+                return res.status(200).json(result);
+            }
+            if (req.method === 'POST') {
+                if (!req.body.status) return res.status(400).json({ error: 'Status is required' });
+                const result = await updateActiveTimer(req.body);
+                return res.status(200).json(result);
+            }
+            if (req.method === 'DELETE') {
+                const result = await deleteActiveTimer();
+                return res.status(200).json(result);
+            }
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+
+        // Route: /api/telegram
+        if (route === 'telegram') {
+            if (req.method === 'GET') {
+                // Telegram Logic (Simplified Inline)
+                const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8475620310:AAHR6TLXvaTfTZHL91jX7C94r2C1zhH751Q';
+                const CHANNEL = '@kulkuljujum';
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=${CHANNEL}`);
+                    const chatData = await response.json();
+                    if (!chatData.ok) {
+                        return res.status(400).json({ error: 'Cannot access channel', details: chatData.description });
+                    }
+                    const chatInfo = chatData.result;
+                    let photoUrl = null;
+                    if (chatInfo.photo) {
+                        const photoResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${chatInfo.photo.big_file_id}`);
+                        const photoData = await photoResponse.json();
+                        if (photoData.ok) photoUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${photoData.result.file_path}`;
+                    }
+                    return res.status(200).json({
+                        success: true,
+                        channel: {
+                            id: chatInfo.id,
+                            title: chatInfo.title,
+                            username: chatInfo.username,
+                            type: chatInfo.type,
+                            photo: photoUrl,
+                            description: chatInfo.description || '',
+                            memberCount: chatInfo.member_count || null
+                        },
+                        previewUrl: `https://t.me/s/${chatInfo.username}`,
+                        totalMessages: 943
+                    });
+                } catch (error) {
+                    return res.status(500).json({ error: 'Failed to fetch Telegram data' });
+                }
+            }
+            return res.status(405).json({ error: 'Method not allowed' });
         }
 
         // Route: /api/custom-apps
@@ -234,6 +303,9 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: `Route ${route} not found` });
     } catch (error) {
         console.error('[Unified API] Error:', error);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({
+            error: error.message,
+            hint: error.message.includes('Missing required') ? 'Check Vercel Project Settings for Environment Variables' : undefined
+        });
     }
 }

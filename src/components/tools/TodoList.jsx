@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check, Trash2, Save, AlertTriangle } from 'lucide-react';
+import { validators } from '../../utils/apiErrorHandler';
 
 const TodoList = ({ tasks, addTask, toggleTask, removeTask, saveTask, saveAllTasks, hasUnsaved, onUnsavedChange }) => {
     const [input, setInput] = useState('');
+    const [inputError, setInputError] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!input.trim()) return;
-        addTask(input);
+        
+        // Validate input before submitting
+        const validation = validators.validateTaskText(input);
+        if (!validation.isValid) {
+            setInputError(validation.error);
+            return;
+        }
+        
+        addTask(validation.sanitized);
         setInput('');
+        setInputError(''); // Clear any previous errors
+    };
+
+    // Clear error when user starts typing
+    const handleInputChange = (e) => {
+        setInput(e.target.value);
+        if (inputError) {
+            setInputError('');
+        }
     };
 
     // Count unsaved tasks
@@ -65,16 +83,36 @@ const TodoList = ({ tasks, addTask, toggleTask, removeTask, saveTask, saveAllTas
             </div>
 
             <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Add a new task..."
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
+                <div className="flex-1">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder="Add a new task..."
+                        className={`w-full bg-white border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 transition-colors ${
+                            inputError 
+                                ? 'border-red-300 focus:ring-red-500/20' 
+                                : 'border-slate-200 focus:ring-indigo-500/20'
+                        }`}
+                    />
+                    {inputError && (
+                        <motion.p 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="text-red-500 text-xs mt-1 px-1"
+                        >
+                            {inputError}
+                        </motion.p>
+                    )}
+                </div>
                 <button
                     type="submit"
-                    className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-colors"
+                    disabled={!input.trim()} // Disable button when input is empty
+                    className={`p-2 rounded-xl transition-colors ${
+                        input.trim() 
+                            ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
                 >
                     <Plus size={20} />
                 </button>

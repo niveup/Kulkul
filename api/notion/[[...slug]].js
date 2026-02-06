@@ -17,8 +17,8 @@
  * POST   /api/notion/databases/:id/query - Query database
  */
 
-import { requireAuth, logAudit, getClientIP } from '../authMiddleware.js';
-import { getDbPool, initDatabase } from '../db.js';
+import { requireAuth, logAudit, getClientIP } from '../../src/lib/authMiddleware.js';
+import { getDbPool, initDatabase } from '../../src/lib/db.js';
 
 // =============================================================================
 // Configuration
@@ -155,7 +155,8 @@ async function handleSearch(req, res, db) {
         }),
     });
 
-    await logAudit(db, 'NOTION_SEARCH', req, JSON.stringify({ query, results: data.results?.length || 0 }));
+    // Non-blocking audit log
+    logAudit(db, 'NOTION_SEARCH', req, JSON.stringify({ query, results: data.results?.length || 0 })).catch(console.error);
 
     return res.status(200).json(data);
 }
@@ -222,7 +223,8 @@ async function handleCreatePage(req, res, db) {
         body: JSON.stringify(payload),
     });
 
-    await logAudit(db, 'NOTION_CREATE_PAGE', req, JSON.stringify({ pageId: data.id }));
+    // Non-blocking audit log
+    logAudit(db, 'NOTION_CREATE_PAGE', req, JSON.stringify({ pageId: data.id })).catch(console.error);
 
     return res.status(201).json(data);
 }
@@ -253,7 +255,8 @@ async function handleUpdatePage(req, res, db, pageId) {
         body: JSON.stringify(payload),
     });
 
-    await logAudit(db, 'NOTION_UPDATE_PAGE', req, JSON.stringify({ pageId }));
+    // Non-blocking audit log
+    logAudit(db, 'NOTION_UPDATE_PAGE', req, JSON.stringify({ pageId })).catch(console.error);
 
     return res.status(200).json(data);
 }

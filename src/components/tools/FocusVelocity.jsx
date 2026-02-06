@@ -1,51 +1,145 @@
 import React, { useMemo } from 'react';
-import { AreaChart, Area, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AreaChart, Area, Tooltip, ResponsiveContainer, ReferenceLine, YAxis, XAxis } from 'recharts';
 
 const FocusVelocity = ({ data, goal = 0 }) => {
-    // Aggregate by DATE (not individual sessions)
+    const [timeRange, setTimeRange] = React.useState(7); // 7, 30, or all days
+    // Aggregate by DATE (not individual sessions) - Production Ready
     const chartData = useMemo(() => {
         if (!data || data.length === 0) return [];
 
-        // Group sessions by date
-        const byDate = {};
+        // Group sessions by date using IST for consistency
+        const byDate = new Map();
+        
         data.forEach((session) => {
-            const dateKey = new Date(session.timestamp).toDateString();
-            if (!byDate[dateKey]) {
-                byDate[dateKey] = { totalMinutes: 0, date: new Date(session.timestamp) };
+            if (!session || !session.timestamp) return;
+            
+            const date = new Date(session.timestamp);
+            const dateKey = date.toDateString();
+            
+            if (!byDate.has(dateKey)) {
+                byDate.set(dateKey, {
+                    totalMinutes: 0,
+                    completedMinutes: 0,
+                    failedMinutes: 0,
+                    completedSessions: 0,
+                    failedSessions: 0,
+                    date: date
+                });
             }
 
-            // Add minutes (completed or elapsed time from ruined)
+            const dayData = byDate.get(dateKey);
+            
+            // Add minutes based on session status
             if (session.status === 'completed') {
-                byDate[dateKey].totalMinutes += session.minutes || 0;
-            } else if (session.elapsedSeconds) {
-                byDate[dateKey].totalMinutes += Math.floor(session.elapsedSeconds / 60);
+                const minutes = session.minutes || 0;
+                dayData.totalMinutes += minutes;
+                dayData.completedMinutes += minutes;
+                dayData.completedSessions++;
+            } else if (session.status === 'failed' && session.elapsedSeconds) {
+                const minutes = Math.floor(session.elapsedSeconds / 60);
+                dayData.totalMinutes += minutes;
+                dayData.failedMinutes += minutes;
+                dayData.failedSessions++;
             }
         });
 
-        // Convert to array and take last 7 days
-        return Object.values(byDate)
-            .sort((a, b) => a.date - b.date)
-            .slice(-7)
-            .map(({ date, totalMinutes }) => ({
-                name: date.toLocaleDateString('en-US', { weekday: 'short' }),
-                value: totalMinutes,
-                date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            }));
-    }, [data]);
+        // Get data based on selected time range
+        const daysToShow = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const daysToInclude = timeRange === 'all' 
+            ? Math.max(30, byDate.size) // Show at least 30 days or all available data
+            : timeRange;
+        
+        for (let i = daysToInclude - 1; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateKey = date.toDateString();
+            
+            if (byDate.has(dateKey)) {
+                const dayData = byDate.get(dateKey);
+                daysToShow.push({
+                    name: timeRange === 'all' && daysToShow.length > 0 
+                        ? (new Date(daysToShow[0].date).getMonth() !== date.getMonth() 
+                            ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                            : date.getDate().toString())
+                        : date.getDate().toString(),
+                    value: dayData.totalMinutes,
+                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    completedMinutes: dayData.completedMinutes,
+                    failedMinutes: dayData.failedMinutes,
+                    completedSessions: dayData.completedSessions,
+                    failedSessions: dayData.failedSessions,
+                    efficiency: dayData.completedSessions + dayData.failedSessions > 0
+                        ? Math.round((dayData.completedSessions / (dayData.completedSessions + dayData.failedSessions)) * 100)
+                        : 0
+                });
+            } else {
+                // Add empty day for consistency
+                daysToShow.push({
+                    name: timeRange === 'all' && daysToShow.length > 0 
+                        ? (new Date(daysToShow[0].date).getMonth() !== date.getMonth() 
+                            ? date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                            : date.getDate().toString())
+                        : date.getDate().toString(),
+                    value: 0,
+                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    completedMinutes: 0,
+                    failedMinutes: 0,
+                    completedSessions: 0,
+                    failedSessions: 0,
+                    efficiency: 0
+                });
+            }
+        }
+        
+        return daysToShow;
+    }, [data, timeRange]);
 
     const average = useMemo(() => {
         if (!chartData.length) return 0;
-        return (chartData.reduce((acc, curr) => acc + curr.value, 0) / chartData.length).toFixed(0);
+        const daysWithData = chartData.filter(d => d.value > 0);
+        if (daysWithData.length === 0) return 0;
+        const total = daysWithData.reduce((acc, curr) => acc + curr.value, 0);
+        return Math.round(total / daysWithData.length);
     }, [chartData]);
+
+    const maxMinutes = useMemo(() => {
+        if (!chartData.length) return 0;
+        return Math.max(...chartData.map(d => d.value));
+    }, [chartData]);
+
+    const goalProgress = useMemo(() => {
+        if (!chartData.length || goal <= 0) return 0;
+        const totalMinutes = chartData.reduce((acc, curr) => acc + curr.value, 0);
+        const daysCount = timeRange === 'all' ? chartData.length : timeRange;
+        return Math.round((totalMinutes / (goal * daysCount)) * 100);
+    }, [chartData, goal, timeRange]);
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
+            const data = payload[0].payload;
             return (
-                <div className="bg-white/10 backdrop-blur-xl px-4 py-2 rounded-lg shadow-xl outline-none">
-                    <p className="text-white/60 text-xs font-medium mb-1">{payload[0].payload.date}</p>
-                    <p className="text-2xl font-semibold text-white tracking-tight">
-                        {payload[0].value.toFixed(0)} <span className="text-sm font-normal text-white/50">min</span>
+                <div className="bg-white/10 backdrop-blur-xl px-4 py-3 rounded-lg shadow-xl outline-none">
+                    <p className="text-white/60 text-xs font-medium mb-2">{data.date}</p>
+                    <p className="text-2xl font-semibold text-white tracking-tight mb-2">
+                        {data.value.toFixed(0)} <span className="text-sm font-normal text-white/50">min</span>
                     </p>
+                    {data.completedSessions > 0 || data.failedSessions > 0 ? (
+                        <div className="space-y-1 text-xs">
+                            {data.completedSessions > 0 && (
+                                <p className="text-emerald-400">
+                                    ✓ {data.completedSessions} completed ({data.completedMinutes}m)
+                                </p>
+                            )}
+                            {data.failedSessions > 0 && (
+                                <p className="text-rose-400">
+                                    ✗ {data.failedSessions} interrupted ({data.failedMinutes}m)
+                                </p>
+                            )}
+                        </div>
+                    ) : null}
                 </div>
             );
         }
@@ -74,16 +168,35 @@ const FocusVelocity = ({ data, goal = 0 }) => {
             <div className="flex justify-between items-end mb-6">
                 <div>
                     <h3 className="text-lg font-medium text-white">Focus Trend</h3>
-                    <p className="text-white/40 text-sm">Last 7 Days</p>
+                    <div className="flex gap-2 mt-1">
+                        {[7, 30, 'all'].map((range) => (
+                            <button
+                                key={range}
+                                onClick={() => setTimeRange(range)}
+                                className={`text-xs px-2 py-1 rounded transition-colors ${
+                                    timeRange === range
+                                        ? 'bg-accent-blue text-white'
+                                        : 'text-white/40 hover:text-white/70'
+                                }`}
+                            >
+                                {range === 'all' ? 'All' : `${range}D`}
+                            </button>
+                        ))}
+                    </div>
                 </div>
                 <div className="text-right">
                     <p className="text-3xl font-semibold text-white tracking-tight">{average}</p>
                     <p className="text-white/40 text-xs font-medium uppercase tracking-wide">Avg Minutes</p>
+                    {goal > 0 && (
+                        <p className="text-accent-blue text-[10px] font-medium mt-1">
+                            {goalProgress}% of weekly goal
+                        </p>
+                    )}
                 </div>
             </div>
 
             {/* Minimal Area Chart */}
-            <div id="focus-trend-chart" className="flex-1 w-full min-h-0 outline-none">
+            <div id="focus-trend-chart" className="flex-1 w-full min-h-0 outline-none focus:outline-none" style={{ outline: "none" }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
                         <defs>
@@ -92,6 +205,22 @@ const FocusVelocity = ({ data, goal = 0 }) => {
                                 <stop offset="95%" stopColor="#2997ff" stopOpacity={0} />
                             </linearGradient>
                         </defs>
+                        <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+                            dy={10}
+                        />
+                        <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+                            tickFormatter={(value) => `${value}m`}
+                            dx={-10}
+                            domain={[0, 'auto']}
+                            allowDataOverflow={false}
+                        />
                         <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
                         <Area
                             type="monotone"

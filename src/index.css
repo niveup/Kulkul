@@ -9,71 +9,94 @@
 @import "./styles/components.css";
 
 :root {
-  /* Dynamic Background Mesh */
-  --bg-mesh: radial-gradient(circle at 15% 50%, rgba(41, 151, 255, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(191, 90, 242, 0.15), transparent 25%);
+  /* Study Studio - Midnight Navy & Warm Amber (Calm Editorial) */
+  --bg-color: #0c0e14;
+  --bg-mesh:
+    radial-gradient(at 100% 0%, hsla(35, 70%, 50%, 0.04) 0, transparent 40%),
+    radial-gradient(at 0% 0%, hsla(230, 40%, 15%, 0.2) 0, transparent 50%),
+    radial-gradient(at 50% 100%, hsla(230, 30%, 8%, 0.1) 0, transparent 60%);
 }
 
 @layer base {
   html {
     font-family: 'Outfit', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: #050505;
-    /* Deep Black Base */
+    -moz-osx-smoothing: grayscale;
+    background-color: var(--bg-color);
   }
 
   body {
-    background-color: #050505;
+    background-color: var(--bg-color);
     background-image: var(--bg-mesh);
     background-attachment: fixed;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.94);
     overflow-x: hidden;
+    min-height: 100vh;
+    letter-spacing: -0.015em;
+    position: relative;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: var(--noise-pattern);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.15;
+    /* Much smoother, calming texture */
   }
 }
 
 @layer utilities {
 
-  /* THE LIQUID CARD */
+  /* THE LIQUID CARD - Apple Glass Edition */
   .liquid-card {
-    @apply relative overflow-hidden transition-all duration-500;
+    @apply relative overflow-hidden transition-all duration-700;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     /* Glass Effect */
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(24px);
-    /* Heavy Blur */
-    -webkit-backdrop-filter: blur(24px);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
 
     /* Borders & Depth */
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
     box-shadow:
-      0 4px 24px -1px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-    /* Inner rim light */
+      0 10px 40px -10px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 
-    border-radius: 24px;
-    /* iOS Smooth Corners */
+    border-radius: 28px;
+    /* iOS Squircle-like */
   }
 
   .liquid-card:hover {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
     border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px -2px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px) scale(1.005);
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
   }
 
-  /* Clean Input */
+  /* Clean Input - Apple Minimal */
   .liquid-input {
-    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 transition-all duration-300 focus:outline-none focus:bg-white/10 focus:border-white/20;
+    @apply w-full bg-white/[0.03] border border-white/[0.08] rounded-2xl px-5 py-3 text-white placeholder-white/20 transition-all duration-300 focus:outline-none focus:bg-white/[0.06] focus:border-white/20;
+    backdrop-filter: blur(8px);
+    letter-spacing: -0.01em;
   }
 
   .liquid-input:focus {
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 8px 24px -8px rgba(0, 0, 0, 0.4);
   }
 
-  /* Clean Badge */
+  /* Clean Badge - Apple Style */
   .liquid-badge {
-    @apply px-3 py-1 rounded-full text-xs font-medium tracking-wide bg-white/5 border border-white/5 text-white/70;
+    @apply px-4 py-1.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-white/[0.05] border border-white/[0.05] text-white/60 transition-all duration-300;
+  }
+
+  .liquid-badge:hover {
+    @apply bg-white/10 text-white/90 border-white/10;
   }
 
   /* Scrollbar - Invisible but functional (Apple style) */
@@ -176,17 +199,223 @@
     0 0 25px rgba(56, 189, 248, 0.7);
 }
 
-.liquid-range.accent-green::-webkit-slider-thumb {
+.liquid-range.accent-amber::-webkit-slider-thumb {
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(16, 185, 129, 0.2),
-    0 0 15px rgba(16, 185, 129, 0.5);
-  /* Green glow */
+    0 0 0 1px rgba(245, 158, 11, 0.2),
+    0 0 15px rgba(245, 158, 11, 0.5);
+  /* Amber glow */
 }
 
-.liquid-range.accent-green::-webkit-slider-thumb:hover {
+.liquid-range.accent-amber::-webkit-slider-thumb:hover {
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(16, 185, 129, 0.3),
-    0 0 25px rgba(16, 185, 129, 0.7);
+    0 0 0 1px rgba(245, 158, 11, 0.3),
+    0 0 25px rgba(245, 158, 11, 0.7);
+}
+
+/* Liquid Metal Logo Effect (User Requested) */
+.logo-liquid-metal {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  --lm-light: #444;
+  --lm-dark: #000;
+}
+
+.logo-liquid-metal::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(var(--lm-light), var(--lm-dark));
+  border-radius: 50%;
+  box-shadow: inset 0 2px 2px 2px rgba(255, 255, 255, 0.3);
+}
+
+.logo-outline {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.logo-outline::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 3px;
+  border-radius: inherit;
+  background: conic-gradient(from 180deg, #3b82f6, #8b5cf6, #ef4444, #8b5cf6, #3b82f6);
+  filter: grayscale(1);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: rotate-metallic 8s linear infinite;
+}
+
+/* Hover state via Sidebar group */
+.group\/avatar:hover .logo-outline::before {
+  filter: grayscale(0);
+}
+
+@keyframes rotate-metallic {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
+/* =============================================================================
+   Floating Label Search Bar
+   ============================================================================= */
+.input-group {
+  position: relative;
+}
+
+.input {
+  border: solid 1.5px #9e9e9e;
+  border-radius: 1rem;
+  background: none;
+  padding: 1.2rem 2rem;
+  font-size: 1rem;
+  color: #f5f5f5;
+  transition: border 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  text-indent: 1rem;
+}
+
+.user-label {
+  position: absolute;
+  left: 1.5rem;
+  /* Align with input text */
+  color: #e8e8e8;
+  pointer-events: none;
+  transform: translateY(1.25rem);
+  transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1rem;
+}
+
+.input:focus,
+.input:valid {
+  outline: none;
+  border: 1.5px solid #1a73e8;
+}
+
+.input:focus~.user-label,
+.input:valid~.user-label {
+  transform: translateY(-50%) scale(0.8);
+  background-color: #0A0A0C;
+  padding: 0 .8em;
+  color: #2196f3;
+  left: 1.2rem;
+}
+
+/* =============================================================================
+   Animated Button - Pomodoro Start
+   ============================================================================= */
+.animated-start-btn {
+  font-family: inherit;
+  font-size: 20px;
+  background: white;
+  color: black;
+  padding: 0.7em 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: none;
+  border-radius: 50px;
+  overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.animated-start-btn span {
+  display: block;
+  margin-left: 0.3em;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animated-start-btn .svg-wrapper {
+  position: absolute;
+  left: 37%;
+  top: 29%;
+  width: 24px;
+  height: 24px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.animated-start-btn .pause-icon,
+.animated-start-btn .play-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animated-start-btn .pause-icon {
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg);
+}
+
+.animated-start-btn .play-icon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.animated-start-btn:hover .pause-icon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.animated-start-btn:hover .play-icon {
+  opacity: 0;
+  transform: scale(0.5) rotate(90deg);
+}
+
+.animated-start-btn:hover .svg-wrapper {
+  transform: translate(-50%, -50%) scale(2);
+  animation: fly-1 0.6s ease-in-out infinite alternate;
+  opacity: 1;
+}
+
+.animated-start-btn:hover svg {
+  transform: rotate(45deg) scale(1.1);
+}
+
+.animated-start-btn:hover span {
+  transform: translateX(10em);
+}
+
+.animated-start-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes fly-1 {
+  from {
+    transform: translateY(0.1em);
+  }
+
+  to {
+    transform: translateY(-0.1em);
+  }
 }

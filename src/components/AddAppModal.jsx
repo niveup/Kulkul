@@ -298,6 +298,7 @@ const AddAppModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                     <button
                                         onClick={onClose}
                                         className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                        title="Close Modal"
                                     >
                                         <X size={20} />
                                     </button>
@@ -318,6 +319,7 @@ const AddAppModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                                         ? "bg-white/10 text-white shadow-sm"
                                                         : "text-slate-400 hover:text-white"
                                                 )}
+                                                title="Automatic Favicon"
                                             >
                                                 <Wand2 size={12} />
                                                 Auto
@@ -330,6 +332,7 @@ const AddAppModal = ({ isOpen, onClose, onSave, initialData = null }) => {
                                                         ? "bg-white/10 text-white shadow-sm"
                                                         : "text-slate-400 hover:text-white"
                                                 )}
+                                                title="Icon Library"
                                             >
                                                 <GridIcon />
                                                 Lib

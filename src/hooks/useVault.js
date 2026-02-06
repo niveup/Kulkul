@@ -10,6 +10,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useVaultStore } from '../store/vaultStore';
 
 // API base URL - works for both local dev and Vercel
 const API_BASE = '';
@@ -33,16 +34,22 @@ export const formatRelativeTime = (date) => {
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
     return past.toLocaleDateString();
 };
 
 export function useVault() {
     // All useState hooks first (consistent order)
-    const [files, setFiles] = useState([]);
-    const [trashFiles, setTrashFiles] = useState([]);
+    // Global State from Store
+    const files = useVaultStore(state => state.files);
+    const folders = useVaultStore(state => state.folders);
+    const { setInitialData, addFile: addFileToStore, removeFile: removeFileFromStore, moveFiles: moveFilesInStore, addFolder, removeFolder } = useVaultStore();
+
+    // Local State
+    // const [files, setFiles] = useState([]); // Replaced by store
+    const [localTrashFiles, setLocalTrashFiles] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -55,6 +62,7 @@ export function useVault() {
     const megaStorageRef = useRef(null);
     const initStartedRef = useRef(false);
     const pdfCacheRef = useRef(new Map()); // Cache downloaded PDFs: fileId -> blobUrl
+    const verificationCacheRef = useRef(new Map()); // Cache verification results: url -> boolean
 
     // Initialize MEGA connection
     const initMega = useCallback(async () => {
@@ -76,25 +84,36 @@ export function useVault() {
                 userAgent: 'StudyDash/1.0'
             });
 
-            await storage.ready;
-            megaStorageRef.current = storage;
-            setMegaConnected(true);
+            // Timeout after 5 seconds to prevent hanging
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('MEGA_CONNECTION_TIMEOUT')), 5000));
+
+            try {
+                await Promise.race([storage.ready, timeoutPromise]);
+                megaStorageRef.current = storage;
+                setMegaConnected(true);
+            } catch (error) {
+                console.warn('MEGA initialization timed out or failed (Account likely blocked). Continuing without MEGA.', error);
+                setMegaConnected(false);
+                return; // Exit early to avoid further errors
+            }
 
             // Get storage quota from MEGA using getAccountInfo
             try {
-                const accountInfo = await storage.getAccountInfo();
-                const spaceUsed = accountInfo.spaceUsed || 0;
-                const spaceLimit = accountInfo.spaceLimit || 20 * 1024 * 1024 * 1024; // 20GB free default
+                if (megaStorageRef.current) {
+                    const accountInfo = await storage.getAccountInfo();
+                    const spaceUsed = accountInfo.spaceUsed || 0;
+                    const spaceLimit = accountInfo.spaceLimit || 20 * 1024 * 1024 * 1024; // 20GB free default
 
-                console.log('MEGA Storage:', {
-                    used: (spaceUsed / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                    total: (spaceLimit / 1024 / 1024 / 1024).toFixed(2) + ' GB'
-                });
+                    console.log('MEGA Storage:', {
+                        used: (spaceUsed / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                        total: (spaceLimit / 1024 / 1024 / 1024).toFixed(2) + ' GB'
+                    });
 
-                setStorageInfo({
-                    used: spaceUsed,
-                    total: spaceLimit
-                });
+                    setStorageInfo({
+                        used: spaceUsed,
+                        total: spaceLimit
+                    });
+                }
             } catch (quotaErr) {
                 console.warn('Could not fetch MEGA quota:', quotaErr);
                 // Fallback: estimate from storage object
@@ -111,7 +130,7 @@ export function useVault() {
         }
     }, []);
 
-    // Fetch active files from database
+    // Fetch active files and folders
     const fetchFiles = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -119,14 +138,18 @@ export function useVault() {
             const data = await response.json();
 
             if (data.success) {
-                setFiles(data.files);
+                // Sync to global store
+                setInitialData({
+                    files: data.files,
+                    folders: data.folders || []
+                });
             }
         } catch (err) {
             console.error('Fetch files error:', err);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [setInitialData]);
 
     // Fetch trash files
     const fetchTrash = useCallback(async () => {
@@ -135,7 +158,7 @@ export function useVault() {
             const data = await response.json();
 
             if (data.success) {
-                setTrashFiles(data.files);
+                setLocalTrashFiles(data.files);
             }
         } catch (err) {
             console.error('Fetch trash error:', err);
@@ -149,8 +172,15 @@ export function useVault() {
 
         fetchFiles();
         fetchTrash();
-        initMega();
-    }, [fetchFiles, fetchTrash, initMega]);
+
+        // Telegram storage is always available (no login required)
+        // Set connected immediately for UI status
+        setMegaConnected(true);
+
+        // MEGA DISABLED - account is blocked and causes app freeze.
+        // Using Telegram storage via useChunkedStorage hook instead.
+        // initMega();
+    }, [fetchFiles, fetchTrash]);
 
     // Upload file to MEGA
     const uploadFile = useCallback(async (file) => {
@@ -159,8 +189,11 @@ export function useVault() {
             return null;
         }
 
-        if (!file.name.toLowerCase().endsWith('.pdf')) {
-            setError('Only PDF files are allowed');
+        const allowedExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.webp'];
+        const isAllowed = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+        if (!isAllowed) {
+            setError('Only PDF and image files (PNG, JPG, JPEG, WEBP) are allowed');
             return null;
         }
 
@@ -219,7 +252,9 @@ export function useVault() {
                 createdAt: new Date().toISOString()
             };
 
-            setFiles(prev => [newFile, ...prev]);
+
+
+            addFileToStore(newFile);
             setStorageInfo(prev => ({ ...prev, used: prev.used + file.size }));
 
             return newFile;
@@ -247,8 +282,8 @@ export function useVault() {
 
             const movedFile = files.find(f => f.id === fileId);
             if (movedFile) {
-                setFiles(prev => prev.filter(f => f.id !== fileId));
-                setTrashFiles(prev => [{ ...movedFile, deletedAt: new Date().toISOString(), daysRemaining: 10 }, ...prev]);
+                removeFileFromStore(fileId);
+                setLocalTrashFiles(prev => [{ ...movedFile, deletedAt: new Date().toISOString(), daysRemaining: 10 }, ...prev]);
             }
             return true;
         } catch (err) {
@@ -270,11 +305,11 @@ export function useVault() {
             const data = await response.json();
             if (!data.success) throw new Error(data.error);
 
-            const restoredFile = trashFiles.find(f => f.id === fileId);
+            const restoredFile = localTrashFiles.find(f => f.id === fileId);
             if (restoredFile) {
-                setTrashFiles(prev => prev.filter(f => f.id !== fileId));
+                setLocalTrashFiles(prev => prev.filter(f => f.id !== fileId));
                 const { deletedAt, daysRemaining, ...cleanFile } = restoredFile;
-                setFiles(prev => [cleanFile, ...prev]);
+                addFileToStore(cleanFile);
             }
             return true;
         } catch (err) {
@@ -282,13 +317,13 @@ export function useVault() {
             setError('Failed to restore file');
             return false;
         }
-    }, [trashFiles]);
+    }, [localTrashFiles]);
 
     // Permanently delete file (from database AND MEGA)
     const permanentDelete = useCallback(async (fileId) => {
         try {
             // Get the file info before deleting (need megaNodeId for MEGA deletion)
-            const fileToDelete = trashFiles.find(f => f.id === fileId);
+            const fileToDelete = localTrashFiles.find(f => f.id === fileId);
 
             // Delete from database first
             const response = await fetch(`${API_BASE}/api/vault/permanent-delete`, {
@@ -334,7 +369,7 @@ export function useVault() {
                 }
             }
 
-            setTrashFiles(prev => prev.filter(f => f.id !== fileId));
+            setLocalTrashFiles(prev => prev.filter(f => f.id !== fileId));
 
             if (fileToDelete) {
                 setStorageInfo(prev => ({ ...prev, used: Math.max(0, prev.used - fileToDelete.size) }));
@@ -345,7 +380,7 @@ export function useVault() {
             setError('Failed to permanently delete');
             return false;
         }
-    }, [trashFiles]);
+    }, [localTrashFiles]);
 
     // View PDF in modal (uses Google Docs viewer)
     const viewPdf = useCallback((file) => {
@@ -370,9 +405,165 @@ export function useVault() {
         }
     }, []);
 
+    // Folder Management
+    const createFolder = useCallback(async (name, parentId = null) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/vault/folders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'create', name, parentId })
+            });
+            const data = await response.json();
+            if (data.success) {
+                addFolder(data.folder);
+                return data.folder;
+            }
+        } catch (err) {
+            console.error('Create folder error:', err);
+            setError('Failed to create folder');
+        }
+        return null;
+    }, [addFolder]);
+
+    const deleteFolder = useCallback(async (folderId) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/vault/folders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'delete', id: folderId })
+            });
+            const data = await response.json();
+            if (data.success) {
+                removeFolder(folderId);
+                return true;
+            }
+        } catch (err) {
+            console.error('Delete folder error:', err);
+            setError('Failed to delete folder');
+        }
+        return false;
+    }, [removeFolder]);
+
+    const moveFile = useCallback(async (fileId, folderId) => {
+        try {
+            // Optimistic update
+            moveFilesInStore([fileId], folderId);
+
+            const response = await fetch(`${API_BASE}/api/vault/move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileId, folderId })
+            });
+            const data = await response.json();
+            if (!data.success) {
+                // Revert if failed? (TODO: Implement revert strategy)
+                console.error('Move failed on server');
+                fetchFiles(); // Refetch to correct state
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.error('Move file error:', err);
+            fetchFiles();
+            return false;
+        }
+    }, [moveFilesInStore, fetchFiles]);
+
+    // Resolve MEGA links to direct blob URLs
+    const resolveMediaUrl = useCallback(async (url) => {
+        if (!url) return null;
+        if (!url.includes('mega.nz')) return url;
+
+        // Check cache
+        if (pdfCacheRef.current.has(url)) {
+            return pdfCacheRef.current.get(url);
+        }
+
+        try {
+            const mega = await import('megajs');
+            const file = mega.File.fromURL(url);
+            await file.loadAttributes();
+
+            const buffer = await file.downloadBuffer();
+            // Try to detect type from name or default to image/png
+            const extension = file.name.split('.').pop().toLowerCase();
+            const mimeType = extension === 'pdf' ? 'application/pdf' : `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+
+            const blob = new Blob([buffer], { type: mimeType });
+            const blobUrl = URL.createObjectURL(blob);
+
+            pdfCacheRef.current.set(url, blobUrl);
+            return blobUrl;
+        } catch (err) {
+            console.warn('MEGA Resolve Error:', err.message);
+            // If the error indicates the file is gone, let the caller know
+            if (err.message.includes('NOTFOUND') || err.message.includes('invalid') || err.message.includes('ENOENT')) {
+                throw new Error('MEGA_FILE_GONE');
+            }
+            return url; // Return original if fails
+        }
+    }, [files]); // Added files to dependency for deletion logic
+
+    // Delete a MEGA file by its public link using server-side API
+    const deleteFileByUrl = useCallback(async (url) => {
+        if (!url || !url.includes('mega.nz')) return false;
+
+        try {
+            console.log('[useVault] Requesting server to delete MEGA file:', url);
+            const response = await fetch(`${API_BASE}/api/vault/delete-by-url`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                console.log('[useVault] ✓ Server deleted file from MEGA');
+                // Optmistically remove from local state if it was there
+                const target = files.find(f => f.downloadUrl === url);
+                if (target) {
+                    removeFileFromStore(target.id);
+                }
+                return true;
+            } else {
+                console.warn('[useVault] Server deletion failed:', data.error);
+                return false;
+            }
+        } catch (err) {
+            console.error('[useVault] Delete MEGA file error:', err);
+            return false;
+        }
+    }, [files, removeFileFromStore]);
+
+    // ... existing functions ...
+
+    // Check if a MEGA file still exists (lightweight check with session caching)
+    const verifyFileExists = useCallback(async (url) => {
+        if (!url || !url.includes('mega.nz')) return true;
+
+        // Check cache first
+        if (verificationCacheRef.current.has(url)) {
+            return verificationCacheRef.current.get(url);
+        }
+
+        try {
+            const mega = await import('megajs');
+            const file = mega.File.fromURL(url);
+            await file.loadAttributes();
+            verificationCacheRef.current.set(url, true);
+            return true;
+        } catch (err) {
+            if (err.message.includes('NOTFOUND') || err.message.includes('invalid') || err.message.includes('ENOENT')) {
+                verificationCacheRef.current.set(url, false);
+                return false;
+            }
+            return true; // If it's a transient error, assume it exists but don't cache
+        }
+    }, []);
+
     return {
         files,
-        trashFiles,
+        trashFiles: localTrashFiles,
         isLoading,
         isUploading,
         uploadProgress,
@@ -384,12 +575,19 @@ export function useVault() {
         uploadFile,
         moveToTrash,
         restoreFile,
+        folders,
+        createFolder,
+        deleteFolder,
+        moveFile,
         permanentDelete,
         viewPdf,
         closePdfViewer,
         downloadFile,
         refreshFiles: fetchFiles,
         refreshTrash: fetchTrash,
+        resolveMediaUrl,
+        deleteFileByUrl,
+        verifyFileExists,
         clearError: useCallback(() => setError(null), [])
     };
 }

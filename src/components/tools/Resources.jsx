@@ -1,13 +1,24 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import formulas11 from '../../data/formulas_11.json';
-import formulas12 from '../../data/formulas_12.json';
+
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 import { Search, ChevronDown, Atom, Calculator, Beaker, PieChart, Moon, Sun, Clock, Sparkles, BookOpen, Lightbulb, X, Maximize2, Pencil, Check } from 'lucide-react';
 import TopicAnalysisModal from './TopicAnalysisModal';
 import { shouldUseLocalStorage } from '../../utils/authMode';
+
+// Phase 1: New components
+import DifficultyBadge from '../resources/DifficultyBadge';
+import TagChip from '../resources/TagChip';
+import TagFilter from '../resources/TagFilter';
+import SearchHistory from '../resources/SearchHistory';
+import SearchWidget from '../resources/SearchWidget';
+import Breadcrumb from '../resources/Breadcrumb';
+import useSearch from '../../hooks/useSearch';
+import SubjectIcon from '../resources/SubjectIcon';
+import ConceptGrid from '../resources/ConceptGrid';
+import { KatexRenderer, MixedTextRenderer } from '../common/Renderers';
 
 // ============================================================================
 // DESIGN SYSTEM - Apple-esque Muted Palette
@@ -69,29 +80,7 @@ const cardVariants = {
     }
 };
 
-const dropdownVariants = {
-    hidden: {
-        opacity: 0,
-        scale: 0.95,
-        y: -10
-    },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: {
-            type: "spring",
-            stiffness: 400,
-            damping: 25
-        }
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.95,
-        y: -10,
-        transition: { duration: 0.15 }
-    }
-};
+
 
 // ============================================================================
 // HELPER COMPONENTS
@@ -165,17 +154,7 @@ const MixedTextRenderer = ({ text, isDarkMode }) => {
     );
 };
 
-// Subject Icon Component
-const SubjectIcon = ({ subject, isActive, isDarkMode }) => {
-    const iconClass = isActive
-        ? 'text-white'
-        : isDarkMode ? 'text-slate-400' : 'text-slate-500';
 
-    if (subject === 'Physics') return <Atom size={18} className={iconClass} />;
-    if (subject === 'Chemistry') return <Beaker size={18} className={iconClass} />;
-    if (subject === 'Math') return <Calculator size={18} className={iconClass} />;
-    return <BookOpen size={18} className={iconClass} />;
-};
 
 // ============================================================================
 // CONCEPT CARD COMPONENT (Clickable)
@@ -374,6 +353,32 @@ const ConceptCard = ({ concept, index, isDarkMode, onClick, onEdit }) => {
                     </div>
                 )}
 
+                {/* Phase 1: Difficulty Badge and Tags */}
+                {(concept.difficulty || concept.tags?.length > 0) && (
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {concept.difficulty && (
+                            <DifficultyBadge
+                                difficulty={concept.difficulty}
+                                isDarkMode={isDarkMode}
+                                size="sm"
+                            />
+                        )}
+                        {concept.tags?.slice(0, 3).map(tag => (
+                            <TagChip
+                                key={tag}
+                                tagId={tag}
+                                isDarkMode={isDarkMode}
+                                size="xs"
+                            />
+                        ))}
+                        {concept.tags?.length > 3 && (
+                            <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                +{concept.tags.length - 3}
+                            </span>
+                        )}
+                    </div>
+                )}
+
                 {/* JEE Favorite Badge */}
                 {/* JEE Favorite Badge */}
                 {concept.isJeeFav && (
@@ -490,6 +495,30 @@ const ExpandedCardModal = ({ concept, isDarkMode, onClose }) => {
                     {concept.concept}
                 </h2>
 
+                {/* Phase 1: Meta Info (Tags & Difficulty) */}
+                <div className="flex flex-wrap items-center gap-3 mb-6">
+                    {concept.difficulty && (
+                        <DifficultyBadge
+                            difficulty={concept.difficulty}
+                            isDarkMode={isDarkMode}
+                            size="md"
+                        />
+                    )}
+                    {concept.subtopic && (
+                        <span className={`text-sm font-medium px-3 py-1 rounded-full ${isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                            {concept.subtopic}
+                        </span>
+                    )}
+                    {concept.tags?.map(tag => (
+                        <TagChip
+                            key={tag}
+                            tagId={tag}
+                            isDarkMode={isDarkMode}
+                            size="md"
+                        />
+                    ))}
+                </div>
+
                 {/* Theory/Content - LARGER */}
                 {(concept.theory || concept.content || concept.details) && (
                     <div
@@ -558,11 +587,44 @@ const ExpandedCardModal = ({ concept, isDarkMode, onClose }) => {
 // MAIN COMPONENT
 // ============================================================================
 const Resources = ({ isDarkMode, onToggleTheme }) => {
+    // Data State (Lazy Loading)
+    const [formulas11, setFormulas11] = useState([]);
+    const [formulas12, setFormulas12] = useState([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+
+    useEffect(() => {
+        let mounted = true;
+        const loadData = async () => {
+            try {
+                const [f11, f12] = await Promise.all([
+                    import('../../data/formulas_11.json'),
+                    import('../../data/formulas_12.json')
+                ]);
+                if (mounted) {
+                    setFormulas11(f11.default || []);
+                    setFormulas12(f12.default || []);
+                    setIsLoadingData(false);
+                }
+            } catch (error) {
+                console.error("Failed to load formula data", error);
+                if (mounted) setIsLoadingData(false);
+            }
+        };
+        loadData();
+        return () => { mounted = false; };
+    }, []);
     // --- STATE ---
     const [selectedClass, setSelectedClass] = useState('12');
     const [selectedSubject, setSelectedSubject] = useState('Physics');
     const [selectedTopic, setSelectedTopic] = useState('Electrostatics');
-    const [searchTerm, setSearchTerm] = useState('');
+    // REMOVED: searchTerm state (now managed by useSearch)
+    // const [searchTerm, setSearchTerm] = useState('');
+
+    // Phase 1 State
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [filterMode, setFilterMode] = useState('OR');
+    const [isSearchHistoryOpen, setIsSearchHistoryOpen] = useState(false);
+
     const [isChartModalOpen, setIsChartModalOpen] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [activeMenu, setActiveMenu] = useState(null);
@@ -652,38 +714,61 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
         (a, b) => getConceptNumber(a) - getConceptNumber(b)
     );
 
-    // Universal Search
-    const universalSearchResults = useMemo(() => {
-        if (!searchTerm.trim()) return [];
-        const results = [];
-        const term = searchTerm.toLowerCase();
-
-        [formulas11, formulas12].forEach((formulas, classIndex) => {
+    // Phase 1: Flatten all concepts for global search
+    const allConcepts = useMemo(() => {
+        const all = [];
+        const process = (formulas, title) => {
             formulas.forEach(chapter => {
-                chapter.concepts?.forEach(concept => {
-                    if (
-                        concept.concept?.toLowerCase().includes(term) ||
-                        concept.theory?.toLowerCase().includes(term) ||
-                        concept.formula?.toLowerCase().includes(term)
-                    ) {
-                        results.push({
+                if (chapter.concepts) {
+                    chapter.concepts.forEach(concept => {
+                        all.push({
                             ...concept,
                             chapterName: chapter.topic,
-                            className: classIndex === 0 ? '11' : '12'
+                            className: title,
+                            subtopic: concept.subtopic || 'Basic Concepts',
+                            tags: concept.tags || [],
+                            difficulty: concept.difficulty || 'Medium'
                         });
-                    }
-                });
+                    });
+                }
             });
-        });
+        };
+        process(formulas11, '11');
+        process(formulas12, '12');
+        return all;
+    }, [formulas11, formulas12]);
 
-        return results.slice(0, 20);
-    }, [searchTerm]);
+    // Phase 1: Advanced Search Hook
+    const {
+        query: searchQuery,
+        setQuery: setSearchQuery,
+        results: searchResults,
+        history: searchHistory,
+        addToHistory,
+        clearHistory,
+    } = useSearch({
+        data: allConcepts,
+        keys: ['concept', 'theory', 'formula', 'tags', 'uid', 'chapterName', 'subtopic'],
+        fuzzyThreshold: 0.3
+    });
 
-    // Filter concepts
-    const filteredConcepts = sortedConcepts.filter(c =>
-        c.concept.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.theory?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Phase 1: Filter concepts by Tags (Local Scope)
+    const filteredConcepts = useMemo(() => {
+        let candidates = sortedConcepts;
+
+        // Filter by tags if any selected
+        if (selectedTags.length > 0) {
+            candidates = candidates.filter(c => {
+                const conceptTags = c.tags || [];
+                if (filterMode === 'AND') {
+                    return selectedTags.every(t => conceptTags.includes(t));
+                }
+                return selectedTags.some(t => conceptTags.includes(t));
+            });
+        }
+
+        return candidates;
+    }, [sortedConcepts, selectedTags, filterMode]);
 
     // Theme colors
     const theme = isDarkMode ? colors.dark : colors.light;
@@ -825,22 +910,16 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
                             </div>
                         ))}
 
-                        {/* Current Topic Badge */}
                         <div className={`h-6 w-px mx-2 ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
-                        <motion.div
-                            key={selectedTopic}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`
-                                px-3 py-1.5 rounded-lg text-sm font-semibold
-                                ${isDarkMode
-                                    ? 'bg-slate-800 text-slate-200'
-                                    : 'bg-slate-100 text-slate-700'
-                                }
-                            `}
-                        >
-                            {selectedTopic}
-                        </motion.div>
+                        <Breadcrumb
+                            items={[
+                                { label: `Class ${selectedClass}`, onClick: () => { } },
+                                { label: selectedSubject, onClick: () => setSelectedClass(selectedClass) },
+                                { label: selectedTopic, onClick: () => { } }
+                            ]}
+                            isDarkMode={isDarkMode}
+                            showHome={false}
+                        />
 
                         {/* Study Timer */}
                         <motion.div
@@ -899,35 +978,59 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
                             {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
                         </motion.button>
 
-                        {/* Search */}
+                        {/* Phase 1: Advanced Search */}
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Search size={16} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search size={16} className={isDarkMode ? 'text-slate-500' : 'text-slate-400'} />
+                                </div>
+                                <input
+                                    type="text"
+                                    className={`
+                                        w-64 pl-9 pr-4 py-2 rounded-xl text-sm font-medium
+                                        border outline-none transition-all
+                                        ${isDarkMode
+                                            ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-500 focus:border-blue-500/50 focus:bg-slate-800'
+                                            : 'bg-slate-50 border-slate-200 text-slate-700 placeholder-slate-400 focus:border-blue-300 focus:bg-white'
+                                        }
+                                    `}
+                                    placeholder="Search concepts, formulas..."
+                                    value={searchQuery}
+                                    onChange={(e) => search(e.target.value)}
+                                    onFocus={() => setIsSearchHistoryOpen(true)}
+                                    onBlur={() => setTimeout(() => setIsSearchHistoryOpen(false), 200)}
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
                             </div>
-                            <input
-                                type="text"
-                                className={`
-                                    w-64 pl-9 pr-4 py-2 rounded-xl text-sm font-medium
-                                    border outline-none transition-all
-                                    ${isDarkMode
-                                        ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder-slate-500 focus:border-blue-500/50 focus:bg-slate-800'
-                                        : 'bg-slate-50 border-slate-200 text-slate-700 placeholder-slate-400 focus:border-blue-300 focus:bg-white'
-                                    }
-                                `}
-                                placeholder="Search all chapters..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+
+                            {/* Search History */}
+                            <SearchHistory
+                                history={searchHistory}
+                                isVisible={isSearchHistoryOpen && !searchQuery}
+                                isDarkMode={isDarkMode}
+                                onSelect={(query) => {
+                                    search(query);
+                                    setIsSearchHistoryOpen(false);
+                                }}
+                                onClear={clearHistory}
                             />
 
                             {/* Search Results Dropdown */}
                             <AnimatePresence>
-                                {searchTerm.trim() && (
+                                {searchQuery.trim() && (
                                     <motion.div
                                         initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
                                         className={`
-                                            absolute top-full right-0 mt-2 w-80 max-h-[400px] overflow-y-auto
+                                            absolute top-full right-0 mt-2 w-96 max-h-[500px] overflow-y-auto
                                             rounded-xl border shadow-2xl backdrop-blur-xl z-50
                                             ${isDarkMode
                                                 ? 'bg-slate-900/95 border-slate-700/50'
@@ -935,32 +1038,47 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
                                             }
                                         `}
                                     >
-                                        {universalSearchResults.length > 0 ? (
+                                        {searchResults.length > 0 ? (
                                             <>
-                                                <div className={`px-3 py-2 border-b text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-500 border-slate-700/50' : 'text-slate-400 border-slate-200'}`}>
-                                                    {universalSearchResults.length} results
+                                                <div className={`px-4 py-3 border-b text-xs font-bold uppercase tracking-wider flex justify-between items-center ${isDarkMode ? 'text-slate-500 border-slate-700/50' : 'text-slate-400 border-slate-200'}`}>
+                                                    <span>{searchResults.length} results</span>
+                                                    <span className="text-[10px] font-normal opacity-70">
+                                                        Press Enter to see all
+                                                    </span>
                                                 </div>
                                                 <div className="p-2 space-y-1">
-                                                    {universalSearchResults.map((result, idx) => (
+                                                    {searchResults.map((result, idx) => (
                                                         <motion.button
                                                             key={idx}
                                                             whileHover={{ x: 4 }}
                                                             onClick={() => {
                                                                 handleTopicClick(result.className, 'Physics', result.chapterName);
-                                                                setSearchTerm('');
+                                                                setExpandedConcept(result);
+                                                                setSearchQuery('');
+                                                                addToHistory(searchQuery);
                                                             }}
                                                             className={`
-                                                                w-full text-left px-3 py-2 rounded-lg transition-colors
+                                                                w-full text-left px-3 py-2.5 rounded-lg transition-colors group
                                                                 ${isDarkMode
-                                                                    ? 'hover:bg-blue-500/20'
-                                                                    : 'hover:bg-blue-50'
+                                                                    ? 'hover:bg-slate-800'
+                                                                    : 'hover:bg-slate-50'
                                                                 }
                                                             `}
                                                         >
-                                                            <div className={`text-sm font-semibold truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-                                                                {result.concept}
+                                                            <div className="flex items-start justify-between mb-1">
+                                                                <span className={`text-sm font-semibold truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                                                                    {result.concept}
+                                                                </span>
+                                                                {result.difficulty && (
+                                                                    <DifficultyBadge difficulty={result.difficulty} isDarkMode={isDarkMode} size="xs" showLabel={false} />
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center gap-2 mt-1">
+
+                                                            <div className={`text-xs truncate mb-1.5 ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                                                                {result.theory?.slice(0, 60)}...
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2">
                                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${result.className === '11'
                                                                     ? isDarkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
                                                                     : isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'
@@ -976,8 +1094,10 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
                                                 </div>
                                             </>
                                         ) : (
-                                            <div className={`p-4 text-center text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                No results for "{searchTerm}"
+                                            <div className={`p-8 text-center flex flex-col items-center ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                <Search size={24} className="opacity-20 mb-2" />
+                                                <p className="text-sm">No matches found</p>
+                                                <p className="text-xs opacity-60 mt-1">Try adjusting your terms or filters</p>
                                             </div>
                                         )}
                                     </motion.div>
@@ -989,46 +1109,29 @@ const Resources = ({ isDarkMode, onToggleTheme }) => {
             </nav>
 
             {/* ============ MAIN CONTENT ============ */}
+            {/* ============ MAIN CONTENT ============ */}
             <main className="max-w-7xl mx-auto px-4 py-8">
-                {filteredConcepts.length > 0 ? (
-                    <motion.div
-                        key={selectedTopic}
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="columns-1 md:columns-2 lg:columns-2 xl:columns-3 gap-4"
-                        style={{ columnFill: 'balance' }}
-                    >
-                        {filteredConcepts.map((concept, idx) => (
-                            <ConceptCard
-                                key={`${selectedTopic}-${idx}`}
-                                concept={concept}
-                                index={idx}
-                                isDarkMode={isDarkMode}
-                                onClick={() => setExpandedConcept(concept)}
-                            />
-                        ))}
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center py-20"
-                    >
-                        <div className="text-6xl mb-4 opacity-50">
-                            {selectedSubject !== 'Physics' ? '🧪' : '🔍'}
-                        </div>
-                        <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                            {selectedSubject !== 'Physics' ? 'Coming Soon!' : 'No results found'}
-                        </h3>
-                        <p className={`mt-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {selectedSubject !== 'Physics'
-                                ? `Notes for ${selectedSubject} are being prepared.`
-                                : 'Try searching for something else.'
-                            }
-                        </p>
-                    </motion.div>
+
+                {/* Phase 1: Tag Filters */}
+                {selectedSubject === 'Physics' && (
+                    <div className="mb-6">
+                        <TagFilter
+                            selectedTags={selectedTags}
+                            onTagsChange={setSelectedTags}
+                            isDarkMode={isDarkMode}
+                            filterMode={filterMode}
+                            onFilterModeChange={setFilterMode}
+                        />
+                    </div>
                 )}
+
+                <ConceptGrid
+                    concepts={filteredConcepts}
+                    selectedTopic={selectedTopic}
+                    selectedSubject={selectedSubject}
+                    isDarkMode={isDarkMode}
+                    setExpandedConcept={setExpandedConcept}
+                />
             </main>
 
             {/* Topic Analysis Modal */}

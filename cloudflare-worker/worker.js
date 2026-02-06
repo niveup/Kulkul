@@ -1,5 +1,7 @@
-// Cloudflare Worker - AI API Proxy
-// This proxies requests to Cerebras and SambaNova APIs to bypass IP blocking
+// Cloudflare Worker - Unified Proxy (AI & Telegram Storage)
+// Handles:
+// 1. AI API Proxy (Cerebras, SambaNova)
+// 2. Telegram File Uploads (Bypass Vercel 4.5MB limit)
 
 export default {
     async fetch(request, env) {
@@ -22,9 +24,58 @@ export default {
         }
 
         try {
-            const provider = request.headers.get('X-Provider') || 'cerebras';
-            const body = await request.text();
+            const provider = request.headers.get('X-Provider');
 
+            // =================================================================
+            // 1. Telegram Storage Proxy
+            // =================================================================
+            if (provider === 'telegram-upload') {
+                const botToken = env.TELEGRAM_BOT_TOKEN;
+                const chatId = env.TELEGRAM_CHAT_ID;
+
+                if (!botToken || !chatId) {
+                    return new Response(JSON.stringify({ error: 'Telegram secrets not configured' }), {
+                        status: 500,
+                        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                    });
+                }
+
+                // Forward the multipart/form-data body directly to Telegram
+                const formData = await request.formData();
+                formData.append('chat_id', chatId);
+
+                // Send to Telegram API
+                const tgResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const tgData = await tgResponse.json();
+
+                if (!tgData.ok) {
+                    throw new Error(`Telegram Error: ${tgData.description}`);
+                }
+
+                // Extract file ID and return
+                const fileId = tgData.result.document
+                    ? tgData.result.document.file_id
+                    : tgData.result.photo[tgData.result.photo.length - 1].file_id;
+
+                const responseData = {
+                    success: true,
+                    fileId: fileId,
+                    // We don't return a direct URL here because viewing handles that
+                };
+
+                return new Response(JSON.stringify(responseData), {
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                });
+            }
+
+            // =================================================================
+            // 2. AI API Proxy (Legacy)
+            // =================================================================
+            const body = await request.text();
             let apiUrl, apiKey;
 
             if (provider === 'cerebras') {
@@ -64,6 +115,7 @@ export default {
                 status: response.status,
                 headers: responseHeaders,
             });
+
         } catch (error) {
             return new Response(JSON.stringify({ error: error.message }), {
                 status: 500,

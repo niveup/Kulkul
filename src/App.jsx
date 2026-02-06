@@ -13,10 +13,12 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'reac
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 // date-fns import removed - not used
 
+// API Error handling utilities
+import { apiRequest, validators } from './utils/apiErrorHandler';
+
 // Components (Eagerly loaded - always needed)
 import AppCard, { AddAppCard } from './components/AppCard';
 import Sidebar from './components/Sidebar';
-import Dock from './components/navigation/Dock';
 
 import PomodoroTimer from './components/tools/PomodoroTimer';
 import TodoList from './components/tools/TodoList';
@@ -35,11 +37,15 @@ const ProgressSection = React.lazy(() => import('./components/tools/ProgressSect
 const ResourceCanvas = React.lazy(() => import('./components/resources/ResourceCanvas'));
 const Workstation = React.lazy(() => import('./components/workstation/Workstation'));
 const AIChat = React.lazy(() => import('./components/tools/AIChat'));
+const NotesLibrary2 = React.lazy(() => import('./components/notes/NotesLibrary2'));
 
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
 const VaultPanel = React.lazy(() => import('./components/tools/VaultPanel'));
 const NotionPanel = React.lazy(() => import('./components/notion/NotionPanel'));
+const TelegramVideos = React.lazy(() => import('./components/tools/TelegramVideos'));
+const VideoApp = React.lazy(() => import('./VideoApp'));
 import AddAppModal from './components/AddAppModal';
+
 import { useCustomApps } from './hooks/useCustomApps';
 
 // Widgets
@@ -50,9 +56,11 @@ import { LuminaOverview } from './components/lumina';
 
 // Store & Hooks
 import { useAppStore, useSessionStore, useTaskStore } from './store';
+import useDashboardStore from './store/dashboardStore';
+
 import { useHotkey, useOnlineStatus, useDebounce } from './hooks';
 import { useToast } from './components/ui/Toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import PasswordModal from './components/PasswordModal';
 
 // Utils
@@ -226,10 +234,11 @@ function App() {
   const isOnline = useOnlineStatus();
 
   // Zustand stores
-  const isDarkMode = useAppStore((s) => s.isDarkMode);
+  const isDarkMode = useAppStore(state => state.isDarkMode);
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const toggleTheme = useAppStore((s) => s.toggleTheme);
+  const toggleTheme = useAppStore(state => state.toggleTheme);
+
 
   // Session store
   const sessions = useSessionStore((s) => s.sessions);
@@ -248,6 +257,10 @@ function App() {
   // Sound and notification hooks
   const soundManager = useSoundManager();
   const notifications = useNotifications();
+
+  // Dashboard store
+  const streak = useDashboardStore((s) => s.cachedStats.currentStreak) || 0;
+  const userName = 'Aspirant';
 
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
@@ -287,7 +300,10 @@ function App() {
 
   // Handler for deleting a custom app
   const handleDeleteApp = useCallback((app) => {
-    if (window.confirm(`Are you sure you want to delete "${app.name}"?`)) {
+    console.log('handleDeleteApp triggered for:', app);
+    const appName = app.name || app.title || 'this app';
+    if (window.confirm(`Are you sure you want to delete "${appName}"?`)) {
+      console.log('Confirmed deletion of ID:', app.id);
       removeApp(app.id);
     }
   }, [removeApp]);
@@ -322,8 +338,8 @@ function App() {
     if (!debouncedSearch) return allApps;
     const query = debouncedSearch.toLowerCase();
     return allApps.filter(app =>
-      app.name.toLowerCase().includes(query) ||
-      (app.description && app.description.toLowerCase().includes(query))
+      (app.name?.toLowerCase() || '').includes(query) ||
+      (app.description && (app.description?.toLowerCase() || '').includes(query))
     );
   }, [debouncedSearch, customApps]);
 
@@ -349,23 +365,32 @@ function App() {
         return;
       }
 
-      // Authenticated: fetch from API
+      // Authenticated: fetch from API with enhanced error handling
       try {
-        const response = await fetch('/api/sessions');
-        if (response.ok) {
-          const data = await response.json();
-          setSessions(Array.isArray(data) ? data : []);
+        const result = await apiRequest('/api/sessions', {
+          method: 'GET'
+        }, {
+          context: 'load-sessions',
+          toast,
+          defaultMessage: 'Failed to load your session history'
+        });
+
+        if (result.success && Array.isArray(result.data)) {
+          setSessions(result.data);
+        } else {
+          // Fallback to localStorage on API failure
+          setSessions(localSessions.getAll());
         }
       } catch (error) {
-        console.error('Failed to load sessions:', error);
-        // Fallback to localStorage
+        // Error already handled by apiRequest, fallback to localStorage
         setSessions(localSessions.getAll());
+        console.error('Session load failed:', error);
       } finally {
         setIsLoadingSessions(false);
       }
     };
     loadSessionsData();
-  }, [setSessions]);
+  }, [setSessions, toast]);
 
   // Load active timer - localStorage for guest mode, API for authenticated
   const hasLoadedActiveTimer = React.useRef(false);
@@ -380,16 +405,23 @@ function App() {
       if (shouldUseLocalStorage()) {
         data = localActiveTimer.get();
       } else {
-        // Authenticated: fetch from API
+        // Authenticated: fetch from API with enhanced error handling
         try {
-          const response = await fetch('/api/active-timer');
-          if (response.ok) {
-            data = await response.json();
+          const result = await apiRequest('/api/active-timer', {
+            method: 'GET'
+          }, {
+            context: 'load-active-timer',
+            toast,
+            defaultMessage: 'Failed to load active timer state'
+          });
+
+          if (result.success) {
+            data = result.data;
           }
         } catch (error) {
-          console.error('Failed to load active timer:', error);
-          // Fallback to localStorage
+          // Error already handled by apiRequest, fallback to localStorage
           data = localActiveTimer.get();
+          console.error('Active timer load failed:', error);
         }
       }
 
@@ -475,15 +507,21 @@ function App() {
         return;
       }
 
-      // Authenticated: fetch from API
+      // Authenticated: fetch from API with enhanced error handling
       try {
-        const response = await fetch('/api/todos');
-        if (response.ok) {
-          const data = await response.json();
-          setTasks(data.map(t => ({ ...t, isSaved: true })));
+        const result = await apiRequest('/api/todos', {
+          method: 'GET'
+        }, {
+          context: 'load-tasks',
+          toast,
+          defaultMessage: 'Failed to load your tasks'
+        });
+
+        if (result.success && Array.isArray(result.data)) {
+          setTasks(result.data.map(t => ({ ...t, isSaved: true })));
         }
       } catch (error) {
-        console.error('Failed to load tasks:', error);
+        console.error('Task load failed:', error);
       } finally {
         setIsLoadingTasks(false);
       }
@@ -535,13 +573,30 @@ function App() {
       // Save session and clear timer - conditional on auth mode
       localSessions.add(newSession);
       localActiveTimer.clear();
+
       if (!shouldUseLocalStorage()) {
-        fetch('/api/sessions', {
+        // Updated to use apiRequest with proper error handling
+        apiRequest('/api/sessions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSession),
-        }).catch(err => console.error('Failed to save session:', err));
-        fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+        }, {
+          context: 'save-session',
+          toast,
+          defaultMessage: 'Failed to save your session data'
+        }).catch(err => {
+          // Error already handled by apiRequest, but log for debugging
+          console.error('Session save failed:', err);
+        });
+
+        apiRequest('/api/active-timer', {
+          method: 'DELETE'
+        }, {
+          context: 'clear-active-timer',
+          toast,
+          showUserMessage: false // Don't show error for cleanup operations
+        }).catch(err => {
+          console.error('Failed to clear active timer:', err);
+        });
       }
     }
   }, [timerState.timeLeft, timerState.isActive, timerState.initialTime, sessions, setSessions, setTimerState, toast]);
@@ -569,15 +624,27 @@ function App() {
           setTimerState({ isActive: true, isFailed: false, startTime: now });
         }
 
+        // Validate timer duration before starting
+        const durationValidation = validators.validateTimerDuration(timerState.duration);
+        if (!durationValidation.isValid) {
+          toast.error('Invalid Duration', durationValidation.error);
+          return;
+        }
+
         // Save timer state - localStorage for guest, API for authenticated
         const timerData = { startTime: now, durationSeconds: startInitial, status: 'active' };
         localActiveTimer.set(timerData);
         if (!shouldUseLocalStorage()) {
-          fetch('/api/active-timer', {
+          apiRequest('/api/active-timer', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(timerData),
-          }).catch(err => console.error('Failed to save active timer:', err));
+          }, {
+            context: 'save-active-timer',
+            toast,
+            defaultMessage: 'Failed to save timer state'
+          }).catch(err => {
+            console.error('Active timer save failed:', err);
+          });
         }
         break;
 
@@ -589,11 +656,16 @@ function App() {
         const pausedData = { durationSeconds: timerState.initialTime, pausedRemaining: timerState.timeLeft, status: 'paused' };
         localActiveTimer.set(pausedData);
         if (!shouldUseLocalStorage()) {
-          fetch('/api/active-timer', {
+          apiRequest('/api/active-timer', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(pausedData),
-          }).catch(err => console.error('Failed to save paused timer:', err));
+          }, {
+            context: 'save-paused-timer',
+            toast,
+            defaultMessage: 'Failed to save paused timer'
+          }).catch(err => {
+            console.error('Paused timer save failed:', err);
+          });
         }
         break;
 
@@ -617,12 +689,26 @@ function App() {
         localSessions.add(failedSession);
         localActiveTimer.clear();
         if (!shouldUseLocalStorage()) {
-          fetch('/api/sessions', {
+          apiRequest('/api/sessions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(failedSession),
-          }).catch(err => console.error('Failed to save session:', err));
-          fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+          }, {
+            context: 'save-failed-session',
+            toast,
+            defaultMessage: 'Failed to save session data'
+          }).catch(err => {
+            console.error('Failed session save failed:', err);
+          });
+
+          apiRequest('/api/active-timer', {
+            method: 'DELETE'
+          }, {
+            context: 'clear-active-timer-failed',
+            toast,
+            showUserMessage: false
+          }).catch(err => {
+            console.error('Failed to clear active timer:', err);
+          });
         }
         break;
 
@@ -639,16 +725,31 @@ function App() {
         // Clear timer
         localActiveTimer.clear();
         if (!shouldUseLocalStorage()) {
-          fetch('/api/active-timer', { method: 'DELETE' }).catch(() => { });
+          apiRequest('/api/active-timer', {
+            method: 'DELETE'
+          }, {
+            context: 'reset-timer',
+            toast,
+            showUserMessage: false
+          }).catch(err => {
+            console.error('Timer reset failed:', err);
+          });
         }
         break;
 
       case 'SET_DURATION':
         const newMinutes = parseInt(payload);
+        // Validate duration change
+        const durationChangeValidation = validators.validateTimerDuration(newMinutes);
+        if (!durationChangeValidation.isValid) {
+          toast.error('Invalid Duration', durationChangeValidation.error);
+          return;
+        }
+
         setTimerState({
-          duration: newMinutes,
-          timeLeft: newMinutes * 60,
-          initialTime: newMinutes * 60,
+          duration: durationChangeValidation.value,
+          timeLeft: durationChangeValidation.value * 60,
+          initialTime: durationChangeValidation.value * 60,
           isCompleted: false,
           isFailed: false,
         });
@@ -658,9 +759,15 @@ function App() {
 
   // Task handlers
   const handleAddTask = useCallback((text) => {
-    if (!text.trim()) return;
-    addTask(text);
-  }, [addTask]);
+    // Validate task text before adding
+    const validation = validators.validateTaskText(text);
+    if (!validation.isValid) {
+      toast.error('Invalid Task', validation.error);
+      return;
+    }
+
+    addTask(validation.sanitized);
+  }, [addTask, toast]);
 
   const handleSaveTask = useCallback(async (id) => {
     const task = tasks.find(t => t.id === id);
@@ -673,364 +780,60 @@ function App() {
       return;
     }
 
-    // Authenticated: save to API
+    // Authenticated: save to API with proper error handling
     try {
-      const response = await fetch('/api/todos', {
+      const response = await apiRequest('/api/todos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: task.text }),
+      }, {
+        context: 'save-task',
+        toast,
+        defaultMessage: 'Failed to save your task'
       });
-      if (response.ok) {
-        const savedTask = await response.json();
-        markTaskSaved(id, savedTask);
+
+      if (response.success) {
+        markTaskSaved(id, response.data);
         toast.success('Task Saved', 'Your task has been saved to the cloud.');
       }
     } catch (error) {
-      console.error('Failed to save task:', error);
-      toast.error('Save Failed', 'Could not save task. Please try again.');
+      // Error already handled by apiRequest
+      console.error('Task save failed:', error);
     }
   }, [tasks, markTaskSaved, toast]);
 
-  const handleToggleTask = useCallback(async (id) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
+  // RouteGuard Component to handle side-effects inside AuthProvider
+  const RouteGuard = () => {
+    const { isAuthenticated, isLoading } = useAuth();
+    const { activeTab, setActiveTab } = useAppStore();
 
-    toggleTask(id);
-
-    // Guest mode: skip API sync
-    if (shouldUseLocalStorage()) return;
-
-    // Authenticated: sync to API
-    if (task.isSaved) {
-      try {
-        await fetch(`/api/todos/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ completed: !task.completed }),
-        });
-      } catch (error) {
-        console.error('Failed to toggle task:', error);
+    useEffect(() => {
+      if (isLoading) return;
+      if (!isAuthenticated && activeTab !== 'videos') {
+        setActiveTab('videos');
       }
-    }
-  }, [tasks, toggleTask]);
+    }, [isAuthenticated, isLoading, activeTab, setActiveTab]);
 
-  const handleRemoveTask = useCallback(async (id) => {
-    const task = tasks.find(t => t.id === id);
-    removeTask(id);
+    return null;
+  };
 
-    // Guest mode: skip API sync
-    if (shouldUseLocalStorage()) return;
-
-    // Authenticated: sync to API
-    if (task?.isSaved) {
-      try {
-        await fetch(`/api/todos/${id}`, { method: 'DELETE' });
-      } catch (error) {
-        console.error('Failed to remove task:', error);
-      }
-    }
-  }, [tasks, removeTask]);
-
-  // Calculate stats
-  const todayFocusTime = useMemo(() => {
-    const today = new Date().toDateString();
-    const totalMinutes = sessions.reduce((acc, session) => {
-      const sessionDate = new Date(session.timestamp).toDateString();
-      if (sessionDate === today) {
-        if (session.status === 'completed') {
-          return acc + (session.minutes || 0);
-        } else if (session.status === 'failed' && session.elapsedSeconds) {
-          // Count the actual time spent in failed sessions
-          return acc + Math.floor(session.elapsedSeconds / 60);
-        }
-      }
-      return acc;
-    }, 0);
-    const hrs = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-    return `${hrs}h ${mins}m`;
-  }, [sessions]);
-
-
-  const completedTasksCount = useMemo(() =>
-    tasks.filter(t => t.completed).length,
-    [tasks]);
-
-  const currentStreak = useMemo(() => {
-    // Calculate streak from sessions
-    let streak = 0;
-    const today = new Date();
-    const checkDate = new Date(today);
-
-    const sessionsByDate = sessions.reduce((acc, s) => {
-      const date = new Date(s.timestamp).toDateString();
-      if (s.status === 'completed') {
-        acc[date] = (acc[date] || 0) + 1;
-      }
-      return acc;
-    }, {});
-
-    while (true) {
-      const dateStr = checkDate.toDateString();
-      if (sessionsByDate[dateStr]) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else if (streak === 0) {
-        // Check if we missed today but had activity yesterday
-        checkDate.setDate(checkDate.getDate() - 1);
-        if (!sessionsByDate[checkDate.toDateString()]) break;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }, [sessions]);
-
+  // Main UI Render
   return (
     <AuthProvider>
-      {/* Password Protection Modal */}
-      <PasswordModal />
-
+      <RouteGuard />
       <div className={cn(
-        'flex min-h-screen transition-colors duration-500',
-        'bg-transparent', // Transparent to show Liquid Mesh body background
-        isDarkMode ? 'dark' : ''
+        "min-h-screen transition-colors duration-500",
+        isDarkMode ? "bg-[#050508] text-white" : "bg-gray-50 text-gray-900"
       )}>
-        {/* Sidebar */}
+        {/* Navigation Sidebar */}
         <Sidebar />
 
-        {/* Main Content */}
-        <main className={cn(
-          'flex-1 transition-all duration-300',
-          'ml-0 w-full',
-          activeTab === 'ai-assistant' || activeTab === 'study-tools'
-            ? 'pl-[104px] pr-0 py-0 overflow-hidden h-screen' // Immersive Mode: No padding, full height
-            : 'pl-[104px] pr-8 py-8' // Standard Mode: Normal padding
-          // Window scrolling enabled
-        )}>
-          {/* Animated Page Content */}
-          <AnimatePresence mode="wait">
-            {/* =================================================================
-              OVERVIEW TAB
-              ================================================================= */}
-            {activeTab === 'overview' && (
-              <motion.div
-                key="overview"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-                className="max-w-7xl mx-auto"
-              >
-                <LuminaOverview
-                  sessions={sessions}
-                  tasks={tasks}
-                  streak={currentStreak}
-                  apps={filteredApps}
-                  onAddApp={() => {
-                    setEditingApp(null);
-                    setIsAddAppModalOpen(true);
-                  }}
-                  onEditApp={handleEditApp}
-                  onDeleteApp={handleDeleteApp}
-                  onStartSession={() => setActiveTab('study-tools')}
-                  onViewPlan={() => setActiveTab('progress')}
-                  userName="Aspirant"
-                  onNavigate={setActiveTab}
-                />
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              STUDY TOOLS TAB
-              ================================================================= */}
-            {activeTab === 'study-tools' && (
-              <motion.div
-                key="study-tools"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-                className="w-full h-full"
-              >
-                <Workstation
-                  timerState={timerState}
-                  handleTimerAction={handleTimerAction}
-                  isDarkMode={isDarkMode}
-                  toggleTheme={toggleTheme}
-                  sessions={sessions}
-                />
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              PROGRESS TAB
-              ================================================================= */}
-            {activeTab === 'progress' && (
-              <motion.div
-                key="progress"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <div className="max-w-5xl mx-auto flex flex-col gap-8">
-                  <Suspense fallback={<PageLoadingSkeleton />}>
-                    <ProgressSection
-                      sessionHistory={sessions}
-                      isDarkMode={isDarkMode}
-                      onToggleTheme={toggleTheme}
-                    />
-                  </Suspense>
-                </div>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              RESOURCES TAB
-              ================================================================= */}
-            {activeTab === 'resources' && (
-              <motion.div
-                key="resources"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <Suspense fallback={<PageLoadingSkeleton />}>
-                  <ResourceCanvas isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
-                </Suspense>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              AI ASSISTANT TAB
-              ================================================================= */}
-            {activeTab === 'ai-assistant' && (
-              <motion.div
-                key="ai-assistant"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-                className="h-full"
-              >
-                <Suspense fallback={<ChatLoadingSkeleton />}>
-                  <AIChat isDarkMode={isDarkMode} />
-                </Suspense>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              VAULT TAB (SECURE CLOUD STORAGE)
-              ================================================================= */}
-            {activeTab === 'vault' && (
-              <motion.div
-                key="vault"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <div className="max-w-7xl mx-auto">
-                  <Suspense fallback={<PageLoadingSkeleton />}>
-                    <VaultPanel isDarkMode={isDarkMode} />
-                  </Suspense>
-                </div>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              TEST TAB - Component pending implementation
-              ================================================================= */}
-            {activeTab === 'test' && (
-              <motion.div
-                key="test"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <div className="flex items-center justify-center h-96">
-                  <div className="text-center text-slate-500 dark:text-slate-400">
-                    <p className="text-lg font-medium">Practice Test</p>
-                    <p className="text-sm">Coming soon...</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              NOTION TAB (NOTION INTEGRATION)
-              ================================================================= */}
-            {activeTab === 'notion' && (
-              <motion.div
-                key="notion"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <div className="max-w-4xl mx-auto">
-                  <Suspense fallback={<PageLoadingSkeleton />}>
-                    <NotionPanel className="h-[calc(100vh-8rem)]" />
-                  </Suspense>
-                </div>
-              </motion.div>
-            )}
-
-            {/* =================================================================
-              ADMIN TAB
-              ================================================================= */}
-            {activeTab === 'admin' && (
-              <motion.div
-                key="admin"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={pageTransition}
-              >
-                <Suspense fallback={<PageLoadingSkeleton />}>
-                  <AdminPanel isDarkMode={isDarkMode} />
-                </Suspense>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {/* BIG INVISIBLE SPACER */}
-          <div className="h-[70px]" />
-        </main>
-
-        {/* Floating Dock Navigation */}
-        <Dock
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-
-        {/* Command Palette (Cmd+K) */}
+        {/* Command Palette (Global Search) */}
         <CommandPalette
           isOpen={isCommandPaletteOpen}
           onClose={() => setIsCommandPaletteOpen(false)}
-          onNavigate={(tab) => setActiveTab(tab)}
-          onToggleTheme={toggleTheme}
-          onStartTimer={() => {
-            setActiveTab('study-tools');
-            handleTimerAction('START');
-          }}
-          isDarkMode={isDarkMode}
         />
 
-
-
-        {/* Add App Modal */}
+        {/* Quick Add Modals */}
         <AddAppModal
           isOpen={isAddAppModalOpen}
           onClose={() => {
@@ -1040,9 +843,98 @@ function App() {
           onSave={handleSaveApp}
           initialData={editingApp}
         />
+
+
+
+        {/* Main Content Area */}
+        <main className="pl-[80px] min-h-screen relative flex flex-col">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={pageVariants}
+              transition={pageTransition}
+              className="flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-10 py-8"
+            >
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                {activeTab === 'overview' && (
+                  <LuminaOverview
+                    sessions={sessions}
+                    tasks={tasks}
+                    apps={filteredApps}
+                    streak={streak}
+                    userName={userName}
+                    onAddApp={() => setIsAddAppModalOpen(true)}
+                    onEditApp={handleEditApp}
+                    onDeleteApp={handleDeleteApp}
+                    onStartSession={() => setActiveTab('study-tools')}
+                    onViewPlan={() => setActiveTab('progress')}
+                    onNavigate={setActiveTab}
+                  />
+                )}
+
+                {activeTab === 'study-tools' && (
+                  <Workstation
+                    timerState={timerState}
+                    handleTimerAction={handleTimerAction}
+                    isDarkMode={isDarkMode}
+                    toggleTheme={toggleTheme}
+                    sessions={sessions}
+                  />
+                )}
+
+                {activeTab === 'progress' && (
+                  <ProgressSection sessionHistory={sessions} />
+                )}
+
+                {activeTab === 'concept' && (
+                  <NotesLibrary2 />
+                )}
+
+                {activeTab === 'videos' && (
+                  <VideoApp />
+                )}
+
+                {activeTab === 'ai-assistant' && (
+                  <div className="h-[calc(100vh-8rem)]">
+                    <AIChat isDarkMode={isDarkMode} />
+                  </div>
+                )}
+
+                {activeTab === 'vault' && (
+                  <VaultPanel isDarkMode={isDarkMode} />
+                )}
+
+                {activeTab === 'notion' && (
+                  <NotionPanel />
+                )}
+
+                {activeTab === 'admin' && (
+                  <AdminPanel isDarkMode={isDarkMode} />
+                )}
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
+
+
+
+          {/* Online/Offline Status Indicator (Subtle) */}
+          {!isOnline && (
+            <div className="fixed bottom-6 right-6 px-4 py-2 bg-red-500/10 border border-red-500/20 backdrop-blur-md rounded-full flex items-center gap-2 z-[100]">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-[10px] uppercase tracking-wider font-bold text-red-400">Offline Mode</span>
+            </div>
+          )}
+        </main>
+
+        {/* Modals & Overlays */}
+        <PasswordModal />
       </div>
     </AuthProvider>
   );
 }
 
 export default App;
+

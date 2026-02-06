@@ -160,6 +160,7 @@ const FluidInput = ({
                                         'text-slate-400 hover:text-white',
                                         'transition-colors'
                                     )}
+                                    title="Clear input"
                                 >
                                     <X size={16} />
                                 </motion.button>
@@ -177,6 +178,7 @@ const FluidInput = ({
                                         'hover:shadow-cyan-500/50 transition-shadow',
                                         'disabled:opacity-50 disabled:cursor-not-allowed'
                                     )}
+                                    title="Send message"
                                 >
                                     <Send size={18} />
                                 </motion.button>
@@ -199,6 +201,7 @@ const FluidInput = ({
                                         'text-slate-400 hover:text-white hover:bg-white/10',
                                         'transition-colors'
                                     )}
+                                    title="Voice input"
                                 >
                                     <Mic size={18} />
                                 </motion.button>
@@ -213,6 +216,7 @@ const FluidInput = ({
                                         'text-slate-400 hover:text-white hover:bg-white/10',
                                         'transition-colors'
                                     )}
+                                    title="Attach files"
                                 >
                                     <Paperclip size={18} />
                                 </motion.button>

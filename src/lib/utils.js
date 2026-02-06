@@ -1,51 +1,60 @@
 /**
- * Utility functions for class name management
- * Industry standard: clsx + tailwind-merge combo
- * Used by: Vercel, Shadcn/ui, Radix
+ * Core utility functions for the application
+ * 
+ * Provides common helpers for:
+ * - Class name merging
+ * - Number/text formatting
+ * - Debounce/throttle
+ * - Browser utilities
+ * - Time formatting
  */
 
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+// =============================================================================
+// Class Name Utilities
+// =============================================================================
 
 /**
- * Combines clsx and tailwind-merge for optimal class name handling
- * - clsx: Conditionally join classNames together
- * - twMerge: Merge Tailwind CSS classes without conflicts
- * 
- * @example
- * cn('px-4 py-2', isActive && 'bg-blue-500', 'px-6') // 'py-2 px-6 bg-blue-500'
+ * Merge class names conditionally (simplified clsx alternative)
+ * @param {...(string|boolean|undefined|null)} inputs - Class names to merge
+ * @returns {string} Merged class names
  */
 export function cn(...inputs) {
-    return twMerge(clsx(inputs));
+    return inputs.filter(Boolean).join(' ');
 }
 
+// =============================================================================
+// Formatting Utilities  
+// =============================================================================
+
 /**
- * Format a number with commas for display
- * @param {number} num - The number to format
+ * Format a number with locale-aware separators
+ * @param {number} num - Number to format
+ * @param {object} options - Intl.NumberFormat options
  * @returns {string} Formatted number string
  */
-export function formatNumber(num) {
-    return new Intl.NumberFormat('en-IN').format(num);
+export function formatNumber(num, options = {}) {
+    if (typeof num !== 'number' || isNaN(num)) return '0';
+    return new Intl.NumberFormat('en-US', options).format(num);
 }
 
 /**
- * Truncate text to a specified length with ellipsis
+ * Truncate text with ellipsis
  * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length before truncation
+ * @param {number} maxLength - Maximum length
  * @returns {string} Truncated text
  */
 export function truncate(text, maxLength = 50) {
-    if (!text || text.length <= maxLength) return text;
+    if (!text || text.length <= maxLength) return text || '';
     return text.slice(0, maxLength).trim() + '...';
 }
 
 /**
- * Generate initials from a name
+ * Get initials from a name
  * @param {string} name - Full name
  * @returns {string} Initials (max 2 characters)
  */
 export function getInitials(name) {
-    if (!name) return '?';
+    if (!name) return '';
     return name
         .split(' ')
         .map(word => word[0])
@@ -54,31 +63,35 @@ export function getInitials(name) {
         .slice(0, 2);
 }
 
+// =============================================================================
+// Timing Utilities
+// =============================================================================
+
 /**
- * Debounce a function call
+ * Debounce a function
  * @param {Function} fn - Function to debounce
- * @param {number} delay - Delay in milliseconds
+ * @param {number} delay - Delay in ms
  * @returns {Function} Debounced function
  */
 export function debounce(fn, delay = 300) {
     let timeoutId;
-    return (...args) => {
+    return function (...args) {
         clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
+        timeoutId = setTimeout(() => fn.apply(this, args), delay);
     };
 }
 
 /**
- * Throttle a function call
+ * Throttle a function
  * @param {Function} fn - Function to throttle
- * @param {number} limit - Time limit in milliseconds
+ * @param {number} limit - Minimum time between calls in ms
  * @returns {Function} Throttled function
  */
-export function throttle(fn, limit = 300) {
+export function throttle(fn, limit = 100) {
     let inThrottle;
-    return (...args) => {
+    return function (...args) {
         if (!inThrottle) {
-            fn(...args);
+            fn.apply(this, args);
             inThrottle = true;
             setTimeout(() => (inThrottle = false), limit);
         }
@@ -86,40 +99,47 @@ export function throttle(fn, limit = 300) {
 }
 
 /**
- * Generate a unique ID
- * @param {string} prefix - Optional prefix for the ID
- * @returns {string} Unique ID
- */
-export function generateId(prefix = '') {
-    const random = Math.random().toString(36).substring(2, 11);
-    const timestamp = Date.now().toString(36);
-    return prefix ? `${prefix}-${timestamp}${random}` : `${timestamp}${random}`;
-}
-
-/**
- * Check if we're in a browser environment
- */
-export const isBrowser = typeof window !== 'undefined';
-
-/**
- * Check if the user prefers reduced motion
- */
-export const prefersReducedMotion = isBrowser
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
-
-/**
- * Sleep for a specified duration
- * @param {number} ms - Duration in milliseconds
+ * Sleep for specified duration
+ * @param {number} ms - Milliseconds to sleep
  * @returns {Promise<void>}
  */
 export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// =============================================================================
+// Browser Utilities
+// =============================================================================
+
 /**
- * Safely parse JSON with a fallback
- * @param {string} json - JSON string to parse
+ * Generate a unique ID
+ * @param {string} prefix - Optional prefix
+ * @returns {string} Unique ID
+ */
+export function generateId(prefix = '') {
+    return `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * Check if code is running in browser
+ * @returns {boolean}
+ */
+export function isBrowser() {
+    return typeof window !== 'undefined';
+}
+
+/**
+ * Check if user prefers reduced motion
+ * @returns {boolean}
+ */
+export function prefersReducedMotion() {
+    if (!isBrowser()) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Safely parse JSON with fallback
+ * @param {string} json - JSON string
  * @param {*} fallback - Fallback value if parsing fails
  * @returns {*} Parsed value or fallback
  */
@@ -134,41 +154,30 @@ export function safeJsonParse(json, fallback = null) {
 /**
  * Copy text to clipboard
  * @param {string} text - Text to copy
- * @returns {Promise<boolean>} Whether copy was successful
+ * @returns {Promise<boolean>} Success status
  */
 export async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
         return true;
     } catch {
-        // Fallback for older browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            return true;
-        } catch {
-            return false;
-        } finally {
-            document.body.removeChild(textarea);
-        }
+        return false;
     }
 }
 
+// =============================================================================
+// Time/Date Utilities
+// =============================================================================
+
 /**
- * Get time of day greeting
- * @returns {string} Greeting based on current time
+ * Get time-based greeting
+ * @returns {string} Greeting message
  */
 export function getGreeting() {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    if (hour < 21) return 'Good Evening';
-    return 'Good Night';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
 }
 
 /**
@@ -179,21 +188,24 @@ export function getGreeting() {
 export function formatRelativeTime(date) {
     const now = new Date();
     const past = new Date(date);
-    const diffInSeconds = Math.floor((now - past) / 1000);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffInSeconds < 60) return 'just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-    return past.toLocaleDateString('en-IN', {
-        month: 'short',
-        day: 'numeric'
-    });
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return past.toLocaleDateString();
 }
 
+// =============================================================================
+// Keyboard Utilities
+// =============================================================================
+
 /**
- * Keyboard event helpers
+ * Common keyboard key codes
  */
 export const Keys = {
     Enter: 'Enter',
@@ -219,4 +231,37 @@ export const Keys = {
 export function isKey(event, keys) {
     const keyList = Array.isArray(keys) ? keys : [keys];
     return keyList.includes(event.key);
+}
+
+// =============================================================================
+// URL Utilities
+// =============================================================================
+
+/**
+ * Ensures a URL is absolute by prepending https:// if needed
+ * @param {string} url - The URL to check
+ * @returns {string} Absolute URL
+ */
+export function ensureAbsoluteUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+        return url;
+    }
+    return `https://${url}`;
+}
+
+/**
+ * Gets a high-quality favicon URL for a given domain
+ * @param {string} url - The URL or domain
+ * @returns {string} Favicon URL
+ */
+export function getFaviconUrl(url) {
+    if (!url) return '';
+    try {
+        // Clean URL to get domain
+        let domain = url.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    } catch {
+        return '';
+    }
 }

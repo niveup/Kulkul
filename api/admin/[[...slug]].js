@@ -2,7 +2,7 @@
  * Admin API - Consolidated endpoint
  * Handles: db-stats, and other admin functions
  */
-import { getDbPool, initDatabase } from '../db.js';
+import { getDbPool, initDatabase } from '../../src/lib/db.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {

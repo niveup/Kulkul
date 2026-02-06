@@ -4,70 +4,77 @@
    ============================================================================= */
 
 :root {
-  /* -------------------------------------------------------------------------
+   /* -------------------------------------------------------------------------
      LUMINA CORE PALETTE - HSL Values for transparency manipulation
      ------------------------------------------------------------------------- */
-  --p-hue: 250;
-  /* Indigo */
-  --p-sat: 95%;
-  --p-lig: 65%;
+   --p-hue: 250;
+   /* Indigo */
+   --p-sat: 95%;
+   --p-lig: 65%;
 
-  --bg-hue: 240;
-  /* Void/Blue-black */
-  --bg-sat: 10%;
+   --bg-hue: 240;
+   /* Void/Blue-black */
+   --bg-sat: 10%;
 
-  /* Base Colors - HSL */
-  --void: 240 5% 2%;
-  /* #050508 */
-  --obsidian: 240 4% 6%;
-  /* #0F0F11 */
-  --mantle: 240 4% 10%;
-  /* #18181B */
+   /* Base Colors - HSL */
+   --void: 240 5% 2%;
+   /* #050508 */
+   --obsidian: 240 4% 6%;
+   /* #0F0F11 */
+   --mantle: 240 4% 10%;
+   /* #18181B */
 
-  /* Semantic Colors */
-  --color-primary-500: #6366f1;
-  --color-primary-600: #4f46e5;
+   /* Semantic Colors */
+   --color-primary-500: #6366f1;
+   --color-primary-600: #4f46e5;
 
-  /* -------------------------------------------------------------------------
+   /* -------------------------------------------------------------------------
      TEXTURIZED DEPTH
      ------------------------------------------------------------------------- */
-  --noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+   --noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
 
-  /* -------------------------------------------------------------------------
-     GLASSMORPHISM
+   /* -------------------------------------------------------------------------
+     TYPOGRAPHY - Apple Pro Precision
      ------------------------------------------------------------------------- */
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(20, 20, 24, 0.7);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  --backdrop-blur: 16px;
+   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+   --font-display: 'cal sans', 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+   --tracking-tight: -0.021em;
+   --tracking-normal: 0em;
+   --tracking-wide: 0.025em;
 
-  /* -------------------------------------------------------------------------
-     TYPOGRAPHY
+   /* -------------------------------------------------------------------------
+     PRECISION SPACING
      ------------------------------------------------------------------------- */
-  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: 'cal sans', 'Outfit', 'Inter', sans-serif;
+   --s-1: 4px;
+   --s-2: 8px;
+   --s-3: 12px;
+   --s-4: 16px;
+   --s-6: 24px;
+   --s-8: 32px;
+   --s-12: 48px;
+   --s-16: 64px;
 }
 
 /* Dark Mode Overrides (Default for Lumina) */
 .dark {
-  --bg-primary: #030304;
-  /* Void */
-  --bg-secondary: #0A0A0C;
-  /* Obsidian */
-  --bg-tertiary: #141417;
-  /* Mantle */
+   --bg-primary: #030304;
+   /* Void */
+   --bg-secondary: #0A0A0C;
+   /* Obsidian */
+   --bg-tertiary: #141417;
+   /* Mantle */
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #A1A1AA;
-  --text-tertiary: #52525B;
+   --text-primary: #FFFFFF;
+   --text-secondary: #A1A1AA;
+   --text-tertiary: #52525B;
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-highlight: rgba(255, 255, 255, 0.12);
+   --border-subtle: rgba(255, 255, 255, 0.06);
+   --border-highlight: rgba(255, 255, 255, 0.12);
 }
 
 @layer base {
-  body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-  }
+   body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+   }
 }

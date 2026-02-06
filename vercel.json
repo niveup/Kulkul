@@ -26,6 +26,10 @@
         "api/notion/[[...slug]].js": {
             "maxDuration": 10,
             "memory": 256
+        },
+        "api/storage/telegram-proxy.js": {
+            "maxDuration": 60,
+            "memory": 512
         }
     },
     "rewrites": [
@@ -94,7 +98,7 @@
             "destination": "/api/notion/[[...slug]]"
         },
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api/|assets/|.*\\.js$|.*\\.css$|.*\\.json$|.*\\.png$|.*\\.jpg$|.*\\.svg$|.*\\.woff2?$|.*\\.ttf$|.*\\.ico$).*)",
             "destination": "/"
         }
     ],

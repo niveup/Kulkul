@@ -144,8 +144,14 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.time('[Auth] initDatabase');
         await initDatabase();
+        console.timeEnd('[Auth] initDatabase');
+
+        console.time('[Auth] getDbPool');
         const db = await getDbPool();
+        console.timeEnd('[Auth] getDbPool');
+
         const clientIP = getClientIP(req);
 
         // =========================================================================

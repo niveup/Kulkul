@@ -4,32 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
 import { validators } from '../../utils/apiErrorHandler';
 
-// Notification helper
-const showNotification = (title, body, icon) => {
-    if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-            new Notification(title, {
-                body,
-                icon,
-                badge: icon,
-                tag: 'pomodoro-timer',
-                requireInteraction: true
-            });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    new Notification(title, {
-                        body,
-                        icon,
-                        badge: icon,
-                        tag: 'pomodoro-timer',
-                        requireInteraction: true
-                    });
-                }
-            });
-        }
-    }
-};
+
 
 // ============================================================================
 // DESIGN SYSTEM - LIQUID BUTTONS & CONTROLS
@@ -137,8 +112,7 @@ const ProgressRing = ({ progress, isFailed, isActive, isCompleted }) => {
 
 const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
-    const previousCompleted = useRef(false);
-    const previousFailed = useRef(false);
+
 
     // Request notification permission on mount
     useEffect(() => {
@@ -147,29 +121,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
         }
     }, []);
 
-    // Show notification when session completes
-    useEffect(() => {
-        if (isCompleted && !previousCompleted.current) {
-            showNotification(
-                '🎉 Session Completed!',
-                `Great job! You completed your ${Math.floor(initialTime / 60)} minute focus session.`,
-                '/icon/pomodoro.png'
-            );
-        }
-        previousCompleted.current = isCompleted;
-    }, [isCompleted, initialTime]);
 
-    // Show notification when session fails
-    useEffect(() => {
-        if (isFailed && !previousFailed.current) {
-            showNotification(
-                '⚠️ Session Failed',
-                `You ended your ${Math.floor(initialTime / 60)} minute focus session early.`,
-                '/icon/pomodoro.png'
-            );
-        }
-        previousFailed.current = isFailed;
-    }, [isFailed, initialTime]);
 
     // Helper to calculate progress (0 to 1)
     // Note: progress goes from 0 (start) to 1 (end). 
@@ -189,8 +141,8 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     };
 
     const handleDurationChange = (change) => {
-        const newDuration = Math.max(5, Math.min(999, duration + change)); // Cap at 999 mins
-        
+        const newDuration = Math.max(0.17, Math.min(999, duration + change)); // Cap at 999 mins, min ~10 sec for testing
+
         // Validate the new duration
         const validation = validators.validateTimerDuration(newDuration);
         if (!validation.isValid) {
@@ -198,7 +150,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
             console.error('Invalid duration:', validation.error);
             return;
         }
-        
+
         onAction('SET_DURATION', validation.value);
     };
 
@@ -238,6 +190,19 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                         </span>
                     </div>
                 </div>
+
+                {/* Notification Permission Button */}
+                {'Notification' in window && Notification.permission === 'default' && (
+                    <motion.button
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={() => Notification.requestPermission()}
+                        className="mt-2 text-[10px] text-white/40 hover:text-white/80 transition-colors flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full"
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        Enable Notifications
+                    </motion.button>
+                )}
             </div>
 
             {/* 2. Main Dial */}
@@ -256,9 +221,9 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                         {/* Decrease Button - Only visible when idle */}
                         {!isActive && !isCompleted && !isFailed && (
                             <IconButton
-                                onClick={() => handleDurationChange(-5)}
+                                onClick={() => handleDurationChange(-1)}
                                 icon={Minus}
-                                disabled={duration <= 5}
+                                disabled={duration <= 0.17}
                                 className="opacity-50 hover:opacity-100 transition-opacity"
                             />
                         )}
@@ -320,10 +285,10 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                                 >
                                     <span className="svg-wrapper">
                                         <svg className="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M6 4H10V20H6V4ZM14 4H18V20H14V4Z" fill="currentColor"/>
+                                            <path d="M6 4H10V20H6V4ZM14 4H18V20H14V4Z" fill="currentColor" />
                                         </svg>
                                         <svg className="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                                            <path d="M8 5V19L19 12L8 5Z" fill="currentColor" />
                                         </svg>
                                     </span>
                                     <span>Start Focus</span>

@@ -2,6 +2,13 @@
 
 const API_BASE = 'https://personal-dashboard-alpha-gilt.vercel.app';
 
+// Get API headers — marks request as coming from extension
+function getApiHeaders(includeContentType = true) {
+    const headers = { 'X-Source': 'extension' };
+    if (includeContentType) headers['Content-Type'] = 'application/json';
+    return headers;
+}
+
 // Handle keyboard shortcut
 chrome.commands.onCommand.addListener(async (command) => {
     console.log('[Background] Command received:', command);
@@ -46,6 +53,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         fetchNotes()
             .then(notes => sendResponse({ notes }))
             .catch(err => sendResponse({ notes: [], error: err.message }));
+        return true;
+    }
+
+    if (request.action === 'fetchChapters') {
+        fetchChapters()
+            .then(data => sendResponse(data))
+            .catch(err => sendResponse({ chapters: [], error: err.message }));
         return true;
     }
 });
@@ -133,10 +147,10 @@ async function startCapture(explicitTabId = null) {
 async function fetchNotes() {
     try {
         console.log('[Background] Fetching notes...');
-        const response = await fetch(`${API_BASE}/api/notes`);
+        const headers = getApiHeaders(false);
+        const response = await fetch(`${API_BASE}/api/notes`, { headers });
+        if (!response.ok) throw new Error(`Status ${response.status}`);
         const data = await response.json();
-        console.log('[Background] Notes fetched:', data.length || (Array.isArray(data) ? data.length : 0));
-        // API returns array directly, not { notes: [...] }
         return Array.isArray(data) ? data : (data.notes || []);
     } catch (err) {
         console.error('[Background] Failed to fetch notes:', err);
@@ -144,28 +158,74 @@ async function fetchNotes() {
     }
 }
 
-// Save screenshot to a note
-async function saveScreenshot({ imageData, noteId, title, subject, description, links, imageName, createNew = false }) {
+// Fetch chapters from the dashboard API
+async function fetchChapters() {
     try {
-        console.log('[Background] Saving screenshot with name:', imageName || '(none)');
-        const response = await fetch(`${API_BASE}/api/notes?action=attach-screenshot`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                imageData,
-                noteId,
-                title,
-                subject,
-                description,
-                links,
-                imageName, // Custom image name
-                createNew
-            })
-        });
+        console.log('[Background] Fetching chapters...');
+        const headers = getApiHeaders(false);
+        const response = await fetch(`${API_BASE}/api/chapter-tracker`, { headers });
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+        return await response.json();
+    } catch (err) {
+        console.error('[Background] Failed to fetch chapters:', err);
+        return { chapters: [], entries: [] };
+    }
+}
 
-        const result = await response.json();
-        console.log('[Background] Save result:', result);
-        return result;
+// Save screenshot to either Note system or Chapter Tracker
+async function saveScreenshot(request) {
+    const { system, imageData, imageName } = request;
+
+    try {
+        const headers = getApiHeaders();
+
+        if (system === 'chapter-tracker') {
+            const { chapterId, entryId, subject, chapterName, text, description, urls, createNewChapter, createNewEntry, type, tags, priority } = request;
+            console.log('[Background] Saving to Chapter Tracker:', text || entryId);
+
+            const response = await fetch(`${API_BASE}/api/chapter-tracker?action=attach-screenshot`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    imageData,
+                    chapterId,
+                    entryId,
+                    subject,
+                    chapterName,
+                    text,
+                    description,
+                    urls,
+                    imageName,
+                    type,
+                    tags,
+                    priority: priority || 'medium',
+                    createNewChapter,
+                    createNewEntry
+                })
+            });
+            return await response.json();
+
+        } else {
+            // Default to Learning Notes
+            const { noteId, title, description, links, createNew } = request;
+            console.log('[Background] Saving to Learning Notes:', title);
+
+            const response = await fetch(`${API_BASE}/api/notes?action=attach-screenshot`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    imageData,
+                    noteId,
+                    title,
+                    subject: request.subject, // Fallback if present
+                    description,
+                    links,
+                    imageName,
+                    createNew
+                })
+            });
+            return await response.json();
+        }
     } catch (err) {
         console.error('[Background] Failed to save screenshot:', err);
         return { success: false, error: err.message };

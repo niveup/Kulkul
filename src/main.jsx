@@ -14,6 +14,7 @@ import { ToastProvider } from './components/ui/Toast';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import App from './App.jsx';
 import './index.css';
+import 'katex/dist/katex.min.css';
 
 // Performance monitoring (optional - for production)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
@@ -45,4 +46,17 @@ root.render(
 // Hot Module Replacement (HMR) - Vite handles this automatically
 if (import.meta.hot) {
   import.meta.hot.accept();
+}
+
+// Register Service Worker for PWA & Notifications support
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('SW registered: ', registration);
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
 }

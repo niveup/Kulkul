@@ -5,12 +5,10 @@
 
 // Get current date object adjusted to IST
 export const getISTDate = () => {
-    const now = new Date();
-    // Get UTC time in ms
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    // Add IST offset (5 hours 30 minutes)
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    return new Date(utc + istOffset);
+    // Standard way to get IST regardless of local system time
+    const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+    const istString = new Intl.DateTimeFormat('en-US', options).format(new Date());
+    return new Date(istString);
 };
 
 // Get start of today in IST (00:00:00)

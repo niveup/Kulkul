@@ -67,9 +67,40 @@ export const useAppStore = create(
                 dailyFocusMinutes: 240, // Default: 4 hours
                 targetEfficiency: 80,   // Default: 80%
             },
-            updateGoals: (updates) => set((state) => ({
-                goals: { ...state.goals, ...updates }
-            })),
+            updateGoals: async (updates) => {
+                set((state) => ({
+                    goals: { ...state.goals, ...updates }
+                }));
+
+                // Sync to Cloud
+                try {
+                    const currentGoals = get().goals;
+                    await fetch('/api/goals', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentGoals),
+                    });
+                } catch (error) {
+                    console.error('Failed to sync goals to cloud:', error);
+                }
+            },
+
+            loadGoalsFromCloud: async () => {
+                try {
+                    const response = await fetch('/api/goals');
+                    if (response.ok) {
+                        const cloudGoals = await response.json();
+                        set({
+                            goals: {
+                                dailyFocusMinutes: cloudGoals.dailyFocusMinutes || 240,
+                                targetEfficiency: cloudGoals.targetEfficiency || 80,
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to load goals from cloud:', error);
+                }
+            },
 
             // -------------------------------------------------------------------------
             // Command Palette
@@ -177,6 +208,53 @@ export const useSessionStore = create(
 );
 
 // =============================================================================
+// Video Status Store - Track video completion status
+// =============================================================================
+
+export const DEFAULT_VIDEO_STATUS = { isDone: false, hasConcept: false };
+
+export const useVideoStatusStore = create(
+    persist(
+        (set, get) => ({
+            videoStatuses: {},
+            isLoadingVideoStatuses: true,
+
+            setVideoStatuses: (statuses) => {
+                const statusMap = {};
+                statuses.forEach(s => {
+                    statusMap[s.videoId] = {
+                        isDone: Boolean(s.isDone),
+                        hasConcept: Boolean(s.hasConcept)
+                    };
+                });
+                set({ videoStatuses: statusMap, isLoadingVideoStatuses: false });
+            },
+
+            updateVideoStatus: (videoId, updates) => set((state) => ({
+                videoStatuses: {
+                    ...state.videoStatuses,
+                    [videoId]: {
+                        ...(state.videoStatuses[videoId] || DEFAULT_VIDEO_STATUS),
+                        ...updates
+                    }
+                }
+            })),
+
+            getVideoStatus: (videoId) => {
+                return get().videoStatuses[videoId] || DEFAULT_VIDEO_STATUS;
+            },
+        }),
+        {
+            name: 'studyhub-video-status-store',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                videoStatuses: state.videoStatuses,
+            }),
+        }
+    )
+);
+
+// =============================================================================
 // Task Store - Hybrid Todo Persistence
 // - Cloud: Today's todos (24h TTL)
 // - IndexedDB: Local backup (6 month retention)
@@ -187,33 +265,41 @@ import * as idb from '../lib/idb';
 export const useTaskStore = create(
     persist(
         (set, get) => ({
-            tasks: [],
+            tasks: [], // Daily Objectives (mapped to /api/daily-todos)
+            mainTodos: [], // Main Todo List (mapped to /api/todos)
             isLoadingTasks: true,
 
             setTasks: (tasks) => set({ tasks, isLoadingTasks: false }),
+            setMainTodos: (todos) => set({ mainTodos: todos }),
 
-            addTask: async (text) => {
+            addTask: async (text, createdAt = null) => {
+                const timestamp = createdAt || new Date().toISOString();
+                const guid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
                 const newTask = {
-                    id: String(Date.now()),
+                    id: guid,
                     text: text.trim(),
                     completed: false,
                     isSaved: false,
-                    createdAt: new Date().toISOString(),
+                    createdAt: timestamp,
                 };
                 set((state) => ({ tasks: [newTask, ...state.tasks] }));
 
                 // Sync to IndexedDB (local backup)
                 await idb.addTodo(newTask);
 
-                // Sync to Cloud (24h TTL)
+                // Sync to Cloud
                 try {
-                    await fetch('/api/daily-todos', {
+                    const response = await fetch('/api/daily-todos', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: newTask.text }),
+                        body: JSON.stringify({ id: guid, text: text.trim(), createdAt: timestamp }),
                     });
-                } catch (e) {
-                    console.warn('[TaskStore] Cloud sync failed:', e);
+                    if (response.ok) {
+                        const savedTask = await response.json();
+                        get().markTaskSaved(guid, savedTask);
+                    }
+                } catch (error) {
+                    console.error('Failed to sync task to cloud:', error);
                 }
 
                 return newTask;
@@ -235,41 +321,157 @@ export const useTaskStore = create(
 
                 // Sync to Cloud
                 try {
-                    await fetch('/api/daily-todos', {
-                        method: 'PATCH',
+                    await fetch(`/api/daily-todos/${id}`, {
+                        method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id, completed: newCompleted }),
+                        body: JSON.stringify({ completed: newCompleted }),
                     });
-                } catch (e) {
-                    console.warn('[TaskStore] Cloud sync failed:', e);
+                } catch (error) {
+                    console.error('Failed to sync task toggle to cloud:', error);
                 }
             },
 
             removeTask: async (id) => {
+                const idStr = String(id);
                 set((state) => ({
-                    tasks: state.tasks.filter(t => t.id !== id)
+                    tasks: state.tasks.filter(t => String(t.id) !== idStr)
                 }));
 
                 // Sync to IndexedDB
-                await idb.deleteTodo(id);
+                await idb.deleteTodo(idStr);
 
                 // Sync to Cloud
                 try {
-                    await fetch('/api/daily-todos', {
+                    await fetch(`/api/daily-todos/${idStr}`, {
                         method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id }),
                     });
-                } catch (e) {
-                    console.warn('[TaskStore] Cloud sync failed:', e);
+                } catch (error) {
+                    console.error('Failed to sync task removal to cloud:', error);
                 }
             },
 
-            markTaskSaved: (id, savedData) => set((state) => ({
-                tasks: state.tasks.map(t =>
+            // --- Main Todo List Methods (mapped to /api/todos) ---
+            addMainTodo: async (text) => {
+                const guid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+                const newTodo = {
+                    id: guid,
+                    text: text.trim(),
+                    completed: false,
+                    isSaved: false,
+                    createdAt: new Date().toISOString(),
+                };
+                set((state) => ({ mainTodos: [newTodo, ...state.mainTodos] }));
+
+                try {
+                    const response = await fetch('/api/todos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: guid, text: text.trim() }),
+                    });
+                    if (response.ok) {
+                        const savedTodo = await response.json();
+                        set((state) => ({
+                            mainTodos: state.mainTodos.map(t =>
+                                t.id === guid ? { ...t, ...savedTodo, isSaved: true } : t
+                            )
+                        }));
+                    }
+                } catch (error) {
+                    console.error('Failed to sync main todo to cloud:', error);
+                }
+                return newTodo;
+            },
+
+            toggleMainTodo: async (id) => {
+                const todo = get().mainTodos.find(t => t.id === id);
+                if (!todo) return;
+
+                const newCompleted = !todo.completed;
+                set((state) => ({
+                    mainTodos: state.mainTodos.map(t =>
+                        t.id === id ? { ...t, completed: newCompleted } : t
+                    )
+                }));
+
+                try {
+                    await fetch(`/api/todos/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ completed: newCompleted }),
+                    });
+                } catch (error) {
+                    console.error('Failed to sync main todo toggle:', error);
+                }
+            },
+
+            removeMainTodo: async (id) => {
+                const idStr = String(id);
+                set((state) => ({
+                    mainTodos: state.mainTodos.filter(t => String(t.id) !== idStr)
+                }));
+
+                try {
+                    await fetch(`/api/todos/${idStr}`, {
+                        method: 'DELETE',
+                    });
+                } catch (error) {
+                    console.error('Failed to sync main todo removal:', error);
+                }
+            },
+
+            markTaskSaved: (id, savedData) => set((state) => {
+                const updatedTasks = state.tasks.map(t =>
                     t.id === id ? { ...t, ...savedData, isSaved: true } : t
-                )
-            })),
+                );
+
+                // Sync the saved state (with proper server ID) back to IndexedDB
+                const savedTask = updatedTasks.find(t => t.id === id || t.id === savedData.id);
+                if (savedTask) {
+                    idb.updateTodo(savedTask).catch(err => console.error('Failed to sync saved task to IDB:', err));
+                }
+
+                return { tasks: updatedTasks };
+            }),
+
+            // Load from Cloud with local fallback
+            loadFromCloud: async () => {
+                try {
+                    // 1. Load Daily Objectives
+                    const objectivesRes = await fetch('/api/daily-todos');
+                    if (objectivesRes.ok) {
+                        const cloudTasks = await objectivesRes.json();
+                        const formattedTasks = cloudTasks.map(t => ({
+                            id: t.id,
+                            text: t.text,
+                            completed: Boolean(t.completed),
+                            isSaved: true,
+                            createdAt: t.created_at
+                        }));
+                        set({ tasks: formattedTasks });
+                        await idb.syncTodosToLocal(formattedTasks);
+                    }
+
+                    // 2. Load Main Todo List
+                    const todosRes = await fetch('/api/todos');
+                    if (todosRes.ok) {
+                        const cloudTodos = await todosRes.json();
+                        const formattedTodos = cloudTodos.map(t => ({
+                            id: t.id,
+                            text: t.text,
+                            completed: Boolean(t.completed),
+                            isSaved: true,
+                            createdAt: t.created_at,
+                            updatedAt: t.updated_at
+                        }));
+                        set({ mainTodos: formattedTodos });
+                    }
+
+                    set({ isLoadingTasks: false });
+                } catch (error) {
+                    console.error('Failed to load tasks from cloud:', error);
+                    get().loadFromLocal(); // Fallback to local
+                }
+            },
 
             // Load from IndexedDB on startup (hybrid fallback)
             loadFromLocal: async () => {
@@ -280,11 +482,12 @@ export const useTaskStore = create(
             },
 
             cleanupOldTasks: () => set((state) => {
-                const twoDaysAgo = Date.now() - (48 * 60 * 60 * 1000);
+                // Keep 90 days of tasks for the archive/history view
+                const ninetyDaysAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
                 return {
                     tasks: state.tasks.filter(t => {
-                        const createdAt = new Date(t.createdAt).getTime();
-                        return createdAt > twoDaysAgo;
+                        const createdAt = new Date(t.createdAt || t.created_at).getTime();
+                        return createdAt > ninetyDaysAgo;
                     })
                 };
             }),

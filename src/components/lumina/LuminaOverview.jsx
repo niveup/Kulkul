@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from './GlassCard';
 import { StatsGroup } from './StatsGroup';
 import { QuickAccess } from './QuickAccess';
+import { getISTDate } from '../../utils/dateUtils';
 
 // Get greeting based on time
 const getGreeting = () => {
@@ -22,13 +23,14 @@ const getFormattedDate = () => {
     });
 };
 
-// Motivational quotes
+// Motivational quotes - Premium, concise, and editorial
 const QUOTES = [
-    "Push yourself, because no one else is going to do it for you.",
-    "Success is not final, failure is not fatal: it is the courage to continue that counts.",
-    "The only way to do great work is to love what you do.",
-    "Don't watch the clock; do what it does. Keep going.",
-    "The secret of getting ahead is getting started."
+    "Your potential is restricted only by the walls you build yourself.",
+    "The disciplined mind is the ultimate competitive advantage.",
+    "Excellence is not an act, but a habit that builds empires.",
+    "Stay patient. The best things happen unexpectedly.",
+    "Focus is the art of knowing what to ignore.",
+    "Simplicity is the ultimate sophistication in work."
 ];
 
 // Static Sections for Search
@@ -110,7 +112,8 @@ const fuzzyMatch = (query, target) => {
 
 export const LuminaOverview = ({
     sessions = [],
-    tasks = [],
+    tasks = [], // Daily Objectives
+    mainTodos = [], // Main Todo List
     streak = 0,
     apps = [],
     onAddApp,
@@ -128,13 +131,25 @@ export const LuminaOverview = ({
 
     // Calculate stats from real data
     const todaysSessions = sessions.filter(s => {
-        const sessionDate = new Date(s.startTime).toDateString();
+        const sessionDate = new Date(s.timestamp || s.startTime).toDateString();
         return sessionDate === new Date().toDateString();
     });
 
-    const focusTimeMinutes = todaysSessions.reduce((acc, s) => acc + (s.duration || 0), 0);
-    const completedTasks = tasks.filter(t => t.completed).length;
-    const totalTasks = tasks.length;
+    const focusTimeMinutes = todaysSessions.reduce((acc, s) => {
+        if (s.status === 'completed') {
+            return acc + (s.minutes || s.duration || 0);
+        } else if (s.status === 'failed' && s.elapsedSeconds) {
+            return acc + Math.floor(s.elapsedSeconds / 60);
+        }
+        return acc;
+    }, 0);
+
+    // Aggregate both Daily Objectives (Filtered for Today) and Main Todo List
+    const todayStr = getISTDate().toDateString();
+    const filteredTasks = tasks.filter(t => new Date(t.createdAt || t.created_at).toDateString() === todayStr);
+    const allTasks = [...filteredTasks, ...mainTodos];
+    const completedTasks = allTasks.filter(t => t.completed).length;
+    const totalTasks = allTasks.length;
 
     // Search Logic with Fuzzy Sorting
     const searchResults = useMemo(() => {
@@ -376,14 +391,14 @@ export const LuminaOverview = ({
                             {/* Content */}
                             <div className="relative z-10">
                                 <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-8">
-                                    Current Focus
+                                    Editorial Memo
                                 </span>
-                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mb-6">
+                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mb-6 italic">
                                     "{quote}"
                                 </h2>
                                 <div className="flex items-center gap-4">
-                                    <div className="h-px w-8 bg-white/20" />
-                                    <p className="text-xs text-white/40 font-medium tracking-widest uppercase">The Lumina Way</p>
+                                    <div className="h-px w-12 bg-white/10" />
+                                    <p className="text-[10px] text-white/30 font-black tracking-[0.3em] uppercase">The Lumina Collective</p>
                                 </div>
                             </div>
 

@@ -20,7 +20,7 @@ export const useNotesStore = create(
                     const response = await fetch(API_PATH);
                     if (!response.ok) throw new Error('Failed to fetch notes');
                     const data = await response.json();
-                    set({ notes: data, isLoading: false, lastSynced: Date.now(), error: null });
+                    set({ notes: Array.isArray(data) ? data : [], isLoading: false, lastSynced: Date.now(), error: null });
                 } catch (err) {
                     set({ error: err.message, isLoading: false });
                     console.error('Notes fetch error:', err);

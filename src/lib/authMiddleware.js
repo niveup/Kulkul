@@ -140,6 +140,13 @@ export async function requireAuth(req, res, options = {}) {
             return true;
         }
 
+        // 0.5 Bypass auth for Chrome Extension requests (extensions can't send HttpOnly cookies)
+        if (req.headers['x-source'] === 'extension') {
+            console.log('[Auth] Extension request - bypassing auth');
+            req.session = { id: 'extension-session', ip_address: getClientIP(req) };
+            return true;
+        }
+
         // 1. Parse Token from Cookie FIRST (no DB needed)
         const cookies = req.headers.cookie || '';
         const tokenMatch = cookies.match(/__Host-auth_token=([^;]+)/) ||

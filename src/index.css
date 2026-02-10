@@ -117,6 +117,110 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    /* Purple-ish thumb */
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+  }
+
+  /* HUD - Scientific Precision Aesthetic */
+  .hud-card {
+    @apply relative overflow-hidden;
+    background: rgba(10, 10, 15, 0.7);
+    backdrop-filter: blur(30px);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 40px rgba(0, 0, 0, 0.5),
+      inset 0 0 1px 1px rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+  }
+
+  .hud-reticle {
+    @apply absolute w-2 h-2 border-white/40;
+  }
+
+  .hud-reticle-tl {
+    @apply top-1 left-1 border-t-2 border-l-2 rounded-tl-sm;
+  }
+
+  .hud-reticle-tr {
+    @apply top-1 right-1 border-t-2 border-r-2 rounded-tr-sm;
+  }
+
+  .hud-reticle-bl {
+    @apply bottom-1 left-1 border-b-2 border-l-2 rounded-bl-sm;
+  }
+
+  .hud-reticle-br {
+    @apply bottom-1 right-1 border-b-2 border-r-2 rounded-br-sm;
+  }
+
+  @keyframes hud-in {
+    0% {
+      transform: translateX(40px) scale(0.98);
+      opacity: 0;
+    }
+
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes hud-out {
+    0% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateX(40px) scale(0.98);
+      opacity: 0;
+    }
+  }
+
+  .animate-hud-in {
+    animation: hud-in 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  .animate-hud-out {
+    animation: hud-out 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  /* Glitch & Stagger Effects */
+  @keyframes smooth-reveal {
+    0% {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-glitch {
+    animation: smooth-reveal 0.6s cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  }
+
+  .hud-terminal-text {
+    @apply font-mono text-purple-400;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+  }
 }
 
 /* Recharts Overrides to remove default focus outlines */

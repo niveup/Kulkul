@@ -82,6 +82,7 @@ const Scene = ({ positions, sessionHistory, onBuildingSelect, selectedBuildingIn
                 const worldZ = (pos.y - 5) + 0.5;
 
                 const config = getBuildingConfig(session.minutes);
+                if (!config || !config.id) return null; // Safety check to prevent rendering errors
                 const isFailed = session.status === 'failed';
 
                 let Comp = TentComplete;

@@ -4,6 +4,7 @@ import { Search, Filter, BookOpen, Calculator, BrainCircuit, AlertCircle, Lightb
 import { useNotesStore, useNoteActions } from '../../store/notesStore';
 import { cn, ensureAbsoluteUrl, getFaviconUrl } from '../../lib/utils';
 import NoteViewModal from './NoteViewModal';
+import MarkdownRenderer from '../ui/MarkdownRenderer';
 
 const TYPE_CONFIG = {
     concept: { icon: BookOpen, color: 'emerald', label: 'Concept' },
@@ -263,7 +264,7 @@ const NoteCard = ({ note, isDarkMode, onDelete, onMarkRevised, onOpenView }) => 
             {/* Content */}
             <div className="flex-grow">
                 <h3 className={cn("text-xl font-bold mb-2 leading-tight flex items-center gap-2", isDarkMode ? "text-white" : "text-slate-900")}>
-                    {note.title}
+                    <MarkdownRenderer content={note.title} as="span" className="inline" />
                     {note.type === 'resource' && note.source && (
                         <button
                             onClick={(e) => {
@@ -289,13 +290,13 @@ const NoteCard = ({ note, isDarkMode, onDelete, onMarkRevised, onOpenView }) => 
                     )}
                 </h3>
 
-                <p className={cn("text-sm line-clamp-3 mb-4", isDarkMode ? "text-slate-400" : "text-slate-600")}>
-                    {note.description}
-                </p>
+                <div className={cn("text-sm line-clamp-3 mb-4", isDarkMode ? "text-slate-400" : "text-slate-600")}>
+                    <MarkdownRenderer content={note.description} className="prose-sm" />
+                </div>
 
                 {note.topic && (
                     <div className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-slate-500/10 w-fit mb-4", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-                        {note.topic}
+                        <MarkdownRenderer content={note.topic} as="span" className="prose-xs" />
                     </div>
                 )}
             </div>

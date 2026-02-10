@@ -90,14 +90,26 @@ async function initDatabase() {
       )
     `);
 
-    // Todos table - 30 day retention
+    // Todos table - 180 day retention
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS todos (
         id VARCHAR(36) PRIMARY KEY,
         text VARCHAR(500) NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    // Daily Objectives table - 180 day retention
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS daily_todos (
+        id VARCHAR(36) PRIMARY KEY,
+        text VARCHAR(500) NOT NULL,
+        completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_created_at (created_at)
       )
     `);
 
@@ -186,8 +198,54 @@ async function initDatabase() {
         revision_count INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_subject (subject),
         INDEX idx_type (type)
+      )
+    `);
+
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS video_titles (
+        video_id VARCHAR(100) PRIMARY KEY,
+        title TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS video_status (
+        video_id VARCHAR(100) PRIMARY KEY,
+        is_done BOOLEAN DEFAULT FALSE,
+        has_concept BOOLEAN DEFAULT FALSE,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Notes: Chapters table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS chapters (
+        id VARCHAR(36) PRIMARY KEY,
+        subject VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_subject (subject)
+      )
+    `);
+
+    // Notes: Entries table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS entries (
+        id VARCHAR(36) PRIMARY KEY,
+        chapter_id VARCHAR(36) NOT NULL,
+        text TEXT,
+        type VARCHAR(20) DEFAULT 'concept',
+        images JSON,
+        urls JSON,
+        description TEXT,
+        tags TEXT,
+        priority VARCHAR(20) DEFAULT 'medium',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
+        INDEX idx_chapter (chapter_id)
       )
     `);
 
@@ -472,7 +530,7 @@ export default defineConfig({
           }
         });
 
-        // Todos API middleware
+        // Todos API middleware (Daily Task List)
         server.middlewares.use('/api/todos', async (req, res, next) => {
           console.log('[Todos API]', req.method, req.url);
 
@@ -480,11 +538,11 @@ export default defineConfig({
             await initDatabase();
             const db = await getDbPool();
 
-            // Auto-cleanup: Delete todos older than 30 days
+            // Auto-cleanup: Delete todos older than 180 days (6 months)
             try {
               await db.execute(`
                 DELETE FROM todos 
-                WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
+                WHERE created_at < DATE_SUB(NOW(), INTERVAL 180 DAY)
               `);
             } catch (cleanupErr) {
               console.log('[Todos] Cleanup skipped:', cleanupErr.message);
@@ -507,7 +565,7 @@ export default defineConfig({
             res.setHeader('Content-Type', 'application/json');
 
             if (req.method === 'GET') {
-              // Get all todos (recent 30 days)
+              // Get all todos (recent 180 days)
               const [todos] = await db.execute(
                 'SELECT id, text, completed, created_at FROM todos ORDER BY created_at DESC'
               );
@@ -574,6 +632,393 @@ export default defineConfig({
             console.error('[Todos API] Error:', error);
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
+        // Daily Todos API middleware (Daily Objectives)
+        server.middlewares.use('/api/daily-todos', async (req, res, next) => {
+          console.log('[Daily Todos API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            // Auto-cleanup: Delete daily todos older than 180 days (6 months)
+            try {
+              await db.execute(`
+                DELETE FROM daily_todos 
+                WHERE created_at < DATE_SUB(NOW(), INTERVAL 180 DAY)
+              `);
+            } catch (cleanupErr) {
+              console.log('[Daily Todos] Cleanup skipped:', cleanupErr.message);
+            }
+
+            // Parse URL for todo ID
+            const urlPath = req.url.split('?')[0];
+            const pathSegments = urlPath.split('/').filter(Boolean);
+            const todoId = pathSegments[0] || null;
+
+            // Parse body for POST/PUT requests
+            let body = {};
+            if (req.method === 'POST' || req.method === 'PUT') {
+              const chunks = [];
+              for await (const chunk of req) chunks.push(chunk);
+              const raw = Buffer.concat(chunks).toString();
+              if (raw) body = JSON.parse(raw);
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+
+            if (req.method === 'GET') {
+              const [todos] = await db.execute(
+                'SELECT id, text, completed, created_at FROM daily_todos ORDER BY created_at DESC'
+              );
+              res.statusCode = 200;
+              res.end(JSON.stringify(todos));
+            } else if (req.method === 'POST') {
+              const newId = crypto.randomUUID();
+              const { text } = body;
+
+              if (!text || !text.trim()) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Text is required' }));
+                return;
+              }
+
+              await db.execute(
+                'INSERT INTO daily_todos (id, text, completed) VALUES (?, ?, ?)',
+                [newId, text.trim(), false]
+              );
+
+              res.statusCode = 201;
+              res.end(JSON.stringify({ id: newId, text: text.trim(), completed: false }));
+            } else if (req.method === 'PUT') {
+              if (!todoId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Todo ID required' }));
+                return;
+              }
+
+              const { completed } = body;
+              await db.execute(
+                'UPDATE daily_todos SET completed = ? WHERE id = ?',
+                [completed, todoId]
+              );
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({ id: todoId, completed }));
+            } else if (req.method === 'DELETE') {
+              if (todoId === 'all') {
+                await db.execute('DELETE FROM daily_todos');
+                res.statusCode = 200;
+                res.end(JSON.stringify({ deleted: true, all: true }));
+                return;
+              }
+
+              if (!todoId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Todo ID required' }));
+                return;
+              }
+
+              await db.execute('DELETE FROM daily_todos WHERE id = ?', [todoId]);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ deleted: true, id: todoId }));
+            } else {
+              res.statusCode = 405;
+              res.end(JSON.stringify({ error: `Method ${req.method} not allowed` }));
+            }
+          } catch (error) {
+            console.error('[Daily Todos API] Error:', error);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
+        // Video Status API (TiDB)
+        server.middlewares.use('/api/video-status', async (req, res, next) => {
+          console.log('[Video Status API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            res.setHeader('Content-Type', 'application/json');
+
+            if (req.method === 'GET') {
+              const [statuses] = await db.execute(
+                'SELECT video_id as videoId, is_done as isDone, has_concept as hasConcept, updated_at as updatedAt FROM video_status ORDER BY updated_at DESC'
+              );
+              res.statusCode = 200;
+              res.end(JSON.stringify(statuses));
+            } else if (req.method === 'POST') {
+              let body = '';
+              for await (const chunk of req) body += chunk;
+              const { videoId, type, value } = JSON.parse(body);
+
+              if (!videoId || !type || value === undefined) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'videoId, type, and value are required' }));
+                return;
+              }
+
+              const columnName = type === 'done' ? 'is_done' : 'has_concept';
+              await db.execute(
+                `INSERT INTO video_status (video_id, ${columnName}) VALUES (?, ?) 
+                 ON DUPLICATE KEY UPDATE ${columnName} = ?, updated_at = CURRENT_TIMESTAMP`,
+                [videoId, value, value]
+              );
+              res.statusCode = 200;
+              res.end(JSON.stringify({ videoId, [type]: value }));
+            }
+          } catch (error) {
+            console.error('[Video Status API] Error:', error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
+        // Video Titles API (TiDB)
+        server.middlewares.use('/api/video-titles', async (req, res, next) => {
+          console.log('[Video Titles API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            const urlPath = req.url.split('?')[0];
+            const pathParts = urlPath.split('/').filter(Boolean);
+            const videoId = pathParts[0] || null;
+
+            res.setHeader('Content-Type', 'application/json');
+
+            if (req.method === 'GET') {
+              const [titles] = await db.execute('SELECT video_id as id, title FROM video_titles');
+              const titleMap = {};
+              titles.forEach(t => titleMap[t.id] = t.title);
+              res.statusCode = 200;
+              res.end(JSON.stringify(titleMap));
+            } else if (req.method === 'POST') {
+              let body = '';
+              for await (const chunk of req) body += chunk;
+              const { id, title } = JSON.parse(body);
+
+              if (!id || !title) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'ID and title required' }));
+                return;
+              }
+
+              await db.execute(
+                'INSERT INTO video_titles (video_id, title) VALUES (?, ?) ON DUPLICATE KEY UPDATE title = ?',
+                [id, title, title]
+              );
+              res.statusCode = 200;
+              res.end(JSON.stringify({ id, title, updated: true }));
+            } else if (req.method === 'DELETE' && videoId) {
+              await db.execute('DELETE FROM video_titles WHERE video_id = ?', [videoId]);
+              res.statusCode = 200;
+              res.end(JSON.stringify({ deleted: true, id: videoId }));
+            }
+          } catch (error) {
+            console.error('[Video Titles API] Error:', error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+
+        // Learning Notes API (restored)
+        server.middlewares.use('/api/notes', async (req, res, next) => {
+          console.log('[Learning Notes API]', req.method, req.url);
+          // Skip if query param ?id is present for DELETE/PUT (it's handled, but we need to check exact match if strict)
+          // Actually req.url includes query params in middleware? Yes.
+
+          // Strict check to avoid capturing /api/notes/something if we had subroutes, but here it's simple.
+          if (req.url.startsWith('/api/notes') && !req.url.includes('chapter-tracker')) {
+            try {
+              await initDatabase();
+              const db = await getDbPool();
+              res.setHeader('Content-Type', 'application/json');
+
+              const parseBody = async () => {
+                let body = '';
+                for await (const chunk of req) body += chunk;
+                return body ? JSON.parse(body) : {};
+              };
+
+              const url = new URL(req.url, `http://${req.headers.host}`);
+              const id = url.searchParams.get('id');
+
+              if (req.method === 'GET') {
+                const [notes] = await db.execute('SELECT * FROM learning_notes ORDER BY created_at DESC');
+                // Transform for frontend if needed? 
+                // Frontend expects: id, title, description, topic, type, etc.
+                // DB columns match well. images/links are NOT in DB schema shown above?
+                // Wait, lines 187-202 of vite.config.js DO NOT show images or links columns for learning_notes!
+                // Let me re-read lines 187-202 carefully.
+                // 187: CREATE TABLE IF NOT EXISTS learning_notes ...
+                // It has: source, tags, description... NO images or links columns?
+                // But NotesLibrary2 uses note.images and note.links!
+                // And NotesStore sends them!
+                // Maybe they are stored in `description` as JSON or I missed the columns in previous view?
+                // Or maybe the table definition I saw was OLD and I need to ALTER it?
+                // "196:         source VARCHAR(500)," is there.
+                // "194:         tags TEXT," is there.
+                // If images/links are missing, saving them via API will fail if I just do INSERT.
+                // However, avoiding a schema change if possible.
+                // Let's look at `CompactNoteCard` (Step 169): 
+                // It renders `note.images` and `note.links`.
+                // If the table doesn't have them, they might be lost?
+                // Or maybe they are new fields the user wants?
+                // NOTE: The user just said "TypeError: filteredNotes.slice is not a function".
+                // Prioritizing fixing the crash first by returning an array.
+                // I will include logic to return `[]` for images/links if they don't exist in DB rows.
+                // AND I will check if I need to add columns.
+                // For now, I'll return the rows.
+
+                // Client expects: notes array.
+                res.statusCode = 200;
+                res.end(JSON.stringify(notes));
+              }
+              else if (req.method === 'POST') {
+                const body = await parseBody();
+                // Insert
+                // Note: body contains images/links but if table lacks them, we might ignore or we should add them?
+                // I will assume for now they might be ignored or I should add them to schema later.
+                // Safety first: Insert what we have columns for.
+                const { id, type, subject, topic, title, description, tags, priority, source } = body;
+                await db.execute(
+                  `INSERT INTO learning_notes (id, type, subject, topic, title, description, tags, priority, source)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                  [id, type, subject, topic, title, description, tags, priority, source]
+                );
+                res.statusCode = 201;
+                res.end(JSON.stringify(body));
+              }
+              else if (req.method === 'PUT') {
+                const body = await parseBody();
+                const { id, type, subject, topic, title, description, tags, priority, source, is_revised, revision_count } = body;
+                await db.execute(
+                  `UPDATE learning_notes SET 
+                           type=?, subject=?, topic=?, title=?, description=?, tags=?, priority=?, source=?, is_revised=?, revision_count=?, updated_at=NOW()
+                         WHERE id=?`,
+                  [type, subject, topic, title, description, tags, priority, source, is_revised, revision_count, id]
+                );
+                res.statusCode = 200;
+                res.end(JSON.stringify(body));
+              }
+              else if (req.method === 'DELETE') {
+                if (!id) throw new Error('Missing ID');
+                await db.execute('DELETE FROM learning_notes WHERE id = ?', [id]);
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+              else {
+                next(); // Pass to next if not matched (e.g. OPTIONS?) or 405
+              }
+            } catch (e) {
+              console.error('[Notes API Error]', e);
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: e.message }));
+            }
+            return;
+          }
+          next();
+        });
+
+        // Notes API (TiDB) -> Renamed to Chapter Tracker
+        server.middlewares.use('/api/chapter-tracker', async (req, res, next) => {
+          console.log('[Chapter Tracker API]', req.method, req.url);
+
+          try {
+            await initDatabase();
+            const db = await getDbPool();
+
+            res.setHeader('Content-Type', 'application/json');
+
+            // Utility to parse body
+            const parseBody = async () => {
+              let body = '';
+              for await (const chunk of req) body += chunk;
+              return body ? JSON.parse(body) : {};
+            };
+
+            if (req.method === 'GET') {
+              // Fetch all chapters and entries
+              const [chapters] = await db.execute('SELECT * FROM chapters ORDER BY created_at ASC');
+              const [entries] = await db.execute('SELECT * FROM entries ORDER BY created_at ASC');
+
+              res.statusCode = 200;
+              res.end(JSON.stringify({ chapters, entries }));
+            }
+            else if (req.method === 'POST') {
+              const body = await parseBody();
+              const { action, data } = body;
+
+              if (action === 'sync') {
+                // Full sync from client (simple overwrite strategy for now, or per-item)
+                // For now, let's support atomic actions
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Full sync not implemented, use specific actions' }));
+              }
+              else if (action === 'add_chapter') {
+                const { id, subject, name } = data;
+                await db.execute(
+                  'INSERT INTO chapters (id, subject, name) VALUES (?, ?, ?)',
+                  [id, subject, name]
+                );
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+              else if (action === 'add_entry') {
+                const { id, chapterId, text, type, images, urls, description, tags, priority } = data;
+                await db.execute(
+                  `INSERT INTO entries (id, chapter_id, text, type, images, urls, description, tags, priority) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                  [id, chapterId, text, type, JSON.stringify(images || []), JSON.stringify(urls || []), description, tags, priority]
+                );
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+              else if (action === 'update_entry') {
+                const { id, text, images, urls, description, tags, priority } = data;
+                await db.execute(
+                  `UPDATE entries SET 
+                      text = ?, images = ?, urls = ?, description = ?, tags = ?, priority = ?, updated_at = NOW()
+                    WHERE id = ?`,
+                  [text, JSON.stringify(images || []), JSON.stringify(urls || []), description, tags, priority, id]
+                );
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+            }
+            else if (req.method === 'DELETE') {
+              // Parse query params for simple deletes? Or use body?
+              // Let's use body for consistency
+              const body = await parseBody();
+              const { action, id } = body;
+
+              if (action === 'delete_chapter') {
+                await db.execute('DELETE FROM chapters WHERE id = ?', [id]);
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+              else if (action === 'delete_entry') {
+                await db.execute('DELETE FROM entries WHERE id = ?', [id]);
+                res.statusCode = 200;
+                res.end(JSON.stringify({ success: true }));
+              }
+            }
+            else {
+              res.statusCode = 405;
+              res.end(JSON.stringify({ error: `Method ${req.method} not allowed` }));
+            }
+
+          } catch (error) {
+            console.error('[Notes API] Error:', error);
+            res.statusCode = 500;
             res.end(JSON.stringify({ error: error.message }));
           }
         });

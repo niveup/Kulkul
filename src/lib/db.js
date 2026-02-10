@@ -34,19 +34,23 @@ export async function initDatabase() {
     if (isDbInitialized) return;
     const db = await getDbPool();
 
-    // FAST PATH: Check if a core table exists to skip 15+ DDL queries
-    try {
-        // If this succeeds, schema handles are likely in place
-        await db.execute('SELECT 1 FROM auth_sessions LIMIT 1');
-        isDbInitialized = true;
-        return;
-    } catch (error) {
-        // Table doesn't exist, proceed to initialization
-        console.log('[DB] Initializing schema (Cold Start)...');
-    }
+    // [Note] Schema check optimization removed to ensure all required tables 
+    // (including entries, chapters, learning_notes) are created on startup.
 
     const connection = await db.getConnection();
     try {
+        // Quick check: If auth_sessions exists, we assume schema is ready for cold start
+        try {
+            const [tables] = await connection.execute("SHOW TABLES LIKE 'auth_sessions'");
+            if (tables.length > 0) {
+                isDbInitialized = true;
+                return;
+            }
+        } catch (e) {
+            console.log('[DB] Table check failed, proceeding with full init:', e.message);
+        }
+
+        console.log('[DB] Running full schema initialization...');
         // Use Promise.all to run DDL queries in parallel for faster startup
         await Promise.all([
             // Core tables
@@ -80,7 +84,8 @@ export async function initDatabase() {
                     text VARCHAR(500) NOT NULL,
                     completed BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_created_at (created_at)
                 )
             `),
             connection.execute(`
@@ -143,6 +148,17 @@ export async function initDatabase() {
                 )
             `),
             connection.execute(`
+                CREATE TABLE IF NOT EXISTS video_status (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    video_id VARCHAR(100) NOT NULL,
+                    is_done BOOLEAN DEFAULT FALSE,
+                    has_concept BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_video (video_id)
+                )
+            `),
+            connection.execute(`
                 CREATE TABLE IF NOT EXISTS auth_sessions (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     token VARCHAR(64) NOT NULL UNIQUE,
@@ -187,7 +203,8 @@ export async function initDatabase() {
                     id VARCHAR(36) PRIMARY KEY,
                     text VARCHAR(500) NOT NULL,
                     completed BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_created_at (created_at)
                 )
             `),
             connection.execute(`
@@ -290,6 +307,69 @@ export async function initDatabase() {
                     INDEX idx_active (is_active),
                     INDEX idx_source (source),
                     INDEX idx_updated (updated_at)
+                )
+            `),
+            connection.execute(`
+                CREATE TABLE IF NOT EXISTS video_titles (
+                    video_id VARCHAR(100) PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `),
+            connection.execute(`
+                CREATE TABLE IF NOT EXISTS learning_notes (
+                    id VARCHAR(36) PRIMARY KEY,
+                    type VARCHAR(50),
+                    subject VARCHAR(50),
+                    topic VARCHAR(255),
+                    title VARCHAR(255),
+                    description TEXT,
+                    tags TEXT,
+                    priority VARCHAR(50),
+                    source VARCHAR(50),
+                    images JSON,
+                    links JSON,
+                    is_revised BOOLEAN DEFAULT FALSE,
+                    revision_count INT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_subject (subject),
+                    INDEX idx_type (type)
+                )
+            `),
+            connection.execute(`
+                CREATE TABLE IF NOT EXISTS user_goals (
+                    id VARCHAR(50) PRIMARY KEY DEFAULT 'current',
+                    daily_focus_minutes INT DEFAULT 240,
+                    target_efficiency INT DEFAULT 80,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            `),
+            connection.execute(`
+                CREATE TABLE IF NOT EXISTS chapters (
+                    id VARCHAR(36) PRIMARY KEY,
+                    subject VARCHAR(50) NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_subject (subject)
+                )
+            `),
+            connection.execute(`
+                CREATE TABLE IF NOT EXISTS entries (
+                    id VARCHAR(36) PRIMARY KEY,
+                    chapter_id VARCHAR(36) NOT NULL,
+                    text TEXT,
+                    type VARCHAR(50),
+                    images JSON,
+                    urls JSON,
+                    description TEXT,
+                    tags TEXT,
+                    priority VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_chapter (chapter_id),
+                    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
                 )
             `)
         ]);

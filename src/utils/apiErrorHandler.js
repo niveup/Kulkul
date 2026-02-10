@@ -248,10 +248,10 @@ export const validators = {
       };
     }
 
-    if (num < 1) {
+    if (num < 0.17) {
       return {
         isValid: false,
-        error: 'Duration must be at least 1 minute'
+        error: 'Duration must be at least 10 seconds'
       };
     }
 

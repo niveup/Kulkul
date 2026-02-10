@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import PomodoroTimer from '../tools/PomodoroTimer';
 import CityBuilderLoader from '../tools/CityBuilder';
+import TodoList from '../tools/TodoList';
 import { cn } from '../../lib/utils';
 
 // Premium Loading Skeletion - Pulsing Glass
@@ -14,7 +15,11 @@ export const Workstation = ({
     handleTimerAction,
     isDarkMode,
     toggleTheme,
-    sessions
+    sessions,
+    mainTodos,
+    addMainTodo,
+    toggleMainTodo,
+    removeMainTodo
 }) => {
     return (
         <div className="h-screen w-full p-4 lg:p-6 flex flex-col lg:flex-row gap-8 overflow-hidden">
@@ -37,6 +42,16 @@ export const Workstation = ({
                         isDarkMode={isDarkMode}
                         onToggleTheme={toggleTheme}
                     />
+
+                    {/* Todo List Integration */}
+                    <div className="flex-1 overflow-hidden mt-4">
+                        <TodoList
+                            tasks={mainTodos || []}
+                            addTask={addMainTodo}
+                            toggleTask={toggleMainTodo}
+                            removeTask={removeMainTodo}
+                        />
+                    </div>
                 </div>
             </motion.div>
 

@@ -74,7 +74,7 @@ export const Sidebar = () => {
 
     return (
         <motion.div
-            className="fixed inset-y-0 left-0 z-[100] flex items-center"
+            className="fixed inset-y-0 left-0 z-[40] flex items-center"
             animate={{ width: isExpanded ? 300 : 100 }} // Larger trigger area that grows with the sidebar
             onMouseEnter={() => setIsExpanded(true)}
             onMouseLeave={() => setIsExpanded(false)}

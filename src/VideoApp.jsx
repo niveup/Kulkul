@@ -4,9 +4,10 @@ import {
     FileText, ExternalLink, Filter,
     ChevronRight, Home, FolderOpen,
     Atom, Zap, Calculator, BookOpen,
-    AlertCircle
+    AlertCircle, Pencil, Check, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useVideoStatusStore, DEFAULT_VIDEO_STATUS } from './store';
 
 // Premium Subject Configuration - "Neural Glass" Edition
 const SUBJECT_CONFIG = {
@@ -80,6 +81,58 @@ export default function VideoApp() {
     const [selectedSubject, setSelectedSubject] = useState(null);
     const [selectedChapter, setSelectedChapter] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [globalTitles, setGlobalTitles] = useState({});
+
+    // Load Global Titles
+    const loadGlobalTitles = async () => {
+        try {
+            const res = await fetch('/api/video-titles');
+            if (res.ok) {
+                const titles = await res.json();
+                setGlobalTitles(titles);
+            }
+        } catch (err) {
+            console.error('Failed to load global titles:', err);
+        }
+    };
+
+    const handleRename = async (id, newTitle) => {
+        try {
+            const res = await fetch('/api/video-titles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, title: newTitle })
+            });
+
+            if (res.ok) {
+                setGlobalTitles(prev => ({ ...prev, [id]: newTitle }));
+                return true;
+            }
+        } catch (err) {
+            console.error('Failed to save title:', err);
+        }
+        return false;
+    };
+
+    useEffect(() => {
+        loadGlobalTitles();
+    }, []);
+
+    // Load Video Statuses
+    useEffect(() => {
+        const loadVideoStatuses = async () => {
+            try {
+                const res = await fetch('/api/video-status');
+                if (res.ok) {
+                    const statuses = await res.json();
+                    useVideoStatusStore.getState().setVideoStatuses(statuses);
+                }
+            } catch (err) {
+                console.error('Failed to load video statuses:', err);
+            }
+        };
+        loadVideoStatuses();
+    }, []);
 
     // Load Data
     useEffect(() => {
@@ -330,27 +383,26 @@ export default function VideoApp() {
                                             <motion.div
                                                 key={`search-ch-${idx}`}
                                                 variants={itemVariants}
-                                                whileHover={{ y: -4, scale: 1.02 }}
                                                 onClick={() => { setSelectedSubject(item.subject); setSelectedChapter(item.name); setSearchQuery(''); }}
                                                 className="relative group cursor-pointer"
                                             >
-                                                <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500`} />
-                                                <div className="relative p-5 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all">
+                                                <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-5 blur-xl transition-all duration-500`} />
+                                                <div className="relative p-5 bg-[#0a0f1d]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden transition-all">
                                                     <div className="flex items-center gap-4 mb-4">
-                                                        <div className={`p-2.5 rounded-xl bg-white/5 border border-white/10 ${config.color} group-hover:scale-110 transition-transform`}>
+                                                        <div className={`p-2.5 rounded-xl bg-white/5 border border-white/10 ${config.color} transition-transform`}>
                                                             <FolderOpen className="w-5 h-5" />
                                                         </div>
                                                         <span className={`text-[10px] font-bold uppercase tracking-widest ${config.color} opacity-80`}>
                                                             {item.subject}
                                                         </span>
                                                     </div>
-                                                    <h4 className="text-lg font-bold text-white leading-tight mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-400 transition-all">
+                                                    <h4 className="text-lg font-bold text-white leading-tight mb-2 transition-all">
                                                         {item.name}
                                                     </h4>
                                                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
                                                         <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Chapter Sector</span>
-                                                        <div className={`p-1.5 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors`}>
-                                                            <ChevronRight className="w-3 h-3 text-white/60" />
+                                                        <div className={`p-1.5 rounded-full bg-white/5 transition-colors`}>
+                                                            <ChevronRight className="w-3 h-3 text-white/40" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -359,7 +411,12 @@ export default function VideoApp() {
                                     } else {
                                         return (
                                             <motion.div key={`search-vid-${idx}`} variants={itemVariants}>
-                                                <VideoCard video={item.video} subject={item.subject} />
+                                                <VideoCard
+                                                    video={item.video}
+                                                    subject={item.subject}
+                                                    customTitle={globalTitles[item.video.id]}
+                                                    onRename={handleRename}
+                                                />
                                             </motion.div>
                                         );
                                     }
@@ -396,39 +453,34 @@ export default function VideoApp() {
                                     <motion.div
                                         key={subject}
                                         variants={itemVariants}
-                                        whileHover={{ y: -12, scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => handleSubjectClick(subject)}
                                         className="group relative h-80 rounded-[2rem] bg-[#0a0f1d] border border-white/5 overflow-hidden cursor-pointer transition-all duration-500"
                                     >
-                                        {/* Dynamic Background Glow */}
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-700 blur-2xl`} />
+                                        {/* Dynamic Background Glow - Static */}
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-10 transition-opacity duration-700 blur-2xl`} />
 
                                         {/* Glass Surface */}
-                                        <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-sm group-hover:backdrop-blur-none transition-all duration-500" />
+                                        <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-sm transition-all duration-500" />
 
-                                        {/* Border Gradient */}
-                                        <div className={`absolute inset-0 rounded-[2rem] border border-white/5 group-hover:border-${config.accent}-500/50 transition-colors duration-500`} />
+                                        {/* Border Gradient - Static */}
+                                        <div className={`absolute inset-0 rounded-[2rem] border border-white/10 transition-colors duration-500`} />
 
                                         {/* Content Wrapper */}
                                         <div className="absolute inset-0 p-8 flex flex-col justify-between relative z-10">
                                             {/* Header */}
                                             <div className="flex justify-between items-start">
-                                                <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md ${config.color} group-hover:scale-110 transition-transform duration-500 ${config.glow}`}>
+                                                <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md ${config.color} transition-transform duration-500 ${config.glow}`}>
                                                     <SubjectIcon className="w-8 h-8" />
                                                 </div>
-                                                <motion.div
-                                                    initial={{ opacity: 0 }}
-                                                    whileHover={{ opacity: 1 }}
-                                                    className="p-2 rounded-full bg-white/5 border border-white/10"
-                                                >
+                                                <div className="p-2 rounded-full bg-white/5 border border-white/10 opacity-40">
                                                     <ChevronRight className="w-5 h-5 text-white" />
-                                                </motion.div>
+                                                </div>
                                             </div>
 
                                             {/* Footer Info */}
                                             <div className="space-y-4">
-                                                <h3 className="text-4xl font-bold text-white tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-400 transition-all">
+                                                <h3 className="text-4xl font-bold text-white tracking-tight transition-all">
                                                     {subject}
                                                 </h3>
 
@@ -464,20 +516,19 @@ export default function VideoApp() {
                                     <motion.div
                                         key={chapter}
                                         variants={itemVariants}
-                                        whileHover={{ scale: 1.02 }}
                                         onClick={() => handleChapterClick(chapter)}
-                                        className="group relative overflow-hidden rounded-2xl bg-[#0f1629] border border-white/5 hover:border-white/10 transition-all cursor-pointer"
+                                        className="relative overflow-hidden rounded-2xl bg-[#0f1629] border border-white/5 transition-all cursor-pointer"
                                     >
-                                        {/* Hover Gradient Background */}
-                                        <div className={`absolute inset-0 bg-gradient-to-r ${subjectConfig.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                                        {/* Background Gradient - Static */}
+                                        <div className={`absolute inset-0 bg-gradient-to-r ${subjectConfig.gradient} opacity-5 transition-opacity duration-500`} />
 
                                         <div className="relative p-6 flex items-start gap-4">
-                                            <div className={`mt-1 p-3 rounded-xl bg-[1C1C1E] border border-white/5 ${subjectConfig.color} shadow-lg shrink-0`}>
+                                            <div className={`mt-1 p-3 rounded-xl bg-[1C1C1E] border border-white/10 ${subjectConfig.color} shadow-lg shrink-0`}>
                                                 <FolderOpen className="w-6 h-6" />
                                             </div>
 
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-lg font-bold text-white mb-2 leading-snug group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-300 transition-all">
+                                                <h4 className="text-lg font-bold text-white mb-2 leading-snug transition-all">
                                                     {chapter}
                                                 </h4>
                                                 <div className="flex items-center gap-3">
@@ -490,8 +541,8 @@ export default function VideoApp() {
                                                 </div>
                                             </div>
 
-                                            <div className="self-center opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                                                <ChevronRight className="w-5 h-5 text-white/50" />
+                                            <div className="self-center opacity-30 transition-all duration-300">
+                                                <ChevronRight className="w-5 h-5 text-white" />
                                             </div>
                                         </div>
                                     </motion.div>
@@ -509,7 +560,12 @@ export default function VideoApp() {
                         >
                             {filteredContent.items.map(video => (
                                 <motion.div key={video.id} variants={itemVariants}>
-                                    <VideoCard video={video} subject={selectedSubject} />
+                                    <VideoCard
+                                        video={video}
+                                        subject={selectedSubject}
+                                        customTitle={globalTitles[video.id]}
+                                        onRename={handleRename}
+                                    />
                                 </motion.div>
                             ))}
                         </motion.div>
@@ -521,45 +577,165 @@ export default function VideoApp() {
     );
 }
 
-// Standalone Video Card Component - "Crystalline Interface"
-function VideoCard({ video, subject }) {
-    const isPDF = !video.isVideo;
-    const config = SUBJECT_CONFIG[subject] || SUBJECT_CONFIG['General'];
+// --- Cinematic Components ---
+
+const StatusFlipButton = ({ active, onToggle, frontLabel, backLabel, activeGlow, ariaLabel }) => {
+    return (
+        <div
+            role="button"
+            aria-pressed={active}
+            aria-label={ariaLabel || (active ? backLabel : frontLabel)}
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onToggle(); } }}
+            className={`relative h-10 w-28 cursor-pointer overflow-hidden rounded-xl border border-white/5 bg-[#0f1629] group shadow-lg transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-white/20 ${active ? 'border-white/20' : 'hover:border-white/10'}`}
+        >
+            {/* Front Face (Inactive) */}
+            <motion.div
+                initial={false}
+                animate={{
+                    y: active ? '100%' : '0%',
+                    rotateX: active ? 60 : 0,
+                    opacity: active ? 0 : 1
+                }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                className="absolute inset-0 flex items-center justify-center bg-[#1d1d20] text-[8px] font-black uppercase tracking-[0.2em] text-[#71717a]"
+            >
+                {frontLabel}
+            </motion.div>
+
+            {/* Back Face (Active) */}
+            <motion.div
+                initial={false}
+                animate={{
+                    y: active ? '0%' : '-100%',
+                    rotateX: active ? 0 : -60,
+                    opacity: active ? 1 : 0
+                }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                className={`absolute inset-0 flex flex-col items-center justify-center ${activeGlow} text-[9px] font-black uppercase tracking-[0.2em] text-white shadow-[inset_0_0_20px_rgba(255,255,255,0.2)]`}
+            >
+                <div className="relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{backLabel}</div>
+                {/* Glass Shine overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50" />
+            </motion.div>
+        </div>
+    );
+};
+
+const VideoCard = ({ video, subject, chapter, searchQuery, onRename }) => {
+    const videoStatus = useVideoStatusStore(state => state.videoStatuses[video.id] || DEFAULT_VIDEO_STATUS);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(video.caption || '');
+    const [customTitle, setCustomTitle] = useState(null);
+
+    useEffect(() => {
+        const fetchTitle = async () => {
+            try {
+                const res = await fetch('/api/video-titles');
+                if (res.ok) {
+                    const titles = await res.json();
+                    if (titles[video.id]) setCustomTitle(titles[video.id]);
+                }
+            } catch (err) { console.error('Failed to fetch video title:', err); }
+        };
+        fetchTitle();
+    }, [video.id]);
+
+    const handleMarkStatus = (type) => {
+        const field = type === 'done' ? 'isDone' : 'hasConcept';
+        const newValue = !videoStatus[field];
+
+        // Instant Optimistic Update for Lag-Free UI
+        useVideoStatusStore.getState().updateVideoStatus(video.id, { [field]: newValue });
+
+        // Silent Background Cloud Sync for Cross-Device Consistency
+        fetch('/api/video-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                videoId: video.id,
+                type: type,
+                value: newValue
+            })
+        }).catch(err => {
+            console.error('[Sync] Failed to persist status update:', err);
+        });
+    };
+
+    const config = (subject && SUBJECT_CONFIG[subject]) || {
+        gradient: 'from-cyan-500 to-blue-500',
+        accent: 'cyan',
+        color: 'text-cyan-400',
+        glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+    };
+    const isPDF = video.type === 'pdf' || video.file?.toLowerCase().endsWith('.pdf') || video.caption?.toLowerCase().includes('.pdf');
 
     const openInTelegram = () => {
-        const urlParts = video.telegramUrl.split('/');
-        const id = urlParts.pop();
-        const channel = urlParts.pop();
-        const tgUrl = `tg://resolve?domain=${channel}&post=${id}`;
-        window.location.href = tgUrl;
+        if (isPDF) {
+            window.open(video.file || video.url, '_blank');
+        } else {
+            const channelUsername = 'kulkuljujum';
+            const msgId = video.id;
+            window.open(`https://t.me/${channelUsername}/${msgId}`, '_blank');
+        }
+    };
+
+    const startEditing = (e) => {
+        e.stopPropagation();
+        setEditValue(customTitle || video.caption.replace(/\[.*?\]/g, '').trim());
+        setIsEditing(true);
+    };
+
+    const handleCancel = (e) => {
+        e.stopPropagation();
+        setIsEditing(false);
+    };
+
+    const handleSave = async (e) => {
+        e.stopPropagation();
+        if (!editValue.trim()) return;
+
+        try {
+            const res = await fetch('/api/video-titles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: video.id, title: editValue.trim() })
+            });
+
+            if (res.ok) {
+                setCustomTitle(editValue.trim());
+                setIsEditing(false);
+                if (onRename) onRename(video.id, editValue.trim());
+            }
+        } catch (err) {
+            console.error('Failed to save title:', err);
+        }
     };
 
     return (
         <motion.div
-            whileHover={{ y: -10, scale: 1.02 }}
-            className="group relative bg-[#0f1629] rounded-3xl overflow-hidden border border-white/5 shadow-2xl transition-all duration-500 cursor-pointer"
+            className="relative bg-[#0f1629] rounded-3xl overflow-hidden border border-white/5 shadow-2xl transition-all duration-500 cursor-pointer"
             onClick={openInTelegram}
         >
-            {/* Cinematic Glow on Hover */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-20 blur-3xl transition-opacity duration-700`} />
+            {/* Cinematic Glow - Static */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-[0.05] blur-3xl`} />
 
-            {/* Border Reveal */}
-            <div className={`absolute inset-0 rounded-3xl border border-white/5 group-hover:border-${config.accent}-500/30 transition-colors duration-500`} />
+            {/* Border - Static */}
+            <div className={`absolute inset-0 rounded-3xl border border-white/5`} />
 
             {/* Thumbnail Area */}
             <div className="relative aspect-video bg-[#050912] overflow-hidden">
-                {/* Dynamic Energy Mesh */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-[0.15] group-hover:opacity-[0.25] transition-opacity duration-700`} />
+                {/* Dynamic Energy Mesh - Static */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-[0.15]`} />
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 contrast-150" />
 
-                {/* Central Focus Orb */}
-                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 ${config.color} blur-[50px] opacity-20 group-hover:opacity-40 transition-opacity duration-500 animate-pulse`} />
+                {/* Central Focus Orb - Static */}
+                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 ${config.color} blur-[50px] opacity-20 animate-pulse`} />
 
                 {/* Main Icon */}
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    <div
                         className={`relative w-20 h-20 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-md border border-white/10 ${config.glow}`}
                     >
                         {isPDF ? (
@@ -567,8 +743,19 @@ function VideoCard({ video, subject }) {
                         ) : (
                             <Play className="w-9 h-9 text-white/90 fill-white/90 ml-1" />
                         )}
-                    </motion.div>
+                    </div>
                 </div>
+
+                {/* Rename Button (Always Visible) */}
+                {!isEditing && (
+                    <button
+                        onClick={startEditing}
+                        className="absolute top-4 right-4 z-30 p-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                        title="Rename video globally"
+                    >
+                        <Pencil size={14} />
+                    </button>
+                )}
 
                 {/* Type Badge */}
                 <div className="absolute top-4 left-4 z-20">
@@ -594,26 +781,66 @@ function VideoCard({ video, subject }) {
             {/* Info Section */}
             <div className="relative p-6 bg-[#0f1629]/90 backdrop-blur-xl">
                 {/* Title */}
-                <h4 className="text-lg font-bold text-white leading-snug line-clamp-2 mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-300 transition-all">
-                    {video.caption.replace(/\[.*?\]/g, '').trim() || 'Untitled Module'}
-                </h4>
-
-                {/* Metadata & Action */}
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Size</span>
-                        <span className="text-xs font-bold text-slate-300">{video.fileSize || 'OPTIMIZED'}</span>
-                    </div>
-
-                    <button className="relative overflow-hidden group/btn px-6 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all">
-                        <div className={`absolute inset-0 bg-gradient-to-r ${config.gradient} opacity-0 group-hover/btn:opacity-20 transition-opacity`} />
-                        <div className="relative flex items-center gap-2">
-                            <span className="text-xs font-bold uppercase tracking-widest text-white">Access</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-white/70" />
+                {isEditing ? (
+                    <div className="flex flex-col gap-2 mb-4" onClick={e => e.stopPropagation()}>
+                        <input
+                            type="text"
+                            autoFocus
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') handleSave(e);
+                                if (e.key === 'Escape') handleCancel(e);
+                            }}
+                            className="w-full bg-white/5 border border-white/20 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white/40"
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={handleCancel}
+                                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400"
+                            >
+                                <X size={14} />
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className={`p-1.5 rounded-lg text-white ${subject ? `bg-gradient-to-r ${config.gradient}` : 'bg-cyan-500'}`}
+                            >
+                                <Check size={14} />
+                            </button>
                         </div>
+                    </div>
+                ) : (
+                    <h4 className="text-lg font-bold text-white leading-snug line-clamp-2 mb-4 transition-all">
+                        {customTitle || video.caption.replace(/\[.*?\]/g, '').trim() || 'Untitled Module'}
+                    </h4>
+                )}
+
+                {/* Actions Layer - Unified Single Row with Flip Animation */}
+                <div className="flex items-center gap-2 pt-4 border-t border-white/5">
+                    <StatusFlipButton
+                        active={videoStatus.isDone}
+                        onToggle={() => handleMarkStatus('done')}
+                        frontLabel="NOT DONE"
+                        backLabel="DONE"
+                        activeGlow="bg-gradient-to-r from-emerald-400 to-cyan-400"
+                        ariaLabel="Toggle done status"
+                    />
+                    <StatusFlipButton
+                        active={videoStatus.hasConcept}
+                        onToggle={() => handleMarkStatus('new_concept')}
+                        frontLabel="NO CONCEPT"
+                        backLabel="CONCEPT"
+                        activeGlow="bg-gradient-to-r from-amber-400 to-orange-400"
+                        ariaLabel="Toggle concept status"
+                    />
+                    <button
+                        onClick={(e) => { e.stopPropagation(); openInTelegram(); }}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all shrink-0"
+                    >
+                        <ExternalLink size={14} className="text-white/70" />
                     </button>
                 </div>
             </div>
         </motion.div>
     );
-}
+};

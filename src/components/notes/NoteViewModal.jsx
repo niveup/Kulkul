@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, Edit3, Calendar, BookOpen, Calculator, BrainCircuit, AlertCircle, Lightbulb, Link as LinkIcon } from 'lucide-react';
 import { cn, ensureAbsoluteUrl, getFaviconUrl } from '../../lib/utils';
 import { useNoteActions } from '../../store/notesStore';
+import MarkdownRenderer from '../ui/MarkdownRenderer';
 
 const TYPE_CONFIG = {
     concept: { icon: BookOpen, color: 'emerald', label: 'Concept' },
@@ -65,7 +66,7 @@ const NoteViewModal = ({ isOpen, note, onClose, isDarkMode }) => {
                                         {config.label}
                                     </div>
                                     <h2 className={cn("text-2xl font-black tracking-tight", isDarkMode ? "text-white" : "text-slate-900")}>
-                                        {note.title}
+                                        <MarkdownRenderer content={note.title} as="span" className="inline" />
                                     </h2>
                                 </div>
                             </div>
@@ -85,10 +86,10 @@ const NoteViewModal = ({ isOpen, note, onClose, isDarkMode }) => {
                                     Key Takeaways
                                 </h4>
                                 <div className={cn(
-                                    "text-lg leading-relaxed whitespace-pre-wrap font-medium",
+                                    "text-lg leading-relaxed font-medium",
                                     isDarkMode ? "text-slate-300" : "text-slate-700"
                                 )}>
-                                    {note.description || "No notes captured for this concept yet."}
+                                    <MarkdownRenderer content={note.description || "No notes captured for this concept yet."} />
                                 </div>
                             </div>
 

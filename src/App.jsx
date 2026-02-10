@@ -57,7 +57,7 @@ import { LuminaOverview } from './components/lumina';
 // Store & Hooks
 import { useAppStore, useSessionStore, useTaskStore } from './store';
 import useDashboardStore from './store/dashboardStore';
-
+import { calculateStreak, calculateTodayFocusMinutes } from './utils/statsUtils';
 import { useHotkey, useOnlineStatus, useDebounce } from './hooks';
 import { useToast } from './components/ui/Toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -247,12 +247,18 @@ function App() {
   const setTimerState = useSessionStore((s) => s.setTimerState);
 
   // Task store
-  const tasks = useTaskStore((s) => s.tasks);
-  const setTasks = useTaskStore((s) => s.setTasks);
-  const addTask = useTaskStore((s) => s.addTask);
-  const toggleTask = useTaskStore((s) => s.toggleTask);
-  const removeTask = useTaskStore((s) => s.removeTask);
-  const markTaskSaved = useTaskStore((s) => s.markTaskSaved);
+  const {
+    tasks,
+    mainTodos,
+    addTask,
+    toggleTask,
+    removeTask,
+    markTaskSaved,
+    setTasks,
+    addMainTodo,
+    toggleMainTodo,
+    removeMainTodo
+  } = useTaskStore();
 
   // Sound and notification hooks
   const soundManager = useSoundManager();
@@ -377,13 +383,40 @@ function App() {
 
         if (result.success && Array.isArray(result.data)) {
           setSessions(result.data);
+
+          // Calculate and update dashboard stats
+          const { updateCachedStats } = useDashboardStore.getState();
+          const currentStreak = calculateStreak(result.data);
+          const totalFocusMinutes = calculateTodayFocusMinutes(result.data);
+
+          updateCachedStats({
+            currentStreak,
+            totalFocusTime: totalFocusMinutes, // Today's focus time
+            totalSessions: result.data.length
+          });
         } else {
           // Fallback to localStorage on API failure
-          setSessions(localSessions.getAll());
+          const localData = localSessions.getAll();
+          setSessions(localData);
+
+          const { updateCachedStats } = useDashboardStore.getState();
+          updateCachedStats({
+            currentStreak: calculateStreak(localData),
+            totalFocusTime: calculateTodayFocusMinutes(localData),
+            totalSessions: localData.length
+          });
         }
       } catch (error) {
         // Error already handled by apiRequest, fallback to localStorage
-        setSessions(localSessions.getAll());
+        const localData = localSessions.getAll();
+        setSessions(localData);
+
+        const { updateCachedStats } = useDashboardStore.getState();
+        updateCachedStats({
+          currentStreak: calculateStreak(localData),
+          totalFocusTime: calculateTodayFocusMinutes(localData),
+          totalSessions: localData.length
+        });
         console.error('Session load failed:', error);
       } finally {
         setIsLoadingSessions(false);
@@ -461,7 +494,7 @@ function App() {
             type: building.id,
             minutes,
             elapsedSeconds: data.durationSeconds,
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             status: 'completed',
           };
           setSessions(prev => [...prev, newSession]);
@@ -498,36 +531,18 @@ function App() {
     loadActiveTimerData();
   }, []); // Empty deps - run once on mount
 
-  // Load tasks - skip API in guest mode (Zustand handles localStorage persistence)
+  // Load tasks and goals from cloud with enhanced error handling and local fallback
   useEffect(() => {
-    const loadTasksData = async () => {
-      // Guest mode: Zustand already restores from localStorage, just mark as loaded
-      if (shouldUseLocalStorage()) {
-        setIsLoadingTasks(false);
-        return;
-      }
+    const { loadFromCloud, loadFromLocal } = useTaskStore.getState();
+    const { loadGoalsFromCloud } = useAppStore.getState();
 
-      // Authenticated: fetch from API with enhanced error handling
-      try {
-        const result = await apiRequest('/api/todos', {
-          method: 'GET'
-        }, {
-          context: 'load-tasks',
-          toast,
-          defaultMessage: 'Failed to load your tasks'
-        });
-
-        if (result.success && Array.isArray(result.data)) {
-          setTasks(result.data.map(t => ({ ...t, isSaved: true })));
-        }
-      } catch (error) {
-        console.error('Task load failed:', error);
-      } finally {
-        setIsLoadingTasks(false);
-      }
-    };
-    loadTasksData();
-  }, [setTasks]);
+    if (shouldUseLocalStorage()) {
+      loadFromLocal().finally(() => setIsLoadingTasks(false));
+    } else {
+      loadFromCloud().finally(() => setIsLoadingTasks(false));
+      loadGoalsFromCloud();
+    }
+  }, []);
 
   // Timer logic - calculate remaining from startTime for cross-browser sync
   useEffect(() => {
@@ -550,53 +565,63 @@ function App() {
   // Timer completion
   useEffect(() => {
     if (timerState.timeLeft === 0 && timerState.isActive) {
-      const minutes = Math.floor(timerState.initialTime / 60);
-      const building = getBuildingConfig(minutes);
+      try {
+        const minutes = Math.floor(timerState.initialTime / 60);
+        console.log('[Timer] Completing session:', { minutes, initialTime: timerState.initialTime });
 
-      setTimerState({ isActive: false, isCompleted: true });
+        const building = getBuildingConfig(minutes);
+        console.log('[Timer] Building config:', building);
 
-      soundManager.playComplete();
-      notifications.timerComplete(minutes);
+        setTimerState({ isActive: false, isCompleted: true });
 
-      const newSession = {
-        id: String(Date.now()),
-        type: building.id,
-        minutes,
-        elapsedSeconds: timerState.initialTime,
-        timestamp: new Date(),
-        status: 'completed',
-      };
+        soundManager.playComplete();
+        notifications.timerComplete(minutes);
 
-      setSessions([...sessions, newSession]);
-      toast.success('Focus Complete!', `Great job! You focused for ${minutes} minutes.`);
+        const newSession = {
+          id: String(Date.now()),
+          type: building?.id || 'tent', // Fallback
+          minutes,
+          elapsedSeconds: timerState.initialTime,
+          timestamp: new Date().toISOString(),
+          status: 'completed',
+        };
 
-      // Save session and clear timer - conditional on auth mode
-      localSessions.add(newSession);
-      localActiveTimer.clear();
+        setSessions([...sessions, newSession]);
+        toast.success('Focus Complete!', `Great job! You focused for ${minutes} minutes.`);
 
-      if (!shouldUseLocalStorage()) {
-        // Updated to use apiRequest with proper error handling
-        apiRequest('/api/sessions', {
-          method: 'POST',
-          body: JSON.stringify(newSession),
-        }, {
-          context: 'save-session',
-          toast,
-          defaultMessage: 'Failed to save your session data'
-        }).catch(err => {
-          // Error already handled by apiRequest, but log for debugging
-          console.error('Session save failed:', err);
-        });
+        // Save session and clear timer - conditional on auth mode
+        localSessions.add(newSession);
+        localActiveTimer.clear();
 
-        apiRequest('/api/active-timer', {
-          method: 'DELETE'
-        }, {
-          context: 'clear-active-timer',
-          toast,
-          showUserMessage: false // Don't show error for cleanup operations
-        }).catch(err => {
-          console.error('Failed to clear active timer:', err);
-        });
+        if (!shouldUseLocalStorage()) {
+          // Updated to use apiRequest with proper error handling
+          apiRequest('/api/sessions', {
+            method: 'POST',
+            body: JSON.stringify(newSession),
+          }, {
+            context: 'save-session',
+            toast,
+            defaultMessage: 'Failed to save your session data'
+          }).catch(err => {
+            // Error already handled by apiRequest, but log for debugging
+            console.error('Session save failed:', err);
+          });
+
+          apiRequest('/api/active-timer', {
+            method: 'DELETE'
+          }, {
+            context: 'clear-active-timer',
+            toast,
+            showUserMessage: false // Don't show error for cleanup operations
+          }).catch(err => {
+            console.error('Failed to clear active timer:', err);
+          });
+        }
+      } catch (error) {
+        console.error('[Timer] Critical error during completion:', error);
+        toast.error('Timer Error', 'Session saved locally but an error occurred.');
+        // Ensure state is reset to prevent loop
+        setTimerState({ isActive: false, isCompleted: true });
       }
     }
   }, [timerState.timeLeft, timerState.isActive, timerState.initialTime, sessions, setSessions, setTimerState, toast]);
@@ -680,7 +705,7 @@ function App() {
           type: getBuildingConfig(Math.floor(timerState.initialTime / 60)).id,
           minutes: Math.floor(timerState.initialTime / 60),
           elapsedSeconds: elapsed,
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           status: 'failed',
         };
         setSessions([...sessions, failedSession]);
@@ -863,6 +888,7 @@ function App() {
                   <LuminaOverview
                     sessions={sessions}
                     tasks={tasks}
+                    mainTodos={mainTodos}
                     apps={filteredApps}
                     streak={streak}
                     userName={userName}
@@ -882,6 +908,10 @@ function App() {
                     isDarkMode={isDarkMode}
                     toggleTheme={toggleTheme}
                     sessions={sessions}
+                    mainTodos={mainTodos}
+                    addMainTodo={addMainTodo}
+                    toggleMainTodo={toggleMainTodo}
+                    removeMainTodo={removeMainTodo}
                   />
                 )}
 

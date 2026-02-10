@@ -20,10 +20,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check connection to StudyHub
     try {
         chrome.runtime.sendMessage({ action: 'fetchNotes' }, (response) => {
-            if (response && response.notes) {
+            if (response && response.notes && response.notes.length > 0) {
                 statusDot.classList.remove('disconnected');
                 statusText.textContent = 'Connected to StudyHub';
                 noteCountEl.textContent = response.notes.length;
+            } else if (response && response.notes) {
+                statusDot.classList.remove('disconnected');
+                statusText.textContent = 'Connected (0 notes)';
+                noteCountEl.textContent = '0';
             } else {
                 statusDot.classList.add('disconnected');
                 statusText.textContent = 'Connection failed';
@@ -38,28 +42,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Capture button click
     captureBtn.addEventListener('click', async () => {
         try {
-            // Get the current tab ID before closing popup
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
             if (tab) {
-                // Check for restricted URLs
                 if (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') ||
                     tab.url.startsWith('brave://') || tab.url.startsWith('about:') ||
                     tab.url.startsWith('view-source:')) {
-
-                    // Show error overlay inside popup
                     document.getElementById('errorOverlay').style.display = 'flex';
-                    // Hide main button to prevent confusion
                     captureBtn.style.display = 'none';
                     return;
                 }
 
-                // Close popup and start capture with explicit tab ID
                 chrome.runtime.sendMessage({ action: 'startCapture', tabId: tab.id });
                 window.close();
             } else {
                 console.error('No active tab found from popup');
-                // Fallback attempt without ID
                 chrome.runtime.sendMessage({ action: 'startCapture' });
                 window.close();
             }
@@ -69,7 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Close error overlay handler
     document.getElementById('closeError')?.addEventListener('click', () => {
         window.close();
     });

@@ -40,10 +40,10 @@ const ProgressSection = ({ sessionHistory = [] }) => {
             const total = sessions.length;
             const completed = sessions.filter(s => s.status === 'completed').length;
             const failed = sessions.filter(s => s.status === 'failed').length;
-            
+
             // Calculate weighted efficiency based on completion rate and time utilization
             const completionRate = total === 0 ? 1 : completed / total;
-            
+
             // Calculate total minutes (including partial from failed sessions)
             const totalMinutes = sessions.reduce((acc, s) => {
                 if (s.status === 'completed') {
@@ -56,18 +56,18 @@ const ProgressSection = ({ sessionHistory = [] }) => {
 
             // Calculate intended minutes (what was planned)
             const intendedMinutes = sessions.reduce((acc, s) => acc + (s.minutes || 0), 0);
-            
+
             // Time utilization rate (actual time spent vs intended time)
             const timeUtilization = intendedMinutes === 0 ? 1 : Math.min(1, totalMinutes / intendedMinutes);
-            
+
             // Weighted efficiency: 70% completion rate, 30% time utilization
             const efficiency = Math.round((completionRate * 0.7 + timeUtilization * 0.3) * 100);
 
-            return { 
-                efficiency, 
-                total, 
-                completed, 
-                failed, 
+            return {
+                efficiency,
+                total,
+                completed,
+                failed,
                 totalMinutes,
                 completionRate: Math.round(completionRate * 100),
                 timeUtilization: Math.round(timeUtilization * 100)
@@ -142,7 +142,7 @@ const ProgressSection = ({ sessionHistory = [] }) => {
             return { text: '0h 0m', minutes: 0 };
         }
 
-        const now = new Date();
+        const now = getISTDate();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
         const minutes = sessionHistory
@@ -245,11 +245,10 @@ const ProgressSection = ({ sessionHistory = [] }) => {
                             </div>
                             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                                 <motion.div
-                                    className={`h-full rounded-full transition-all duration-500 ${
-                                        (todayFocusTime.minutes / goals.dailyFocusMinutes) >= 1
-                                            ? 'bg-emerald-400'
-                                            : 'bg-accent-blue'
-                                    }`}
+                                    className={`h-full rounded-full transition-all duration-500 ${(todayFocusTime.minutes / goals.dailyFocusMinutes) >= 1
+                                        ? 'bg-emerald-400'
+                                        : 'bg-accent-blue'
+                                        }`}
                                     initial={{ width: '0%' }}
                                     animate={{ width: `${Math.min(100, (todayFocusTime.minutes / goals.dailyFocusMinutes) * 100)}%` }}
                                     key={`progress-${todayFocusTime.minutes}`}

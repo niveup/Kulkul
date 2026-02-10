@@ -51,18 +51,41 @@ class NotificationService {
         if (!this.isSupported() || !this.enabled) return null;
         if (Notification.permission !== 'granted') return null;
 
+        // Use absolute paths to avoid issues with subdirectories or strict browser policies
+        const getAbsolutePath = (path) => {
+            if (path.startsWith('http')) return path;
+            return `${window.location.origin}${path.startsWith('/') ? '' : '/'}${path}`;
+        };
+
         const defaultOptions = {
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
+            icon: getAbsolutePath('/favicon.ico'),
+            badge: getAbsolutePath('/favicon.ico'),
             silent: false,
             requireInteraction: false,
             ...options,
         };
 
+        // Ensure icon in options is also absolute if provided
+        if (options.icon) {
+            defaultOptions.icon = getAbsolutePath(options.icon);
+        }
+        if (options.badge) {
+            defaultOptions.badge = getAbsolutePath(options.badge);
+        }
+
         try {
+            // Try ServiceWorker registration first (for PWA/Mobile support)
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, defaultOptions);
+                });
+                return true; // async, so we return true to indicate initiated
+            }
+
+            // Fallback to standard Notification API
             const notification = new Notification(title, defaultOptions);
 
-            // Auto close after 5 seconds
+            // Auto close after 5 seconds if not requiring interaction
             if (!options.requireInteraction) {
                 setTimeout(() => notification.close(), 5000);
             }
@@ -80,6 +103,7 @@ class NotificationService {
     timerComplete(duration) {
         return this.send('🎉 Focus Session Complete!', {
             body: `Great work! You focused for ${duration} minutes. Time for a break!`,
+            icon: '/icon/pomodoro.png', // Use specific icon
             tag: 'timer-complete',
             requireInteraction: true,
         });
@@ -89,6 +113,7 @@ class NotificationService {
     timerFailed() {
         return this.send('😔 Session Ended', {
             body: 'No worries! Take a moment and try again when you\'re ready.',
+            button: '/icon/pomodoro.png',
             tag: 'timer-failed',
         });
     }

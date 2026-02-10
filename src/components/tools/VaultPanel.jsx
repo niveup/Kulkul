@@ -854,6 +854,14 @@ const VaultPanel = ({ isDarkMode }) => {
                     const fileToUpload = new File([fileData.blob], localFile.name, { type: localFile.type });
                     const metadata = await uploadToTelegram(fileToUpload);
 
+                    if (metadata?.aborted) {
+                        console.log('[VaultPanel] Upload cancelled (clean exit)');
+                        setLocalFiles(prev => prev.map(f =>
+                            f.id === localFile.id ? { ...f, isSyncing: false, isPending: true } : f
+                        ));
+                        continue; // Skip this file
+                    }
+
                     if (metadata) {
                         const saveData = {
                             id: metadata.fileId || localFile.id,
@@ -863,7 +871,8 @@ const VaultPanel = ({ isDarkMode }) => {
                             isChunked: metadata.isChunked || false,
                             chunks: metadata.chunks || null,
                             downloadUrl: metadata.downloadUrl || null,
-                            storagePlatform: 'telegram'
+                            storagePlatform: 'telegram',
+                            folderId: localFile.folderId || currentFolderId // Ensure folder logic
                         };
 
                         const response = await fetch('/api/vault/save-telegram', {
@@ -902,17 +911,7 @@ const VaultPanel = ({ isDarkMode }) => {
         return () => clearTimeout(syncTimeout);
     }, [cacheReady, localFiles, uploadToTelegram, markAsSynced, deleteFromCache, refreshFiles, getFileBlob]);
 
-    // Auto-cleanup hook: Removes local file ONLY when it appears in remote list
-    // This prevents the "file disappears" glitch during network sync
-    useEffect(() => {
-        if (files.length > 0 && localFiles.length > 0) {
-            const remoteKeys = new Set(files.map(f => `${f.name}-${f.size}`));
-            setLocalFiles(prev => {
-                const shouldUpdate = prev.some(l => remoteKeys.has(`${l.name}-${l.size}`));
-                return shouldUpdate ? prev.filter(l => !remoteKeys.has(`${l.name}-${l.size}`)) : prev;
-            });
-        }
-    }, [files, localFiles]);
+
 
     // Handle file upload with INSTANT save + TRUE background sync (non-blocking)
     const handleUpload = useCallback(async (file) => {
@@ -1163,6 +1162,17 @@ const VaultPanel = ({ isDarkMode }) => {
         searchQuery,
         setSearchQuery
     } = useVaultStore();
+
+    // Auto-cleanup hook: Removes local file ONLY when it appears in remote list (Moved here to avoid TDZ error)
+    useEffect(() => {
+        if (files && files.length > 0 && localFiles.length > 0) {
+            const remoteKeys = new Set(files.map(f => `${f.name}-${f.size}`));
+            setLocalFiles(prev => {
+                const shouldUpdate = prev.some(l => remoteKeys.has(`${l.name}-${l.size}`));
+                return shouldUpdate ? prev.filter(l => !remoteKeys.has(`${l.name}-${l.size}`)) : prev;
+            });
+        }
+    }, [files, localFiles]);
 
     const [showTrash, setShowTrash] = useState(false);
 

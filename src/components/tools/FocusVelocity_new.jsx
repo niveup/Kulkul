@@ -264,11 +264,10 @@ const FocusVelocity = ({ data, goal = 0 }) => {
                             <button
                                 key={range}
                                 onClick={() => setTimeRange(range)}
-                                className={`text-xs px-2 py-1 rounded transition-colors ${
-                                    timeRange === range
+                                className={`text-xs px-2 py-1 rounded transition-colors ${timeRange === range
                                         ? 'bg-accent-blue text-white'
                                         : 'text-white/40 hover:text-white/70'
-                                }`}
+                                    }`}
                             >
                                 {range === 'all' ? 'All' : `${range}D`}
                             </button>
@@ -345,78 +344,4 @@ const FocusVelocity = ({ data, goal = 0 }) => {
 };
 
 export default FocusVelocity;
-        {/* Header */}
-            <div className="flex justify-between items-end mb-6">
-                <div>
-                    <h3 className="text-lg font-medium text-white">Focus Trend</h3>
-                    <div className="flex gap-2 mt-1">
-                        {[7, 30, 'all'].map((range) => (
-                            <button
-                                key={range}
-                                onClick={() => setTimeRange(range)}
-                                className={`text-xs px-2 py-1 rounded transition-colors ${
-                                    timeRange === range
-                                        ? 'bg-accent-blue text-white'
-                                        : 'text-white/40 hover:text-white/70'
-                                }`}
-                            >
-                                {range === 'all' ? 'All' : `${range}D`}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className="text-right">
-                    <p className="text-3xl font-semibold text-white tracking-tight">{average}</p>
-                    <p className="text-white/40 text-xs font-medium uppercase tracking-wide">Avg Minutes</p>
-                    {goal > 0 && (
-                        <p className="text-accent-blue text-[10px] font-medium mt-1">
-                            {goalProgress}% of weekly goal
-                        </p>
-                    )}
-                </div>
-            </div>
 
-            {/* Minimal Area Chart */}
-            <div id="focus-trend-chart" className="flex-1 w-full min-h-0 outline-none">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                        <defs>
-                            <linearGradient id="colorFocus" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#2997ff" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#2997ff" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <XAxis
-                            dataKey="name"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
-                            dy={10}
-                        />
-                        <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
-                            tickFormatter={(value) => `${value}m`}
-                            dx={-10}
-                            domain={[0, 'auto']}
-                            allowDataOverflow={false}
-                        />
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
-                        <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#2997ff"
-                            strokeWidth={2}
-                            fill="url(#colorFocus)"
-                            animationDuration={1500}
-                        />
-                        {goal > 0 && <ReferenceLine y={goal} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />}
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
-        </div>
-    );
-};
-
-export default FocusVelocity;

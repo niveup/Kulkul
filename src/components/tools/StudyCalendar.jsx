@@ -107,7 +107,7 @@ const StudyCalendar = ({ goalMinutes }) => {
 
     const calendarDays = getCalendarDays();
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                       'July', 'August', 'September', 'October', 'November', 'December'];
+        'July', 'August', 'September', 'October', 'November', 'December'];
 
     return (
         <div className="w-full">
@@ -128,22 +128,32 @@ const StudyCalendar = ({ goalMinutes }) => {
             </div>
 
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-3">
-                <button
-                    onClick={goToPreviousMonth}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                >
-                    <ChevronLeft size={14} />
-                </button>
-                <h3 className="text-[12px] font-medium text-white/70 uppercase tracking-wide">
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h3>
-                <button
-                    onClick={goToNextMonth}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                >
-                    <ChevronRight size={14} />
-                </button>
+            <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-0.5">
+                {!(currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear()) && (
+                    <button
+                        onClick={() => setCurrentDate(new Date())}
+                        className="p-1 px-3 rounded-full text-[8px] font-medium uppercase tracking-wider bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all active:scale-95 border border-cyan-500/20"
+                    >
+                        Today
+                    </button>
+                )}
+                <div className="flex gap-0.5">
+                    <button
+                        onClick={goToPreviousMonth}
+                        className="p-1 px-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/5 transition-all active:scale-95"
+                    >
+                        <ChevronLeft size={10} strokeWidth={3} />
+                    </button>
+                    <h3 className="w-28 text-[10px] font-bold text-white uppercase tracking-wider text-center">
+                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h3>
+                    <button
+                        onClick={goToNextMonth}
+                        className="p-1 px-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/5 transition-all active:scale-95"
+                    >
+                        <ChevronRight size={10} strokeWidth={3} />
+                    </button>
+                </div>
             </div>
 
             {/* Day Labels */}
@@ -163,9 +173,8 @@ const StudyCalendar = ({ goalMinutes }) => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.2, delay: index * 0.01 }}
-                        className={`relative aspect-[4/3] rounded-md overflow-hidden border border-white/10 ${
-                            day ? 'cursor-pointer hover:scale-105 transition-transform' : 'bg-transparent'
-                        }`}
+                        className={`relative aspect-[4/3] rounded-md overflow-hidden border border-white/10 ${day ? 'cursor-pointer hover:scale-105 transition-transform' : 'bg-transparent'
+                            }`}
                     >
                         {day ? (
                             <>

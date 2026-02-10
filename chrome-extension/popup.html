@@ -208,6 +208,87 @@
         .error-btn:hover {
             background: rgba(255, 255, 255, 0.2);
         }
+
+        /* API Key Settings */
+        .settings-section {
+            margin-top: 12px;
+        }
+
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px 0;
+            width: 100%;
+            text-align: left;
+        }
+
+        .settings-toggle:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .settings-content {
+            display: none;
+            margin-top: 8px;
+        }
+
+        .settings-content.show {
+            display: block;
+        }
+
+        .api-key-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 12px;
+            font-family: monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .api-key-input:focus {
+            border-color: rgba(16, 185, 129, 0.6);
+        }
+
+        .api-key-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .save-key-btn {
+            margin-top: 8px;
+            width: 100%;
+            padding: 8px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: #10b981;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .save-key-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .key-status {
+            font-size: 11px;
+            margin-top: 6px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .key-status.saved {
+            color: #10b981;
+        }
     </style>
 </head>
 

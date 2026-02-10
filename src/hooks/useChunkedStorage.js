@@ -8,22 +8,9 @@ const DIRECT_UPLOAD_LIMIT = 20 * 1024 * 1024; // 20MB - Telegram getFile limit
 // IMPORTANT: Chunks MUST be under 20MB due to Telegram Bot API getFile limit
 // OPTIMIZED: Increased parallelism for faster uploads
 function getChunkConfig(fileSize) {
-    if (fileSize < DIRECT_UPLOAD_LIMIT) {
-        return { chunkSize: fileSize, parallel: 1, strategy: 'direct' };
-    } else if (fileSize < 60 * 1024 * 1024) {
-        // 20MB - 60MB: 19MB chunks, ALL parallel (max 3-4 chunks)
-        // This covers most common large files (50MB PDFs)
-        return { chunkSize: 19 * 1024 * 1024, parallel: 6, strategy: 'chunked' };
-    } else if (fileSize < 200 * 1024 * 1024) {
-        // 60MB - 200MB: 19MB chunks, 6 parallel
-        return { chunkSize: 19 * 1024 * 1024, parallel: 6, strategy: 'chunked' };
-    } else if (fileSize < 1024 * 1024 * 1024) {
-        // 200MB - 1GB: 18MB chunks, 8 parallel
-        return { chunkSize: 18 * 1024 * 1024, parallel: 8, strategy: 'chunked' };
-    } else {
-        // > 1GB: 17MB chunks, 10 parallel
-        return { chunkSize: 17 * 1024 * 1024, parallel: 10, strategy: 'chunked' };
-    }
+    // Unified High-Speed Config for all large files
+    // 9.5MB is safe, fast to buffer, and easy to parallelize.
+    return { chunkSize: 9.5 * 1024 * 1024, parallel: 6, strategy: 'chunked' };
 }
 
 export function useChunkedStorage() {
@@ -90,20 +77,38 @@ export function useChunkedStorage() {
             currentChunkIndex: 0
         });
 
-        // Helper to calculate speed and ETA
+        // Helper to calculate speed and ETA with SMOOTHING
         const updateSpeedAndEta = (bytesUploaded) => {
             const now = Date.now();
             const timeDelta = (now - speedTrackingRef.current.lastTime) / 1000; // seconds
 
-            if (timeDelta >= 0.5) { // Update speed every 0.5 seconds
+            if (timeDelta >= 0.8) { // Update speed every 0.8 seconds (less jitter)
                 const bytesDelta = bytesUploaded - speedTrackingRef.current.lastBytes;
-                const speed = timeDelta > 0 ? bytesDelta / timeDelta : 0;
+                let instantSpeed = timeDelta > 0 ? bytesDelta / timeDelta : 0;
+
+                // Exponential Smoothing (EMA): Stable display
+                // If instant speed drops to 0 (brief stall), decay slowly instead of flickering
+                const prevSpeed = speedTrackingRef.current.lastSpeed || 0;
+                let smoothedSpeed = instantSpeed;
+
+                if (prevSpeed > 0) {
+                    // 70% history, 30% new (Heavy smoothing)
+                    smoothedSpeed = (prevSpeed * 0.7) + (instantSpeed * 0.3);
+
+                    // If stalled (0 speed), just decay previous speed
+                    if (instantSpeed === 0) smoothedSpeed = prevSpeed * 0.9;
+                }
+
                 const remainingBytes = file.size - bytesUploaded;
-                const eta = speed > 0 ? Math.ceil(remainingBytes / speed) : 0;
+                const eta = smoothedSpeed > 0 ? Math.ceil(remainingBytes / smoothedSpeed) : 0;
 
-                speedTrackingRef.current = { lastBytes: bytesUploaded, lastTime: now };
+                speedTrackingRef.current = {
+                    lastBytes: bytesUploaded,
+                    lastTime: now,
+                    lastSpeed: smoothedSpeed
+                };
 
-                return { uploadSpeed: speed, eta };
+                return { uploadSpeed: smoothedSpeed, eta };
             }
             return null;
         };
@@ -190,36 +195,69 @@ export function useChunkedStorage() {
                 }));
             };
 
-            // Upload chunks in parallel batches
-            for (let i = 0; i < chunks.length; i += config.parallel) {
-                const batch = chunks.slice(i, i + config.parallel);
+            // Upload chunks using a Rolling Queue (Concurrency Pool)
+            // This prevents "stop-and-wait" gaps between batches.
 
-                // Mark current batch as uploading
+            // Map chunks to items with index
+            const queue = chunks.map((chunk, index) => ({ chunk, index }));
+            const pendingPromises = []; // Currently executing promises
+
+            // Helper to process a single item
+            const processNext = async (item) => {
+                const chunkFile = new File([item.chunk], `${file.name}.part${item.index}`, { type: file.type });
+
+                // Update current chunk index for UI
                 setUploadDetails(prev => ({
                     ...prev,
-                    currentChunkIndex: i
+                    currentChunkIndex: item.index
                 }));
 
-                const batchResults = await Promise.all(
-                    batch.map(async (chunk, batchIndex) => {
-                        const chunkIndex = i + batchIndex;
-                        const chunkFile = new File([chunk], `${file.name}.part${chunkIndex}`, { type: file.type });
+                const result = await uploadDirect(chunkFile, abortControllerRef.current.signal, (percent) => {
+                    chunkProgress[item.index] = percent;
+                    updateOverallProgress();
+                });
 
-                        // Per-chunk progress callback
-                        const result = await uploadDirect(chunkFile, abortControllerRef.current.signal, (percent) => {
-                            chunkProgress[chunkIndex] = percent;
-                            updateOverallProgress();
-                        });
+                // Mark complete
+                chunkProgress[item.index] = 100;
+                updateOverallProgress();
 
-                        // Mark chunk as 100% complete
-                        chunkProgress[chunkIndex] = 100;
-                        updateOverallProgress();
+                return { index: item.index, fileId: result.fileId };
+            };
 
-                        return { index: chunkIndex, fileId: result.fileId };
-                    })
-                );
+            // Process queue
+            while (queue.length > 0 || pendingPromises.length > 0) {
+                // Fill execution slots up to parallelism limit
+                while (queue.length > 0 && pendingPromises.length < config.parallel) {
+                    const item = queue.shift();
+                    const promise = processNext(item);
 
-                chunkIds.push(...batchResults);
+                    // Attach cleanup to remove self from pending list
+                    const wrappedPromise = promise.then(res => {
+                        pendingPromises.splice(pendingPromises.indexOf(wrappedPromise), 1);
+                        return res;
+                    });
+
+                    pendingPromises.push(wrappedPromise);
+                    // Add result to main list eventually? No, we need to collect them.
+                    // We can stick results into a side array.
+                }
+
+                if (pendingPromises.length === 0) break;
+
+                // Wait for AT LEAST ONE to finish (race)
+                // Actually, since we remove from pendingPromises array on completion,
+                // we can just wait for Promise.race(pendingPromises)
+
+                // Wait for the race to yield a result
+                const result = await Promise.race(pendingPromises);
+
+                // Check if result is valid (it might be the result object)
+                if (result && result.fileId && !result.aborted) {
+                    chunkIds.push(result);
+                } else if (result && result.aborted) {
+                    // handled by rejection mostly, but if we return object...
+                    return null;
+                }
             }
 
             // Sort by index to ensure correct order
@@ -251,9 +289,10 @@ export function useChunkedStorage() {
             return metadata;
 
         } catch (err) {
-            if (err.name === 'AbortError') {
+            if (err.name === 'AbortError' || err.message === 'Upload aborted') {
                 console.log('[ChunkedStorage] Upload cancelled');
                 setError('Upload cancelled');
+                return { aborted: true };
             } else {
                 console.error('[ChunkedStorage] Upload error:', err);
                 setError(err.message || 'Upload failed');
@@ -404,7 +443,11 @@ async function uploadDirect(file, signal, onProgress) {
         };
 
         xhr.onerror = () => reject(new Error('Network error during upload'));
-        xhr.onabort = () => reject(new Error('Upload aborted'));
+        xhr.onabort = () => {
+            const error = new Error('Upload aborted');
+            error.name = 'AbortError';
+            reject(error);
+        };
 
         // Handle abort signal
         if (signal) {

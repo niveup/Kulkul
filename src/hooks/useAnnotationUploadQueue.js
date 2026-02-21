@@ -125,6 +125,7 @@ export function useAnnotationUploadQueue() {
                 oldImageUrl: typeof oldImageObj === 'string' ? oldImageObj : oldImageObj?.url,
                 base64DataUrl,
                 timestamp: Date.now(),
+                retries: 0
             });
             writeQueue(queue);
             setPendingCount(queue.length);
@@ -176,7 +177,12 @@ export function useAnnotationUploadQueue() {
                 console.log(`[AnnotationQueue] Retry succeeded for note ${item.noteId}`);
             } catch (err) {
                 console.warn(`[AnnotationQueue] Retry failed for note ${item.noteId}:`, err.message);
-                remaining.push(item);
+                const retries = (item.retries || 0) + 1;
+                if (retries < 3) {
+                    remaining.push({ ...item, retries });
+                } else {
+                    console.error(`[AnnotationQueue] Dropping note ${item.noteId} from queue after 3 failed attempts.`);
+                }
             }
         }
 
@@ -189,15 +195,6 @@ export function useAnnotationUploadQueue() {
         setPendingCount(remaining.length);
         retryingRef.current = false;
     }, [updateNoteImage]);
-
-    // Auto-retry on mount
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            retryPending();
-        }, 5000); // Wait 5s after app load before retrying
-
-        return () => clearTimeout(timer);
-    }, [retryPending]);
 
     return {
         uploadAnnotation,

@@ -297,14 +297,16 @@ const NoteViewModal = ({ isOpen, note, onClose, isDarkMode }) => {
                 </div>
             )}
 
-            <ImageViewerModal
-                isOpen={!!selectedImage}
-                imageObj={selectedImage}
-                noteId={note.id}
-                onClose={() => setSelectedImage(null)}
-                onUpdateImage={updateNoteImage}
-                onDeleteImage={removeMediaLink}
-            />
+            {!!selectedImage && (
+                <ImageViewerModal
+                    isOpen={true}
+                    imageObj={selectedImage}
+                    noteId={note.id}
+                    onClose={() => setSelectedImage(null)}
+                    onUpdateImage={updateNoteImage}
+                    onDeleteImage={removeMediaLink}
+                />
+            )}
         </AnimatePresence>
     );
 };

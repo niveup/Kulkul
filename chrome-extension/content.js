@@ -292,15 +292,17 @@ if (!window.studyhubInjected) {
 
                 <!-- Right Panel -->
                 <div class="studyhub-right-panel">
-                    <!-- Streamlined Header for Chapter Tracker -->
-                    <div style="margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);">
-                        <h4 style="margin: 0; color: var(--accent-emerald); font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Chapter Tracker</h4>
-                        <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);">Organize and save your research context.</p>
+                    <!-- Tab Switcher (Chapter Tracker vs Notes Library) -->
+                    <div class="studyhub-sys-tabs">
+                        <button class="studyhub-sys-tab active" data-sys="chapter-tracker">📚 Chapter Tracker</button>
+                        <button class="studyhub-sys-tab" data-sys="learning-notes">📝 Notes Library</button>
                     </div>
 
                     <div class="studyhub-panel-scroll-content" style="margin: 0;">
-                        <!-- Chapters Section -->
-                        <div id="studyhub-chapters-section" class="section-animate">
+                        <!-- ================================ -->
+                        <!-- SYSTEM: CHAPTER TRACKER          -->
+                        <!-- ================================ -->
+                        <div id="sys-chapter-tracker" class="sys-section active">
                             <div class="studyhub-sub-pill-container">
                                 <button class="studyhub-sub-pill active" id="pill-new-entry">✨ New Entry</button>
                                 <button class="studyhub-sub-pill" id="pill-existing-entry">🔍 Attach to Existing</button>
@@ -347,11 +349,46 @@ if (!window.studyhubInjected) {
                                 <div class="studyhub-form-group" style="margin-top: 12px;">
                                     <label class="studyhub-label">Entry Heading</label>
                                     <input type="text" id="studyhub-attach-entry-text" placeholder="e.g. Newton's Law, Section 2.1..." class="studyhub-input-glass"/>
+                            </div>
+                        </div>
+
+                        <!-- ================================ -->
+                        <!-- SYSTEM: LEARNING NOTES           -->
+                        <!-- ================================ -->
+                        <div id="sys-learning-notes" class="sys-section">
+                            <div class="studyhub-sub-pill-container">
+                                <button class="studyhub-sub-pill active" id="pill-new-note">✨ New Note</button>
+                                <button class="studyhub-sub-pill" id="pill-existing-note">🔍 Attach to Existing</button>
+                            </div>
+
+                            <div class="studyhub-form-group">
+                                <label class="studyhub-label">Select Subject</label>
+                                <select id="notes-subject-select" class="studyhub-input-glass">
+                                    <option value="physics">Physics</option>
+                                    <option value="chemistry">Chemistry</option>
+                                    <option value="math">Mathematics</option>
+                                </select>
+                            </div>
+
+                            <div id="notes-new-fields">
+                                <div class="studyhub-form-group">
+                                    <label class="studyhub-label">Note Title</label>
+                                    <input type="text" id="notes-title" placeholder="e.g. Thermodynamics summary..." class="studyhub-input-glass"/>
+                                </div>
+                            </div>
+
+                            <div id="notes-existing-fields" style="display:none;">
+                                <div class="studyhub-form-group">
+                                    <label class="studyhub-label">Select Existing Note</label>
+                                    <input type="text" id="notes-search" placeholder="🔍 Filter notes..." class="studyhub-input-glass" style="margin-bottom: 12px;"/>
+                                    <div id="notes-list" class="studyhub-list-glass">
+                                        <div class="studyhub-list-item">Loading notes...</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Common Fields -->
+                        <!-- Common Fields (Applies to both) -->
                         <div class="studyhub-form-group" style="margin-top: 24px;">
                             <label class="studyhub-label">Links & References</label>
                             <div id="studyhub-links-container"></div>
@@ -373,17 +410,32 @@ if (!window.studyhubInjected) {
             let targetEntryId = null;
             let targetChapterId = null;
 
+            // Notes Data
+            let allNotes = [];
+            let targetNoteId = null;
+
             const els = {
                 saveBtn: document.getElementById('studyhub-save'),
                 retakeBtn: document.getElementById('studyhub-retake'),
                 closeBtn: document.getElementById('studyhub-close'),
+
+                // Chapter Tracker
                 subjectSelect: document.getElementById('studyhub-subject-select'),
                 chapterSelect: document.getElementById('studyhub-chapter-select'),
                 newChapterInput: document.getElementById('studyhub-new-chapter-name'),
                 entrySearch: document.getElementById('studyhub-entry-search'),
                 entryList: document.getElementById('studyhub-entry-list'),
+
+                // Notes Library
+                notesSubjectSelect: document.getElementById('notes-subject-select'),
+                notesSearch: document.getElementById('notes-search'),
+                notesList: document.getElementById('notes-list'),
+
                 status: document.getElementById('studyhub-floating-status')
             };
+
+            // Global System State
+            let activeSystem = 'chapter-tracker'; // 'chapter-tracker' or 'learning-notes'
 
             // --- Cleanup function to prevent memory leaks ---
             function cleanupModal() {
@@ -413,6 +465,23 @@ if (!window.studyhubInjected) {
                 }
             }
 
+            function fetchNotesLibrary() {
+                try {
+                    // Re-use background.js fetch relay to fetch Notes Library
+                    chrome.runtime.sendMessage({ action: 'fetchNotes' }, (response) => {
+                        if (response && response.notes) {
+                            allNotes = response.notes;
+                            console.log(`[StudyHub] Fetched ${allNotes.length} notes.`);
+                            updateNotesList();
+                        } else {
+                            renderNotesList([]);
+                        }
+                    });
+                } catch (err) {
+                    console.error('[StudyHub] fetchNotes error:', err);
+                }
+            }
+
             async function fetchChaptersAndEntries() {
                 try {
                     chrome.runtime.sendMessage({ action: 'fetchChapters' }, (response) => {
@@ -428,7 +497,7 @@ if (!window.studyhubInjected) {
                             updateChapterDropdown();
                             updateEntryList();
                         } else {
-                            console.error('[StudyHub] Fetch failed:', response?.error);
+                            console.error('[StudyHub] Fetch chapters failed:', response?.error);
                             renderEntryList([]); // Clear loading state
                             const errorMsg = response?.error?.includes('401') || response?.error?.includes('Unauthorized')
                                 ? '⚠️ Please login to Dashboard'
@@ -532,12 +601,61 @@ if (!window.studyhubInjected) {
                     els.entryList.appendChild(item);
                 });
             }
+
+            // --- Notes Library Render Functions ---
+            function updateNotesList() {
+                const subject = els.notesSubjectSelect.value.toLowerCase();
+                const term = els.notesSearch.value.toLowerCase();
+
+                const filtered = allNotes.filter(n => {
+                    const noteSubject = (n.subject || '').toLowerCase();
+                    const matchesSubject = noteSubject === subject || (subject === 'math' && noteSubject === 'mathematics');
+                    const matchesSearch = !term || (n.title && n.title.toLowerCase().includes(term));
+                    return matchesSubject && matchesSearch;
+                });
+                renderNotesList(filtered);
+            }
+
+            function renderNotesList(notes) {
+                els.notesList.innerHTML = '';
+                if (notes.length === 0) {
+                    els.notesList.innerHTML = '<div class="studyhub-list-item">No notes found</div>';
+                    return;
+                }
+
+                notes.forEach(n => {
+                    const item = document.createElement('div');
+                    item.className = 'studyhub-list-item';
+                    if (targetNoteId === n.id) item.classList.add('selected');
+                    item.textContent = n.title || 'Untitled Note';
+                    item.onclick = () => {
+                        targetNoteId = n.id;
+                        document.querySelectorAll('#notes-list .studyhub-list-item').forEach(i => i.classList.remove('selected'));
+                        item.classList.add('selected');
+                    };
+                    els.notesList.appendChild(item);
+                });
+            }
+
             // --- Initialization ---
             fetchChaptersAndEntries();
+            fetchNotesLibrary();
 
             // --- Add initial link (current page URL) using the helper ---
             const linksContainer = document.getElementById('studyhub-links-container');
             createLinkRow(linksContainer, window.location.href, true);
+
+            // System Tabs
+            document.querySelectorAll('.studyhub-sys-tab').forEach(tab => {
+                trackEvent(tab, 'click', (e) => {
+                    document.querySelectorAll('.studyhub-sys-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.sys-section').forEach(s => s.classList.remove('active'));
+
+                    e.currentTarget.classList.add('active');
+                    activeSystem = e.currentTarget.dataset.sys;
+                    document.getElementById(`sys-${activeSystem}`).classList.add('active');
+                });
+            });
 
             // Events (all tracked for cleanup)
             trackEvent(els.subjectSelect, 'change', () => {
@@ -600,52 +718,91 @@ if (!window.studyhubInjected) {
                     // Use the deduplicated collectLinks() helper
                     const urls = collectLinks();
 
-                    const isNew = document.getElementById('pill-new-entry').classList.contains('active');
-                    if (isNew) {
-                        const chapterId = els.chapterSelect.value;
-                        const newChapterName = els.newChapterInput.value.trim();
-                        const text = document.getElementById('studyhub-entry-text').value.trim();
+                    if (activeSystem === 'chapter-tracker') {
+                        const isNew = document.getElementById('pill-new-entry').classList.contains('active');
+                        if (isNew) {
+                            const chapterId = els.chapterSelect.value;
+                            const newChapterName = els.newChapterInput.value.trim();
+                            const text = document.getElementById('studyhub-entry-text').value.trim();
 
-                        if (chapterId === 'NEW_CHAPTER' && !newChapterName) return showStatus('⚠️ Missing chapter name', 'error');
-                        if (!text) return showStatus('⚠️ Missing entry heading', 'error');
+                            if (chapterId === 'NEW_CHAPTER' && !newChapterName) return showStatus('⚠️ Missing chapter name', 'error');
+                            if (!text) return showStatus('⚠️ Missing entry heading', 'error');
 
-                        showStatus('⏳ Saving new entry...', 'loading', 0);
-                        chrome.runtime.sendMessage({
-                            action: 'saveScreenshot',
-                            system: 'chapter-tracker',
-                            imageData: _capturedImageData,
-                            chapterId: chapterId === 'NEW_CHAPTER' ? null : chapterId,
-                            subject: els.subjectSelect.value,
-                            chapterName: newChapterName,
-                            text,
-                            description,
-                            urls,
-                            imageName,
-                            type: selectedType,
-                            tags,
-                            createNewChapter: chapterId === 'NEW_CHAPTER',
-                            createNewEntry: true
-                        }, handleResult);
-                    } else {
-                        // Attach to existing chapter — create new entry inside selected chapter
-                        if (!targetChapterId) return showStatus('⚠️ Select a chapter first', 'error');
-                        const attachText = (document.getElementById('studyhub-attach-entry-text')?.value || '').trim();
-                        if (!attachText) return showStatus('⚠️ Enter an entry heading', 'error');
-                        showStatus('⏳ Saving to chapter...', 'loading', 0);
-                        chrome.runtime.sendMessage({
-                            action: 'saveScreenshot',
-                            system: 'chapter-tracker',
-                            imageData: _capturedImageData,
-                            chapterId: targetChapterId,
-                            subject: els.subjectSelect.value,
-                            text: attachText,
-                            description,
-                            urls,
-                            imageName,
-                            type: 'concept',
-                            tags,
-                            createNewEntry: true
-                        }, handleResult);
+                            showStatus('⏳ Saving new entry...', 'loading', 0);
+                            chrome.runtime.sendMessage({
+                                action: 'saveScreenshot',
+                                system: 'chapter-tracker',
+                                imageData: _capturedImageData,
+                                chapterId: chapterId === 'NEW_CHAPTER' ? null : chapterId,
+                                subject: els.subjectSelect.value,
+                                chapterName: newChapterName,
+                                text,
+                                description,
+                                urls,
+                                imageName,
+                                type: selectedType,
+                                tags,
+                                createNewChapter: chapterId === 'NEW_CHAPTER',
+                                createNewEntry: true
+                            }, handleResult);
+                        } else {
+                            // Attach to existing chapter — create new entry inside selected chapter
+                            if (!targetChapterId) return showStatus('⚠️ Select a chapter first', 'error');
+                            const attachText = (document.getElementById('studyhub-attach-entry-text')?.value || '').trim();
+                            if (!attachText) return showStatus('⚠️ Enter an entry heading', 'error');
+                            showStatus('⏳ Saving to chapter...', 'loading', 0);
+                            chrome.runtime.sendMessage({
+                                action: 'saveScreenshot',
+                                system: 'chapter-tracker',
+                                imageData: _capturedImageData,
+                                chapterId: targetChapterId,
+                                subject: els.subjectSelect.value,
+                                text: attachText,
+                                description,
+                                urls,
+                                imageName,
+                                type: 'concept',
+                                tags,
+                                createNewEntry: true
+                            }, handleResult);
+                        }
+                    } else if (activeSystem === 'learning-notes') {
+                        // LEARNING NOTES SAVING
+                        const isNew = document.getElementById('pill-new-note').classList.contains('active');
+
+                        if (isNew) {
+                            const title = document.getElementById('notes-title').value.trim();
+                            if (!title) return showStatus('⚠️ Entry title is required', 'error');
+
+                            showStatus('⏳ Saving new note...', 'loading', 0);
+                            chrome.runtime.sendMessage({
+                                action: 'saveScreenshot',
+                                system: 'learning-notes',
+                                imageData: _capturedImageData,
+                                subject: els.notesSubjectSelect.value,
+                                title,
+                                description,
+                                links: urls, // The /api/notes expects "links" in its schema, not "urls"
+                                imageName,
+                                createNew: true // Flags API to create a new note record
+                            }, handleResult);
+                        } else {
+                            if (!targetNoteId) return showStatus('⚠️ Select an existing note', 'error');
+
+                            showStatus('⏳ Attaching to note...', 'loading', 0);
+                            chrome.runtime.sendMessage({
+                                action: 'saveScreenshot',
+                                system: 'learning-notes',
+                                imageData: _capturedImageData,
+                                noteId: targetNoteId,
+                                // Provide default title logic. Existing takes precedence.
+                                title: allNotes.find(n => n.id === targetNoteId)?.title || "Attached Screenshot",
+                                description,
+                                links: urls,
+                                imageName,
+                                createNew: false
+                            }, handleResult);
+                        }
                     }
                 } catch (err) {
                     console.error('[StudyHub] Save error:', err);

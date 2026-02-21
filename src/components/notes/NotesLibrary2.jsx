@@ -305,6 +305,23 @@ const NotesLibrary2 = () => {
         fetchNotes();
     }, [fetchNotes]);
 
+    // Auto-refresh notes when user switches back to this tab
+    // (e.g. after saving a screenshot from the Chrome Extension on another tab)
+    useEffect(() => {
+        let lastFetchTime = Date.now();
+        const COOLDOWN_MS = 5000; // Don't re-fetch more than once every 5 seconds
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && Date.now() - lastFetchTime > COOLDOWN_MS) {
+                lastFetchTime = Date.now();
+                fetchNotes();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [fetchNotes]);
+
     // Automatic background sync removed to prevent MEGA rate limiting.
     // Telegram storage does not require active link verification.
 

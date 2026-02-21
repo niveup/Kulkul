@@ -17,9 +17,10 @@ import {
     GraduationCap
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useAppStore } from '../store';
+import { useAppStore, useTheme } from '../store';
 import { useHotkey } from '../hooks';
 import { useAuth } from '../contexts/AuthContext';
+import { useSoundManager } from '../utils/soundManager';
 
 // =============================================================================
 // Designer Configuration
@@ -39,21 +40,23 @@ const MENU_ITEMS = [
 ];
 
 export const Sidebar = () => {
-    const { activeTab, setActiveTab, toggleTheme } = useAppStore();
+    const { activeTab, setActiveTab } = useAppStore();
+    const { themePreference, setThemePreference, isDarkMode, toggleTheme } = useTheme();
     const { isAuthenticated, isLoading } = useAuth();
     const [isExpanded, setIsExpanded] = useState(false);
     const sidebarRef = useRef(null);
+    const { playHover, playClick } = useSoundManager();
 
     // Keyboard shortcuts
-    useHotkey('1', () => setActiveTab('overview'), [setActiveTab]);
-    useHotkey('2', () => setActiveTab('study-tools'), [setActiveTab]);
-    useHotkey('3', () => setActiveTab('progress'), [setActiveTab]);
-    useHotkey('4', () => setActiveTab('videos'), [setActiveTab]);
-    useHotkey('5', () => setActiveTab('concept'), [setActiveTab]);
-    useHotkey('7', () => setActiveTab('ai-assistant'), [setActiveTab]);
-    useHotkey('8', () => setActiveTab('vault'), [setActiveTab]);
-    useHotkey('9', () => setActiveTab('notion'), [setActiveTab]);
-    useHotkey('0', () => setActiveTab('admin'), [setActiveTab]);
+    useHotkey('1', () => { playClick(); setActiveTab('overview'); }, [setActiveTab, playClick]);
+    useHotkey('2', () => { playClick(); setActiveTab('study-tools'); }, [setActiveTab, playClick]);
+    useHotkey('3', () => { playClick(); setActiveTab('progress'); }, [setActiveTab, playClick]);
+    useHotkey('4', () => { playClick(); setActiveTab('videos'); }, [setActiveTab, playClick]);
+    useHotkey('5', () => { playClick(); setActiveTab('concept'); }, [setActiveTab, playClick]);
+    useHotkey('7', () => { playClick(); setActiveTab('ai-assistant'); }, [setActiveTab, playClick]);
+    useHotkey('8', () => { playClick(); setActiveTab('vault'); }, [setActiveTab, playClick]);
+    useHotkey('9', () => { playClick(); setActiveTab('notion'); }, [setActiveTab, playClick]);
+    useHotkey('0', () => { playClick(); setActiveTab('admin'); }, [setActiveTab, playClick]);
 
     // Mouse Tracking for Spotlight
     useEffect(() => {
@@ -161,7 +164,13 @@ export const Sidebar = () => {
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => setActiveTab(item.id)}
+                                    onClick={() => {
+                                        playClick();
+                                        setActiveTab(item.id);
+                                    }}
+                                    onMouseEnter={() => {
+                                        if (!isActive) playHover();
+                                    }}
                                     className={cn(
                                         "relative w-full flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300 outline-none group/item",
                                         isActive ? "text-white" : "text-white/40 hover:text-white"
@@ -220,23 +229,57 @@ export const Sidebar = () => {
                     </nav>
 
                     {/* Footer Actions */}
-                    <div className="p-3 mt-auto">
+                    <div className="p-3 mt-auto flex flex-col gap-1">
+                        {/* Dynamic Background Toggle */}
                         <button
-                            onClick={toggleTheme}
+                            onClick={() => {
+                                playClick();
+                                setThemePreference(themePreference === 'dynamic' ? 'classic-obsidian' : 'dynamic');
+                            }}
+                            onMouseEnter={playHover}
                             className={cn(
                                 "w-full flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300 group/footer hover:bg-white/5 border border-transparent hover:border-white/5",
                                 !isExpanded && "justify-center"
                             )}
                         >
-                            <Sun size={20} strokeWidth={1.5} className="text-white/40 group-hover/footer:text-amber-300 transition-colors" />
+                            <Sun size={20} strokeWidth={1.5} className={cn(
+                                "transition-colors",
+                                themePreference === 'dynamic' ? "text-amber-400 font-bold drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "text-white/40 group-hover/footer:text-amber-300"
+                            )} />
 
                             <motion.div
                                 animate={{ opacity: isExpanded ? 1 : 0, width: isExpanded ? 'auto' : 0 }}
                                 className="flex-1 flex justify-between items-center overflow-hidden whitespace-nowrap"
                             >
-                                <span className="text-[13px] font-medium text-white/60">Appearance</span>
+                                <span className={cn(
+                                    "text-[13px] font-medium transition-colors",
+                                    themePreference === 'dynamic' ? "text-amber-400" : "text-white/60"
+                                )}>Dynamic Mode</span>
                             </motion.div>
                         </button>
+
+                        {/* Classic Light/Dark Toggle (Only visible if not in dynamic mode) */}
+                        {themePreference === 'classic-obsidian' && (
+                            <button
+                                onClick={() => { playClick(); toggleTheme(); }}
+                                onMouseEnter={playHover}
+                                className={cn(
+                                    "w-full flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300 group/footer hover:bg-white/5 border border-transparent hover:border-white/5",
+                                    !isExpanded && "justify-center"
+                                )}
+                            >
+                                <Monitor size={20} strokeWidth={1.5} className="text-white/40 group-hover/footer:text-white transition-colors" />
+
+                                <motion.div
+                                    animate={{ opacity: isExpanded ? 1 : 0, width: isExpanded ? 'auto' : 0 }}
+                                    className="flex-1 flex justify-between items-center overflow-hidden whitespace-nowrap"
+                                >
+                                    <span className="text-[13px] font-medium text-white/60">
+                                        {isDarkMode ? 'Dark Theme' : 'Light Theme'}
+                                    </span>
+                                </motion.div>
+                            </button>
+                        )}
 
                         {/* Spacer for bottom aesthetic */}
                         <div className="h-2" />

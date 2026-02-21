@@ -9,7 +9,9 @@ import {
     Calendar as CalendarIcon,
     Sparkles,
     Target,
-    Clock
+    Clock,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { validators } from '../../utils/apiErrorHandler';
 import { getTodayIST, isTodayIST } from '../../utils/dateUtils';
@@ -61,46 +63,37 @@ const TodoList = ({ tasks, addTask, toggleTask, removeTask, saveTask, saveAllTas
         <div className="h-full flex flex-col bg-[#050508]/40 backdrop-blur-3xl rounded-[2rem] border border-white/5 overflow-hidden shadow-2xl relative">
             {/* Header Area */}
             <div className="flex items-center justify-between p-6 pb-2">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
-                        <Target size={16} className="text-cyan-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-semibold text-white tracking-normal leading-tight">
-                            Main Todos
-                        </h3>
-                        <p className="text-[10px] font-medium text-white/30 uppercase tracking-[0.2em] mt-0.5">
-                            Today
-                        </p>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                        Focus
+                    </h3>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {/* The requested Today button */}
-                    {!isToday && (
-                        <motion.button
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            whileHover={{ scale: 1.05, y: -0.5 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setViewDate(getTodayIST())}
-                            className="px-4 py-2 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-[0_0_15px_rgba(6,182,212,0.1)] flex items-center justify-center"
-                        >
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Today</span>
-                        </motion.button>
-                    )}
+                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                    <button
+                        onClick={() => {/* Navigate functionality if applicable */ }}
+                        className="p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                    >
+                        <ChevronLeft size={14} strokeWidth={3} />
+                    </button>
 
-                    {unsavedCount > 0 && (
-                        <motion.button
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            onClick={() => saveAllTasks && saveAllTasks()}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-                        >
-                            <Save size={10} />
-                            Save
-                        </motion.button>
-                    )}
+                    <button
+                        onClick={() => setViewDate(getTodayIST())}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all duration-300 transform active:scale-90 ${isToday
+                            ? 'bg-transparent text-white/10 cursor-default'
+                            : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                            }`}
+                        disabled={isToday}
+                    >
+                        Today
+                    </button>
+
+                    <button
+                        onClick={() => {/* Navigate functionality if applicable */ }}
+                        className="p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                    >
+                        <ChevronRight size={14} strokeWidth={3} />
+                    </button>
                 </div>
             </div>
 

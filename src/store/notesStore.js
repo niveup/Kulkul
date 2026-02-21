@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { logger } from '../lib/logger';
 
 const API_PATH = '/api/notes';
 
@@ -7,6 +8,24 @@ export const useNotesStore = create(
     persist(
         (set, get) => ({
             notes: [],
+            chapters: {
+                'Physics': [
+                    'Kinematics', 'Laws of Motion', 'Work, Energy and Power', 'Rotational Motion',
+                    'Gravitation', 'Thermodynamics', 'Electrostastics', 'Current Electricity',
+                    'Magnetic Effects of Current and Magnetism', 'Electromagnetic Induction and Alternating Currents', 'Optics'
+                ],
+                'Chemistry': [
+                    'Some Basic Concepts of Chemistry', 'Structure of Atom', 'Classification of Elements and Periodicity in Properties',
+                    'Chemical Bonding and Molecular Structure', 'Chemical Thermodynamics', 'Equilibrium',
+                    'Redox Reactions', 'Organic Chemistry - Some Basic Principles and Techniques', 'Hydrocarbons'
+                ],
+                'Mathematics': [
+                    'Sets, Relations and Functions', 'Complex Numbers and Quadratic Equations', 'Matrices and Determinants',
+                    'Permutations and Combinations', 'Binomial Theorem', 'Sequence and Series',
+                    'Limit, Continuity and Differentiability', 'Integral Calculus', 'Differential Equations', 'Coordinate Geometry', 'Three Dimensional Geometry', 'Vector Algebra'
+                ]
+            },
+            chapterAccessTimes: {},
             isLoading: false,
             error: null,
             lastSynced: null,
@@ -23,13 +42,13 @@ export const useNotesStore = create(
                     set({ notes: Array.isArray(data) ? data : [], isLoading: false, lastSynced: Date.now(), error: null });
                 } catch (err) {
                     set({ error: err.message, isLoading: false });
-                    console.error('Notes fetch error:', err);
+                    logger.error('Notes fetch error:', err);
                 }
             },
 
             // Add new note (with Optimistic UI)
             addNote: async (note) => {
-                console.log('[NotesStore] addNote called with:', {
+                logger.debug('[NotesStore] addNote called with:', {
                     title: note.title,
                     images: note.images,
                     links: note.links
@@ -43,7 +62,7 @@ export const useNotesStore = create(
                     revision_count: 0
                 };
 
-                console.log('[NotesStore] newNote object:', {
+                logger.debug('[NotesStore] newNote object:', {
                     id: newNote.id,
                     images: newNote.images,
                     links: newNote.links
@@ -55,7 +74,7 @@ export const useNotesStore = create(
 
                 try {
                     const body = JSON.stringify(newNote);
-                    console.log('[NotesStore] Sending to API:', body.substring(0, 500));
+                    logger.debug('[NotesStore] Sending to API:', body.substring(0, 500));
 
                     const response = await fetch(API_PATH, {
                         method: 'POST',
@@ -63,13 +82,13 @@ export const useNotesStore = create(
                         body: body
                     });
                     if (!response.ok) throw new Error('Failed to save note');
-                    console.log('[NotesStore] API Response OK');
+                    logger.debug('[NotesStore] API Response OK');
 
                     // Update state with actual DB response if needed (API returns 201)
                 } catch (err) {
                     // Rollback
                     set({ notes: previousNotes, error: `Save failed: ${err.message}` });
-                    console.error('Note add error:', err);
+                    logger.error('Note add error:', err);
                 }
             },
 
@@ -79,7 +98,7 @@ export const useNotesStore = create(
                 const existingNote = previousNotes.find(n => n.id === id);
 
                 if (!existingNote) {
-                    console.error('[NotesStore] updateNote: Note not found:', id);
+                    logger.error('[NotesStore] updateNote: Note not found:', id);
                     return;
                 }
 
@@ -94,7 +113,7 @@ export const useNotesStore = create(
                     revision_count: existingNote.revision_count ?? 0
                 };
 
-                console.log('[NotesStore] updateNote mergedNote:', {
+                logger.debug('[NotesStore] updateNote mergedNote:', {
                     id: mergedNote.id,
                     images: mergedNote.images,
                     links: mergedNote.links
@@ -106,7 +125,7 @@ export const useNotesStore = create(
 
                 try {
                     const body = JSON.stringify(mergedNote);
-                    console.log('[NotesStore] PUT to API:', body.substring(0, 500));
+                    logger.debug('[NotesStore] PUT to API:', body.substring(0, 500));
 
                     const response = await fetch(`${API_PATH}?id=${id}`, {
                         method: 'PUT',
@@ -114,10 +133,10 @@ export const useNotesStore = create(
                         body: body
                     });
                     if (!response.ok) throw new Error('Failed to update note');
-                    console.log('[NotesStore] PUT Response OK');
+                    logger.debug('[NotesStore] PUT Response OK');
                 } catch (err) {
                     set({ notes: previousNotes, error: `Update failed: ${err.message}` });
-                    console.error('Note update error:', err);
+                    logger.error('Note update error:', err);
                 }
             },
 
@@ -133,7 +152,7 @@ export const useNotesStore = create(
                     if (!response.ok) throw new Error('Failed to delete note');
                 } catch (err) {
                     set({ notes: previousNotes, error: `Delete failed: ${err.message}` });
-                    console.error('Note delete error:', err);
+                    logger.error('Note delete error:', err);
                 }
             },
 
@@ -165,8 +184,34 @@ export const useNotesStore = create(
                     links: (note.links || []).filter(l => l !== brokenUrl)
                 };
 
-                console.log('[NotesStore] removeMediaLink: Cleaning up broken link:', brokenUrl);
+                logger.debug('[NotesStore] removeMediaLink: Cleaning up broken link:', brokenUrl);
                 await get().updateNote(id, updates);
+            },
+
+            // Update a specific image (used by the annotator)
+            updateNoteImage: async (noteId, oldImgObj, newImageDataUrl) => {
+                const note = get().notes.find(n => n.id === noteId);
+                if (!note || !note.images) {
+                    logger.error('[NotesStore] updateNoteImage: Note or note.images is missing', { noteId });
+                    return;
+                }
+
+                const actualOldUrl = typeof oldImgObj === 'string' ? oldImgObj : oldImgObj?.url;
+
+                const updatedImages = note.images.map(img => {
+                    const imgUrl = typeof img === 'string' ? img : img?.url;
+                    if (imgUrl === actualOldUrl) {
+                        return {
+                            name: typeof img === 'object' ? img.name : 'annotated-image.webp',
+                            url: newImageDataUrl,
+                            annotated_at: new Date().toISOString()
+                        };
+                    }
+                    return img;
+                });
+
+                logger.debug('[NotesStore] updateNoteImage: Saving new annotated image data');
+                await get().updateNote(noteId, { images: updatedImages });
             },
 
             // UI Actions
@@ -175,11 +220,55 @@ export const useNotesStore = create(
                     isModalOpen: isOpen,
                     editingNote: note
                 });
+            },
+
+            // Chapter Actions
+            addCustomChapter: (subject, chapterName) => set(state => {
+                const subKey = Object.keys(state.chapters).find(k => k.toLowerCase() === subject.toLowerCase()) || subject;
+                const updated = { ...state.chapters };
+                if (!updated[subKey]) updated[subKey] = [];
+                if (!updated[subKey].includes(chapterName)) {
+                    updated[subKey] = [...updated[subKey], chapterName];
+                }
+                return { chapters: updated };
+            }),
+
+            deleteCustomChapter: (subject, chapterName) => set(state => {
+                const subKey = Object.keys(state.chapters).find(k => k.toLowerCase() === subject.toLowerCase()) || subject;
+                const updated = { ...state.chapters };
+                if (updated[subKey]) {
+                    updated[subKey] = updated[subKey].filter(c => c !== chapterName);
+                }
+                return { chapters: updated };
+            }),
+
+            recordChapterAccess: (chapterName) => set((state) => ({ chapterAccessTimes: { ...state.chapterAccessTimes, [chapterName]: Date.now() } })),
+
+            editCustomChapter: (subject, oldName, newName) => {
+                // Update chapter name
+                set(state => {
+                    const subKey = Object.keys(state.chapters).find(k => k.toLowerCase() === subject.toLowerCase()) || subject;
+                    const updated = { ...state.chapters };
+                    if (updated[subKey]) {
+                        updated[subKey] = updated[subKey].map(c => c === oldName ? newName : c);
+                    }
+                    return { chapters: updated };
+                });
+
+                // Also update all notes referencing the old chapter name
+                const store = get();
+                const notesToUpdate = store.notes.filter(n => n.topic === oldName && (n.subject?.toLowerCase() === subject.toLowerCase() || subject === 'Other'));
+                notesToUpdate.forEach(n => {
+                    store.updateNote(n.id, { topic: newName });
+                });
             }
         }),
         {
             name: 'learning-notes-storage',
-            partialize: (state) => ({ notes: state.notes }) // Only persist the list locally for fast boot
+            partialize: (state) => ({
+                notes: state.notes,
+                chapters: state.chapters // Persist chapters
+            })
         }
     )
 );
@@ -195,6 +284,10 @@ export const useNoteActions = () => {
     const toggleModal = useNotesStore(s => s.toggleModal);
     const setViewContext = useNotesStore(s => s.setViewContext);
 
+    const addCustomChapter = useNotesStore(s => s.addCustomChapter);
+    const deleteCustomChapter = useNotesStore(s => s.deleteCustomChapter);
+    const editCustomChapter = useNotesStore(s => s.editCustomChapter);
+
     return {
         fetchNotes,
         addNote,
@@ -203,6 +296,9 @@ export const useNoteActions = () => {
         markAsRevised,
         removeMediaLink,
         toggleModal,
-        setViewContext
+        setViewContext,
+        addCustomChapter,
+        deleteCustomChapter,
+        editCustomChapter
     };
 };

@@ -3,6 +3,7 @@ import { Play, Pause, RotateCcw, Plus, Minus, CheckCircle2, AlertTriangle } from
 import { motion, AnimatePresence } from 'framer-motion';
 import { getBuildingConfig } from '../../utils/pomodoroConfig';
 import { validators } from '../../utils/apiErrorHandler';
+import { useSoundManager } from '../../utils/soundManager';
 
 
 
@@ -112,6 +113,7 @@ const ProgressRing = ({ progress, isFailed, isActive, isCompleted }) => {
 
 const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
     const { duration, timeLeft, isActive, isCompleted, isFailed, initialTime } = state;
+    const { playHover, playClick } = useSoundManager();
 
 
     // Request notification permission on mount
@@ -205,56 +207,62 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                 )}
             </div>
 
-            {/* 2. Main Dial */}
-            <div className="relative flex-1 flex flex-col items-center justify-center min-h-[350px]">
-                <ProgressRing
-                    progress={isActive ? progress : 0} // When idle, ring is empty. 
-                    isFailed={isFailed}
-                    isActive={isActive}
-                    isCompleted={isCompleted}
-                />
+            {/* 2. Main Dial and Controls Container */}
+            <div className="relative flex-1 flex items-center justify-center w-full min-h-[350px] gap-1 sm:gap-2">
 
-                {/* Content Overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-                    {/* Time Display Row with Controls */}
-                    <div className="flex items-center gap-12 pointer-events-auto">
-                        {/* Decrease Button - Only visible when idle */}
-                        {!isActive && !isCompleted && !isFailed && (
-                            <IconButton
-                                onClick={() => handleDurationChange(-1)}
-                                icon={Minus}
-                                disabled={duration <= 0.17}
-                                className="opacity-50 hover:opacity-100 transition-opacity"
-                            />
-                        )}
+                {/* External Decrease Button */}
+                <div className="flex-shrink-0 z-20">
+                    {!isActive && !isCompleted && !isFailed && (
+                        <IconButton
+                            onClick={() => { playClick(); handleDurationChange(-1); }}
+                            onMouseEnter={playHover}
+                            icon={Minus}
+                            disabled={duration <= 0.17}
+                            className="opacity-70 hover:opacity-100 transition-all bg-white/5 hover:bg-white/10 active:bg-white/20 backdrop-blur-sm border border-white/10 p-3 sm:p-4 shadow-lg rounded-full"
+                        />
+                    )}
+                </div>
 
-                        {/* Main Time */}
+                {/* Center Ring Container */}
+                <div className="relative flex items-center justify-center -mx-2 sm:-mx-4">
+                    <ProgressRing
+                        progress={isActive ? progress : 0}
+                        isFailed={isFailed}
+                        isActive={isActive}
+                        isCompleted={isCompleted}
+                    />
+
+                    {/* Content Overlay inside Ring */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
                         <motion.div
                             layout
-                            className="text-8xl font-medium tracking-tighter text-white tabular-nums select-none"
+                            className="text-6xl sm:text-7xl font-medium tracking-tighter text-white tabular-nums select-none drop-shadow-md pointer-events-auto"
                             style={{ fontFamily: "'Inter', sans-serif" }}
                         >
                             {formatTime(timeLeft)}
                         </motion.div>
 
-                        {/* Increase Button - Only visible when idle */}
-                        {!isActive && !isCompleted && !isFailed && (
-                            <IconButton
-                                onClick={() => handleDurationChange(5)}
-                                icon={Plus}
-                                disabled={duration >= 999}
-                                className="opacity-50 hover:opacity-100 transition-opacity"
-                            />
-                        )}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-sm font-medium text-white/50 tracking-[0.2em] mt-2 uppercase select-none"
+                        >
+                            {isActive ? 'Focusing' : isCompleted ? 'Session Done' : isFailed ? 'Look Away?' : 'Ready'}
+                        </motion.div>
                     </div>
+                </div>
 
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-sm font-medium text-white/50 tracking-[0.2em] mt-2 uppercase select-none"
-                    >
-                        {isActive ? 'Focusing' : isCompleted ? 'Session Done' : isFailed ? 'Look Away?' : 'Ready'}
-                    </motion.div>
+                {/* External Increase Button */}
+                <div className="flex-shrink-0 z-20">
+                    {!isActive && !isCompleted && !isFailed && (
+                        <IconButton
+                            onClick={() => { playClick(); handleDurationChange(5); }}
+                            onMouseEnter={playHover}
+                            icon={Plus}
+                            disabled={duration >= 999}
+                            className="opacity-70 hover:opacity-100 transition-all bg-white/5 hover:bg-white/10 active:bg-white/20 backdrop-blur-sm border border-white/10 p-3 sm:p-4 shadow-lg rounded-full"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -273,6 +281,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                             {isCompleted || isFailed ? (
                                 <LiquidButton
                                     onClick={() => onAction('RESET')}
+                                    onMouseEnter={playHover}
                                     label="New Session"
                                     icon={RotateCcw}
                                     variant="secondary"
@@ -281,6 +290,7 @@ const PomodoroTimer = ({ state, onAction, isDarkMode, onToggleTheme }) => {
                             ) : (
                                 <button
                                     onClick={() => onAction('START')}
+                                    onMouseEnter={playHover}
                                     className="animated-start-btn"
                                 >
                                     <span className="svg-wrapper">

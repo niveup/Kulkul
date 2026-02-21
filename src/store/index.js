@@ -24,8 +24,10 @@ export const useAppStore = create(
             // Theme State
             // -------------------------------------------------------------------------
             isDarkMode: true,
+            themePreference: 'classic-obsidian', // 'dynamic' | 'classic-obsidian'
             toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
             setTheme: (isDark) => set({ isDarkMode: isDark }),
+            setThemePreference: (pref) => set({ themePreference: pref }),
 
             // -------------------------------------------------------------------------
             // Sidebar State
@@ -135,6 +137,7 @@ export const useAppStore = create(
             partialize: (state) => ({
                 // Only persist these fields
                 isDarkMode: state.isDarkMode,
+                themePreference: state.themePreference,
                 sidebarCollapsed: state.sidebarCollapsed,
                 activeTab: state.activeTab,
                 preferences: state.preferences,
@@ -156,9 +159,14 @@ export const useSessionStore = create(
             isLoadingSessions: true,
 
             setSessions: (sessions) => set({ sessions, isLoadingSessions: false }),
-            addSession: (session) => set((state) => ({
-                sessions: [...state.sessions, session]
-            })),
+            addSession: (session) => set((state) => {
+                // Prevent duplicates based on ID (Idempotency)
+                if (state.sessions.some(s => s.id === session.id)) {
+                    console.log('[Store] Duplicate session ignored:', session.id);
+                    return {};
+                }
+                return { sessions: [...state.sessions, session] };
+            }),
 
             // Timer state
             timerState: {
@@ -527,10 +535,12 @@ export const selectCommandPaletteOpen = (state) => state.commandPaletteOpen;
  */
 export const useTheme = () => {
     const isDarkMode = useAppStore((state) => state.isDarkMode);
+    const themePreference = useAppStore((state) => state.themePreference);
     const toggleTheme = useAppStore((state) => state.toggleTheme);
     const setTheme = useAppStore((state) => state.setTheme);
+    const setThemePreference = useAppStore((state) => state.setThemePreference);
 
-    return { isDarkMode, toggleTheme, setTheme };
+    return { isDarkMode, themePreference, toggleTheme, setTheme, setThemePreference };
 };
 
 /**

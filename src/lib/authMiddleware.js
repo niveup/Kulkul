@@ -20,7 +20,7 @@ import { getDbPool, initDatabase } from './db.js';
 // Configuration
 // =============================================================================
 
-const RATE_LIMIT_API = { maxRequests: 100, windowMinutes: 60 };
+const RATE_LIMIT_API = { maxRequests: 500, windowMinutes: 60 };
 
 // =============================================================================
 // Environment Detection
@@ -36,19 +36,9 @@ export function isLocalhost(req) {
         return false; // Running on Vercel, enforce auth
     }
 
-    // Check NODE_ENV
-    if (process.env.NODE_ENV === 'production') {
-        return false;
-    }
-
-    // Check host header for localhost patterns
-    const host = req?.headers?.host || '';
-    const isLocalHost = host.includes('localhost') ||
-        host.includes('127.0.0.1') ||
-        host.startsWith('192.168.') ||
-        host.startsWith('10.');
-
-    return isLocalHost;
+    // Rely strictly on NODE_ENV for development detection
+    // Host header spoofing is prevented by not using it as a fallback
+    return process.env.NODE_ENV !== 'production';
 }
 
 /**
@@ -140,9 +130,9 @@ export async function requireAuth(req, res, options = {}) {
             return true;
         }
 
-        // 0.5 Bypass auth for Chrome Extension requests (extensions can't send HttpOnly cookies)
-        if (req.headers['x-source'] === 'extension') {
-            console.log('[Auth] Extension request - bypassing auth');
+        // 0.5 Secure check for Chrome Extension requests
+        const extensionKey = process.env.EXTENSION_API_KEY;
+        if (extensionKey && req.headers['x-extension-key'] === extensionKey) {
             req.session = { id: 'extension-session', ip_address: getClientIP(req) };
             return true;
         }

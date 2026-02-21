@@ -1,10 +1,27 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, Bell, Command, ChevronRight, Check, Hash, ExternalLink, ArrowRight } from 'lucide-react';
+import { Search, Bell, Command, ChevronRight, Check, Hash, ExternalLink, ArrowRight, GripVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { GlassCard } from './GlassCard';
 import { StatsGroup } from './StatsGroup';
 import { QuickAccess } from './QuickAccess';
 import { getISTDate } from '../../utils/dateUtils';
+import { useSoundManager } from '../../utils/soundManager';
 
 // Get greeting based on time
 const getGreeting = () => {
@@ -110,6 +127,45 @@ const fuzzyMatch = (query, target) => {
     return 0; // No match
 };
 
+// ============================================================================
+// SORTABLE DASHBOARD SECTION WRAPPER
+// ============================================================================
+const SortableSection = ({ id, children }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    // Don't render empty containers
+    if (!children) return null;
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 1,
+        opacity: isDragging ? 0.8 : 1,
+        position: 'relative'
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="relative group/section w-full">
+            {/* Drag Handle Overlay - Visible on hover, positioned to left */}
+            <div
+                {...attributes}
+                {...listeners}
+                className="absolute -left-12 top-1/2 -translate-y-1/2 p-2 opacity-0 group-hover/section:opacity-100 cursor-grab active:cursor-grabbing transition-opacity z-50 text-white/30 hover:text-white/70 bg-white/5 rounded-lg border border-white/10 hidden xl:flex items-center justify-center backdrop-blur-md shadow-lg"
+            >
+                <GripVertical size={20} />
+            </div>
+            {children}
+        </div>
+    );
+};
+
 export const LuminaOverview = ({
     sessions = [],
     tasks = [], // Daily Objectives
@@ -128,6 +184,40 @@ export const LuminaOverview = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     const searchRef = useRef(null);
+    const { playHover, playClick } = useSoundManager();
+
+    // Bento Grid Layout State
+    const [layoutOrder, setLayoutOrder] = useState(() => {
+        try {
+            const saved = localStorage.getItem('lumina-layout-v1');
+            if (saved) return JSON.parse(saved);
+        } catch (e) { }
+        return ['motivation', 'stats', 'hero', 'quickAccess'];
+    });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setLayoutOrder((items) => {
+                const oldIndex = items.indexOf(active.id);
+                const newIndex = items.indexOf(over.id);
+                const newArray = arrayMove(items, oldIndex, newIndex);
+                localStorage.setItem('lumina-layout-v1', JSON.stringify(newArray));
+                return newArray;
+            });
+        }
+    };
 
     // Calculate stats from real data
     const todaysSessions = sessions.filter(s => {
@@ -181,6 +271,7 @@ export const LuminaOverview = ({
 
     // Handle Search Selection
     const handleResultClick = (result) => {
+        playClick();
         if (result.type === 'app') {
             window.open(result.url, '_blank');
         } else if (result.type === 'section') {
@@ -230,13 +321,22 @@ export const LuminaOverview = ({
             {/* Premium Ambient Background - Optimized Performance */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-void">
                 {/* Top Right: Warm Amber Glow (Desk Lamp feel) */}
-                <div className="absolute top-[-10%] right-[-5%] w-[60vw] h-[60vw] bg-amber-500/[0.03] rounded-full blur-[120px] mix-blend-screen" />
+                <div
+                    className="absolute top-[-10%] right-[-5%] w-[60vw] h-[60vw] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(circle at center, rgba(245, 158, 11, 0.04) 0%, transparent 60%)' }}
+                />
 
-                {/* Top Left: Calm Indigo */}
-                <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] bg-indigo-500/[0.05] rounded-full blur-[120px] mix-blend-screen animate-pulse-glow" />
+                {/* Left: Deep Cosmic Indigo */}
+                <div
+                    className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full pointer-events-none animate-pulse-glow"
+                    style={{ background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.06) 0%, transparent 60%)' }}
+                />
 
-                {/* Top Center: Ambient Light Source */}
-                <div className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] bg-white/5 rounded-full blur-[150px] mix-blend-screen" />
+                {/* Top Center: Angelic White Highlight */}
+                <div
+                    className="absolute top-[-30%] left-[20%] right-[20%] h-[50vw] rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05) 0%, transparent 60%)' }}
+                />
 
                 {/* Noise Texture */}
                 <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
@@ -322,6 +422,7 @@ export const LuminaOverview = ({
                                                     <button
                                                         key={`${result.type}-${result.id || idx}`}
                                                         onClick={() => handleResultClick(result)}
+                                                        onMouseEnter={playHover}
                                                         className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors group text-left"
                                                     >
                                                         {/* Icon based on type */}
@@ -366,102 +467,132 @@ export const LuminaOverview = ({
                         </div>
 
                         {/* Notification Bell */}
-                        <button className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all duration-300 active:scale-95 relative group">
+                        <button
+                            onClick={playClick}
+                            onMouseEnter={playHover}
+                            className="p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all duration-300 active:scale-95 relative group"
+                        >
                             <Bell size={20} className="text-white/70 group-hover:text-white transition-colors" />
                             <span className="absolute top-3 right-3.5 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></span>
                         </button>
                     </div>
                 </header>
 
-                {/* Daily Motivation - Apple Studio Greeting Card */}
-                {!isScrolled && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="mb-12"
-                    >
-                        <div className="relative group p-12 rounded-[2.5rem] overflow-hidden">
-                            {/* Card Background - Deep Glass with shimmer */}
-                            <div className="absolute inset-0 bg-white/[0.02] border border-white/[0.05] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] backdrop-blur-3xl rounded-[2.5rem]" />
+                {/* Main Sortable Bento Grid */}
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext items={layoutOrder} strategy={verticalListSortingStrategy}>
+                        <div className="flex flex-col gap-4 pb-32">
+                            {layoutOrder.map((sectionId) => {
+                                let content = null;
+                                if (sectionId === 'motivation' && !isScrolled) {
+                                    content = (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 1, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+                                            className="mb-8"
+                                        >
+                                            <div className="relative group p-12 rounded-[2.5rem] overflow-hidden">
+                                                {/* Card Background - Deep Glass with shimmer */}
+                                                <div className="absolute inset-0 bg-white/[0.02] border border-white/[0.05] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] backdrop-blur-3xl rounded-[2.5rem]" />
 
-                            {/* Animated Shimmer Beam */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-emerald-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] cubic-bezier(0.4, 0, 0.2, 1)" />
+                                                {/* Animated Shimmer Beam */}
+                                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-emerald-500/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] cubic-bezier(0.4, 0, 0.2, 1)" />
 
-                            {/* Content */}
-                            <div className="relative z-10">
-                                <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-8">
-                                    Editorial Memo
-                                </span>
-                                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mb-6 italic">
-                                    "{quote}"
-                                </h2>
-                                <div className="flex items-center gap-4">
-                                    <div className="h-px w-12 bg-white/10" />
-                                    <p className="text-[10px] text-white/30 font-black tracking-[0.3em] uppercase">The Lumina Collective</p>
-                                </div>
-                            </div>
+                                                {/* Content */}
+                                                <div className="relative z-10">
+                                                    <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-300 uppercase tracking-widest mb-8">
+                                                        Editorial Memo
+                                                    </span>
+                                                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-[1.1] max-w-4xl mb-6 italic">
+                                                        "{quote}"
+                                                    </h2>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="h-px w-12 bg-white/10" />
+                                                        <p className="text-[10px] text-white/30 font-black tracking-[0.3em] uppercase">The Lumina Collective</p>
+                                                    </div>
+                                                </div>
 
-                            {/* Decorative Edge Glow */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                                                {/* Decorative Edge Glow */}
+                                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                                            </div>
+                                        </motion.div>
+                                    );
+                                } else if (sectionId === 'stats') {
+                                    content = (
+                                        <div className="mb-4">
+                                            <StatsGroup
+                                                focusTime={focusTimeMinutes}
+                                                completedTasks={completedTasks}
+                                                totalTasks={totalTasks}
+                                                streak={streak}
+                                                sessions={sessions}
+                                            />
+                                        </div>
+                                    );
+                                } else if (sectionId === 'hero') {
+                                    content = (
+                                        <div className="mb-4 relative z-10 w-full">
+                                            {/* Large Gradient Card - No external image for performance */}
+                                            <GlassCard className="p-0 h-[350px] relative overflow-hidden" hoverEffect={false}>
+                                                {/* Soft Editorial Gradient - Study Studio */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-[#121826] via-[#0a0d14] to-[#080a10]" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                                                <div className="absolute bottom-0 left-0 p-10 w-full">
+                                                    <div className="flex items-center gap-3 mb-4">
+                                                        <span className="px-3 py-1 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 text-xs font-semibold text-indigo-200">
+                                                            Study Session
+                                                        </span>
+                                                    </div>
+                                                    <h2 className="text-5xl font-bold text-white mb-3 tracking-tighter drop-shadow-xl">
+                                                        Deep Work Session
+                                                    </h2>
+                                                    <p className="text-white/70 max-w-lg text-lg font-light leading-relaxed mb-8">
+                                                        Early bird catches the worm. You have {totalTasks - completedTasks} pending tasks scheduled for today.
+                                                    </p>
+
+                                                    <div className="flex gap-4">
+                                                        <button
+                                                            onClick={() => { playClick(); onStartSession(); }}
+                                                            onMouseEnter={playHover}
+                                                            className="px-8 py-3.5 bg-white text-black font-bold rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 flex items-center gap-2 group/btn"
+                                                        >
+                                                            Start Session
+                                                            <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { playClick(); onViewPlan(); }}
+                                                            onMouseEnter={playHover}
+                                                            className="px-8 py-3.5 bg-white/5 backdrop-blur-xl text-white font-semibold rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 active:scale-95"
+                                                        >
+                                                            View Plan
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </GlassCard>
+                                        </div>
+                                    );
+                                } else if (sectionId === 'quickAccess') {
+                                    content = (
+                                        <div className="mt-4">
+                                            <QuickAccess apps={apps} onAddApp={onAddApp} onEditApp={onEditApp} onDeleteApp={onDeleteApp} />
+                                        </div>
+                                    );
+                                }
+
+                                return <SortableSection key={sectionId} id={sectionId}>{content}</SortableSection>;
+                            })}
                         </div>
-                    </motion.div>
-                )}
-
-                {/* Statistics Row */}
-                <StatsGroup
-                    focusTime={focusTimeMinutes}
-                    completedTasks={completedTasks}
-                    totalTasks={totalTasks}
-                    streak={streak}
-                    sessions={sessions}
-                />
-
-                {/* Main Content Grid: Hero */}
-                <div className="mb-8">
-                    {/* Large Gradient Card - No external image for performance */}
-                    <GlassCard className="p-0 h-[350px] relative overflow-hidden" hoverEffect={false}>
-                        {/* Soft Editorial Gradient - Study Studio */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#121826] via-[#0a0d14] to-[#080a10]" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-
-                        <div className="absolute bottom-0 left-0 p-10 w-full">
-                            <div className="flex items-center gap-3 mb-4">
-                                <span className="px-3 py-1 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 text-xs font-semibold text-indigo-200">
-                                    Study Session
-                                </span>
-                            </div>
-                            <h2 className="text-5xl font-bold text-white mb-3 tracking-tighter drop-shadow-xl">
-                                Deep Work Session
-                            </h2>
-                            <p className="text-white/70 max-w-lg text-lg font-light leading-relaxed mb-8">
-                                Early bird catches the worm. You have {totalTasks - completedTasks} pending tasks scheduled for today.
-                            </p>
-
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={onStartSession}
-                                    className="px-8 py-3.5 bg-white text-black font-bold rounded-2xl hover:bg-gray-100 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95 flex items-center gap-2 group/btn"
-                                >
-                                    Start Session
-                                    <ChevronRight size={16} className="transition-transform group-hover/btn:translate-x-1" />
-                                </button>
-                                <button
-                                    onClick={onViewPlan}
-                                    className="px-8 py-3.5 bg-white/5 backdrop-blur-xl text-white font-semibold rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300 active:scale-95"
-                                >
-                                    View Plan
-                                </button>
-                            </div>
-                        </div>
-                    </GlassCard>
-                </div>
-
-                {/* Quick Access Grid */}
-                <QuickAccess apps={apps} onAddApp={onAddApp} onEditApp={onEditApp} onDeleteApp={onDeleteApp} />
+                    </SortableContext>
+                </DndContext>
 
             </div>
-        </div>
+        </div >
     );
 };
 

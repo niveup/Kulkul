@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight, Calendar as CalendarIcon, History } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, ChevronLeft, ChevronRight, Calendar as CalendarIcon, History } from 'lucide-react';
 import { getISTDate, isTodayIST, getTodayIST } from '../../utils/dateUtils';
 import TodoHistory from './TodoHistory';
 
@@ -85,69 +85,62 @@ const TodayTimeline = ({ sessions = [] }) => {
 
     return (
         <div className="h-full flex flex-col group/timeline overflow-hidden">
-            {/* Header: Celestial Navigator */}
+            {/* Header Area */}
             <div className="flex items-center justify-between mb-6 px-1 shrink-0">
-                <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-3xl rounded-full p-0.5 border border-white/10 shadow-inner">
-                    <motion.button
-                        whileHover={{ scale: 1.1, x: -1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateDate(-1)}
-                        className="p-1.5 rounded-full bg-white/5 text-white/40 hover:text-white transition-all shadow-sm"
-                    >
-                        <ArrowLeft size={10} strokeWidth={3.5} />
-                    </motion.button>
-
-                    <div className="flex flex-col items-center w-32 px-1">
-                        {/* Fixed width to prevent layout shift with varying date lengths */}
-                        <span className="text-[7px] font-medium uppercase tracking-[0.2em] text-white/60 mb-0 leading-none">
-                            {/* Increased visibility from white/30 */}
-                            {formatDateHeading(viewDate)}
-                        </span>
-                        <h3 className={`text-sm font-semibold tracking-normal leading-tight transition-all duration-300 ${isToday ? 'text-white' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]'}`}>
-                            {isToday ? 'Live' : 'Archive'}
-                        </h3>
-                    </div>
-
-                    <motion.button
-                        whileHover={{ scale: 1.1, x: 1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateDate(1)}
-                        disabled={isToday}
-                        className={`p-1.5 rounded-full transition-all shadow-sm ${isToday
-                            ? 'text-white/5 cursor-not-allowed'
-                            : 'bg-white/5 text-white/40 hover:text-white'
-                            }`}
-                    >
-                        <ArrowRight size={10} strokeWidth={3.5} />
-                    </motion.button>
+                <div className="flex flex-col">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                        {isToday ? 'Live' : 'Archive'}
+                    </h3>
+                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-0.5">
+                        {formatDateHeading(viewDate)}
+                    </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {!isToday && (
-                        <motion.button
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            whileHover={{ scale: 1.05, y: -0.5 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setViewDate(getTodayIST())}
-                            className="px-3 py-1.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-sm flex items-center justify-center"
-                        >
-                            <span className="text-[9px] font-medium uppercase tracking-[0.2em]">Today</span>
-                        </motion.button>
-                    )}
+                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                    <button
+                        onClick={() => navigateDate(-1)}
+                        className="p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                    >
+                        <ChevronLeft size={14} strokeWidth={3} />
+                    </button>
 
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                    <button
+                        onClick={() => setViewDate(getTodayIST())}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all duration-300 transform active:scale-90 ${isToday
+                            ? 'bg-transparent text-white/10 cursor-not-allowed select-none'
+                            : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                            }`}
+                        disabled={isToday}
+                    >
+                        Today
+                    </button>
+
+                    <button
+                        onClick={() => navigateDate(1)}
+                        className={`p-1.5 rounded-md transition-all active:scale-90 ${isToday ? 'text-white/5 cursor-not-allowed select-none' : 'text-white/40 hover:text-white hover:bg-white/10'
+                            }`}
+                        disabled={isToday}
+                    >
+                        <ChevronRight size={14} strokeWidth={3} />
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-[#050508]/40 border border-white/10 rounded-xl p-1 shrink-0">
+                    <button
                         onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                        className={`h-9 aspect-square flex items-center justify-center rounded-full transition-all duration-300 border overflow-hidden relative group/btn ${isCalendarOpen
-                            ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_5px_15px_rgba(6,182,212,0.3)]'
-                            : 'bg-[#050508]/40 border-white/10 text-white/50 hover:text-white hover:border-white/20'
+                        className={`h-9 aspect-square flex items-center justify-center rounded-lg transition-all duration-300 border overflow-hidden relative group/btn ${isCalendarOpen
+                            ? 'bg-blue-500 border-blue-400 text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]'
+                            : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20'
                             }`}
                     >
-                        <div className={`absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-emerald-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700`} />
+                        <div className={`absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700`} />
                         <CalendarIcon size={14} className="relative z-10" />
-                    </motion.button>
+                    </button>
+                    <button
+                        className="h-9 aspect-square flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all active:scale-90"
+                    >
+                        <History size={14} />
+                    </button>
                 </div>
             </div>
 
@@ -161,10 +154,10 @@ const TodayTimeline = ({ sessions = [] }) => {
                     <Clock size={12} className="text-cyan-400" />
                     <span className="text-xs font-medium">{formatDuration(totalFocusTime)}</span>
                 </div>
-            </div>
+            </div >
 
             {/* Main Content Area */}
-            <div className="flex-1 min-h-0 relative">
+            < div className="flex-1 min-h-0 relative" >
                 <AnimatePresence mode="wait">
                     {isCalendarOpen ? (
                         <motion.div
@@ -274,8 +267,8 @@ const TodayTimeline = ({ sessions = [] }) => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

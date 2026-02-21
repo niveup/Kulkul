@@ -42,6 +42,22 @@
             "destination": "/api/[...route]"
         },
         {
+            "source": "/api/daily-todos/:path*",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/daily-todos",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/active-timer/:path*",
+            "destination": "/api/[...route]"
+        },
+        {
+            "source": "/api/active-timer",
+            "destination": "/api/[...route]"
+        },
+        {
             "source": "/api/sessions/:path*",
             "destination": "/api/[...route]"
         },

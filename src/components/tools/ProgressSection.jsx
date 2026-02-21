@@ -236,7 +236,6 @@ const ProgressSection = ({ sessionHistory = [] }) => {
                         <div className="flex flex-col h-full justify-center">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-accent-blue animate-pulse" />
                                     <span className="text-[13px] font-medium text-white/70 uppercase tracking-wide">Daily Goal Progress</span>
                                 </div>
                                 <span className="text-[13px] font-semibold text-white">
@@ -244,16 +243,18 @@ const ProgressSection = ({ sessionHistory = [] }) => {
                                 </span>
                             </div>
                             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                <motion.div
-                                    className={`h-full rounded-full transition-all duration-500 ${(todayFocusTime.minutes / goals.dailyFocusMinutes) >= 1
-                                        ? 'bg-emerald-400'
-                                        : 'bg-accent-blue'
-                                        }`}
-                                    initial={{ width: '0%' }}
-                                    animate={{ width: `${Math.min(100, (todayFocusTime.minutes / goals.dailyFocusMinutes) * 100)}%` }}
-                                    key={`progress-${todayFocusTime.minutes}`}
-                                    transition={{ duration: 0.5, ease: "easeOut" }}
-                                    style={{ minWidth: '0%' }}
+                                <div
+                                    className="h-full rounded-full transition-all duration-700 ease-out"
+                                    style={{
+                                        width: `${Math.min(100, (todayFocusTime.minutes / (goals.dailyFocusMinutes || 240)) * 100)}%`,
+                                        background: (todayFocusTime.minutes / (goals.dailyFocusMinutes || 1)) >= 1
+                                            ? 'linear-gradient(90deg, #10b981, #34d399)'
+                                            : 'linear-gradient(90deg, #2997ff, #7dd3fc)',
+                                        boxShadow: (todayFocusTime.minutes / (goals.dailyFocusMinutes || 1)) >= 1
+                                            ? '0 0 15px rgba(16, 185, 129, 0.3)'
+                                            : '0 0 15px rgba(41, 151, 255, 0.3)',
+                                        minWidth: todayFocusTime.minutes > 0 ? '4px' : '0%'
+                                    }}
                                 />
                             </div>
                             <div className="flex items-center justify-between mt-2">

@@ -4,8 +4,9 @@
  * Optimized for 60FPS performance using Framer Motion
  */
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
+import { useSoundManager } from '../../utils/soundManager';
 
 export const GlassCard = ({
     children,
@@ -16,6 +17,7 @@ export const GlassCard = ({
 }) => {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
+    const { playHover, playClick } = useSoundManager();
 
     const handleMouseMove = React.useCallback(({ clientX, clientY, currentTarget }) => {
         if (!spotlight) return;
@@ -26,7 +28,13 @@ export const GlassCard = ({
 
     return (
         <motion.div
-            onClick={onClick}
+            onClick={(e) => {
+                if (hoverEffect) playClick();
+                if (onClick) onClick(e);
+            }}
+            onMouseEnter={() => {
+                if (hoverEffect) playHover();
+            }}
             onMouseMove={handleMouseMove}
             className={`
                 relative overflow-hidden

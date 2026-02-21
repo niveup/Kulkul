@@ -144,6 +144,53 @@ class SoundManager {
         this._beep(1200, 0.03, 'square');
     }
 
+    // --- New Tactile Micro-Interactions (Apple-style) ---
+
+    // Hover - Extremely subtle deep tick (like a mechanical dial passing a notch)
+    playHover() {
+        if (!this.enabled) return;
+        this.init();
+        this.resume();
+
+        // Very low frequency, extremely short burst for a "clicky" feel without a tone
+        this._playSequence([
+            [150, 0.02, 0] // 150hz for 20ms
+        ]);
+
+        // Cut the master volume drastically for this specific sound so it's felt more than heard
+        const ctx = this.audioContext;
+        if (ctx) {
+            const gainNode = ctx.createGain();
+            gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+        }
+    }
+
+    // Click - Satisfying mechanical switch sound
+    playClick() {
+        if (!this.enabled) return;
+        this.init();
+        this.resume();
+
+        // Two extremely fast, high-pitched ticks to mimic a mechanical switch depressing and returning
+        this._playSequence([
+            [800, 0.01, 0],   // Initial tap
+            [1200, 0.02, 30]  // The "bottom out" click 30ms later
+        ]);
+    }
+
+    // Snap - When a widget locks into place during drag-and-drop
+    playSnap() {
+        if (!this.enabled) return;
+        this.init();
+        this.resume();
+
+        // A chunky, satisfying hollow "thunk"
+        this._playSequence([
+            [300, 0.04, 0],
+            [150, 0.08, 40]
+        ]);
+    }
+
     // Warning - Last minute warning
     playWarning() {
         this._playSequence([
@@ -188,6 +235,12 @@ export const useSoundManager = () => {
     const playNotification = useCallback(() => soundManager.playNotification(), []);
     const playTick = useCallback(() => soundManager.playTick(), []);
     const playWarning = useCallback(() => soundManager.playWarning(), []);
+
+    // New Tactile Sounds
+    const playHover = useCallback(() => soundManager.playHover(), []);
+    const playClick = useCallback(() => soundManager.playClick(), []);
+    const playSnap = useCallback(() => soundManager.playSnap(), []);
+
     const setVolume = useCallback((vol) => soundManager.setVolume(vol), []);
     const setEnabled = useCallback((enabled) => soundManager.setEnabled(enabled), []);
 
@@ -201,6 +254,9 @@ export const useSoundManager = () => {
         playNotification,
         playTick,
         playWarning,
+        playHover,
+        playClick,
+        playSnap,
         setVolume,
         setEnabled,
     };

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { useNoteActions } from '../../store/notesStore';
 
-const FloatingAddButton = ({ isDarkMode }) => {
+const FloatingAddButton = ({ isDarkMode, onClick }) => {
     const { toggleModal } = useNoteActions();
     const [isHovered, setIsHovered] = useState(false);
 
@@ -18,7 +18,7 @@ const FloatingAddButton = ({ isDarkMode }) => {
                 {/* Main Button */}
                 <motion.button
                     layout
-                    onClick={() => toggleModal(true)}
+                    onClick={onClick || (() => toggleModal(true))}
                     initial={{ width: 56 }}
                     animate={{
                         width: isHovered ? "auto" : 56,

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Check, Trash2, ArrowLeft, ArrowRight, Calendar as CalendarIcon, History, Lock, Sparkles } from 'lucide-react';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, History, Lock, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTaskStore } from '../../store';
 import { isTodayIST, getTodayIST, isFutureIST } from '../../utils/dateUtils';
@@ -70,68 +70,56 @@ const ObjectivesProtocol = () => {
 
     return (
         <div className="h-full flex flex-col group/protocol overflow-hidden">
-            {/* Header: Editorial Navigator */}
-            <div className="flex items-center justify-between mb-4 px-1 shrink-0">
-                <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-3xl rounded-xl p-0.5 border border-white/10 shadow-inner">
-                    <motion.button
-                        whileHover={{ scale: 1.1, x: -1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateDate(-1)}
-                        className="p-1.5 rounded-lg bg-white/5 text-white/40 hover:text-white transition-all shadow-sm"
-                    >
-                        <ArrowLeft size={12} strokeWidth={3.5} />
-                    </motion.button>
-
-                    <div className="flex flex-col items-center w-24 px-0.5">
-                        {/* Fixed width to prevent layout shift with varying date names like "Yesterday" vs "Oct 31" */}
-                        <span className="text-[7px] font-black uppercase tracking-[0.2em] text-white/60 mb-0 leading-none">
-                            {/* Changed from text-white/30 for better visibility */}
-                            {formatDateHeading(viewDate)}
-                        </span>
-                        <h3 className={`text-sm font-semibold tracking-normal leading-tight transition-all duration-300 ${isEditable ? 'text-white' : 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]'}`}>
-                            {isToday ? 'Focus' : isFuture ? 'Planning' : 'Archive'}
-                        </h3>
-                    </div>
-
-                    <motion.button
-                        whileHover={{ scale: 1.1, x: 1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateDate(1)}
-                        disabled={isFuture}
-                        className={`p-1.5 rounded-lg transition-all shadow-sm ${isFuture
-                            ? 'text-white/5 cursor-not-allowed'
-                            : 'bg-white/5 text-white/40 hover:text-white'
-                            }`}
-                    >
-                        <ArrowRight size={12} strokeWidth={3.5} />
-                    </motion.button>
+            {/* Header Area */}
+            <div className="flex items-center justify-between mb-6 px-1 shrink-0">
+                <div className="flex flex-col">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight leading-none">
+                        {isToday ? 'Focus' : isFuture ? 'Planning' : 'Archive'}
+                    </h3>
+                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1.5">
+                        {formatDateHeading(viewDate)}
+                    </p>
                 </div>
 
-                {!isToday && (
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ scale: 1.05, y: -0.5 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setViewDate(getTodayIST())}
-                        className="px-4 py-2 ml-auto mr-2 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-[0_0_15px_rgba(6,182,212,0.1)] flex items-center justify-center"
+                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                    <button
+                        onClick={() => navigateDate(-1)}
+                        className="p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
                     >
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Today</span>
-                    </motion.button>
-                )}
+                        <ChevronLeft size={14} strokeWidth={3} />
+                    </button>
 
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    <button
+                        onClick={() => setViewDate(getTodayIST())}
+                        className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all duration-300 transform active:scale-90 ${isToday
+                            ? 'bg-transparent text-white/10 cursor-not-allowed select-none'
+                            : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                            }`}
+                        disabled={isToday}
+                    >
+                        Today
+                    </button>
+
+                    <button
+                        onClick={() => navigateDate(1)}
+                        className={`p-1.5 rounded-md transition-all active:scale-90 ${isFuture ? 'text-white/5 cursor-not-allowed select-none' : 'text-white/40 hover:text-white hover:bg-white/10'
+                            }`}
+                        disabled={isFuture}
+                    >
+                        <ChevronRight size={14} strokeWidth={3} />
+                    </button>
+                </div>
+
+                <button
                     onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                    className={`h-11 aspect-square flex items-center justify-center rounded-2xl transition-all duration-300 border overflow-hidden relative group/btn ${isCalendarOpen
-                        ? 'bg-cyan-500 border-cyan-400 text-white shadow-[0_10px_20px_rgba(6,182,212,0.3)]'
-                        : 'bg-[#050508]/40 border-white/10 text-white/50 hover:text-white hover:border-white/20'
+                    className={`h-9 aspect-square ml-1 flex items-center justify-center rounded-lg transition-all duration-300 border overflow-hidden relative group/btn ${isCalendarOpen
+                        ? 'bg-blue-500 border-blue-400 text-white shadow-[0_5px_15px_rgba(59,130,246,0.3)]'
+                        : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/20'
                         }`}
                 >
-                    <div className={`absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-emerald-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700`} />
-                    <CalendarIcon size={18} className="relative z-10" />
-                </motion.button>
+                    <div className={`absolute inset-0 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-700`} />
+                    <CalendarIcon size={14} className="relative z-10" />
+                </button>
             </div>
 
             {/* Main Content Area */}

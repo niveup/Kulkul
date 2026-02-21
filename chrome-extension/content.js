@@ -7,11 +7,19 @@ if (!window.studyhubInjected) {
         let startX, startY;
         let selectionOverlay, selectionBox;
 
+        // ─── Closure-scoped image data (no global namespace pollution) ───
+        let _capturedImageData = null;
+
         // Listen for messages from background script
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (request.action === 'startSelection') {
-                initSelection();
-                sendResponse({ success: true });
+                try {
+                    initSelection();
+                    sendResponse({ success: true });
+                } catch (err) {
+                    console.error('[StudyHub] Failed to init selection:', err);
+                    sendResponse({ success: false, error: err.message });
+                }
             }
         });
 
@@ -49,11 +57,19 @@ if (!window.studyhubInjected) {
                 // Small delay to let overlay disappear
                 await new Promise(r => setTimeout(r, 100));
 
-                chrome.runtime.sendMessage({ action: 'captureFullPage' }, (response) => {
-                    if (response.dataUrl) {
-                        showPreview(response.dataUrl);
-                    }
-                });
+                try {
+                    chrome.runtime.sendMessage({ action: 'captureFullPage' }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[StudyHub] Capture error:', chrome.runtime.lastError.message);
+                            return;
+                        }
+                        if (response && response.dataUrl) {
+                            showPreview(response.dataUrl);
+                        }
+                    });
+                } catch (err) {
+                    console.error('[StudyHub] Full page capture failed:', err);
+                }
             });
         }
 
@@ -92,29 +108,46 @@ if (!window.studyhubInjected) {
             if (!isSelecting) return;
             isSelecting = false;
 
-            const rect = selectionBox.getBoundingClientRect();
+            try {
+                const rect = selectionBox.getBoundingClientRect();
 
-            // Minimum size check
-            if (rect.width < 10 || rect.height < 10) {
-                return;
-            }
-
-            // Hide selection UI before capture
-            selectionOverlay.style.display = 'none';
-            selectionBox.style.display = 'none';
-
-            // Small delay to ensure UI is hidden
-            await new Promise(r => setTimeout(r, 50));
-
-            // Capture the visible tab
-            chrome.runtime.sendMessage({ action: 'captureFullPage' }, async (response) => {
-                if (response.dataUrl) {
-                    // Crop the image to selection
-                    const croppedImage = await cropImage(response.dataUrl, rect);
-                    removeSelection();
-                    showPreview(croppedImage);
+                // Minimum size check
+                if (rect.width < 10 || rect.height < 10) {
+                    return;
                 }
-            });
+
+                // Hide selection UI before capture
+                selectionOverlay.style.display = 'none';
+                selectionBox.style.display = 'none';
+
+                // Small delay to ensure UI is hidden
+                await new Promise(r => setTimeout(r, 50));
+
+                // Capture the visible tab
+                chrome.runtime.sendMessage({ action: 'captureFullPage' }, async (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('[StudyHub] Capture error:', chrome.runtime.lastError.message);
+                        removeSelection();
+                        return;
+                    }
+                    if (response && response.dataUrl) {
+                        try {
+                            // Crop the image to selection
+                            const croppedImage = await cropImage(response.dataUrl, rect);
+                            removeSelection();
+                            showPreview(croppedImage);
+                        } catch (cropErr) {
+                            console.error('[StudyHub] Crop failed:', cropErr);
+                            removeSelection();
+                        }
+                    } else {
+                        removeSelection();
+                    }
+                });
+            } catch (err) {
+                console.error('[StudyHub] onMouseUp error:', err);
+                removeSelection();
+            }
         }
 
         function onKeyDown(e) {
@@ -139,45 +172,92 @@ if (!window.studyhubInjected) {
         }
 
         async function cropImage(dataUrl, rect) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
 
-                    // Account for device pixel ratio
-                    const dpr = window.devicePixelRatio || 1;
+                        // Account for device pixel ratio
+                        const dpr = window.devicePixelRatio || 1;
 
-                    canvas.width = rect.width * dpr;
-                    canvas.height = rect.height * dpr;
+                        canvas.width = rect.width * dpr;
+                        canvas.height = rect.height * dpr;
 
-                    ctx.drawImage(
-                        img,
-                        rect.left * dpr,
-                        rect.top * dpr,
-                        rect.width * dpr,
-                        rect.height * dpr,
-                        0,
-                        0,
-                        rect.width * dpr,
-                        rect.height * dpr
-                    );
+                        ctx.drawImage(
+                            img,
+                            rect.left * dpr,
+                            rect.top * dpr,
+                            rect.width * dpr,
+                            rect.height * dpr,
+                            0,
+                            0,
+                            rect.width * dpr,
+                            rect.height * dpr
+                        );
 
-                    resolve(canvas.toDataURL('image/png'));
+                        resolve(canvas.toDataURL('image/png'));
+                    } catch (err) {
+                        reject(err);
+                    }
                 };
+                img.onerror = () => reject(new Error('Failed to load image for cropping'));
                 img.src = dataUrl;
             });
         }
 
+        // ─── Helper: collect all link URLs from the links container ───
+        function collectLinks() {
+            const linkInputs = document.querySelectorAll('#studyhub-links-container input');
+            return Array.from(linkInputs).map(i => i.value.trim()).filter(Boolean);
+        }
+
+        // ─── Helper: add a removable link input row ───
+        function createLinkRow(container, value = '', readonly = false) {
+            const row = document.createElement('div');
+            row.className = 'studyhub-link-item';
+            row.innerHTML = `
+                <input type="text" value="${value}" ${readonly ? 'readonly disabled' : 'placeholder="Paste Reference URL..."'} class="studyhub-input-glass" style="border:none; background:transparent;"/>
+                <span class="studyhub-remove-link-btn">✕</span>
+            `;
+            container.appendChild(row);
+            row.querySelector('.studyhub-remove-link-btn').addEventListener('click', () => row.remove());
+            return row;
+        }
+
         function showPreview(imageDataUrl) {
-            let allNotes = [];
             let allChapters = [];
             let allEntries = [];
             let selectedType = 'concept';
 
+            // Store image data in closure variable (not on window)
+            _capturedImageData = imageDataUrl;
+
+            // ─── Track all event listeners for cleanup ───
+            const cleanupFns = [];
+            function trackEvent(el, event, handler) {
+                if (!el) return;
+                el.addEventListener(event, handler);
+                cleanupFns.push(() => el.removeEventListener(event, handler));
+            }
+
             // Create Modal Overlay
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'studyhub-modal-overlay';
+            // Force inline styles to escape any parent transform/stacking context
+            Object.assign(modalOverlay.style, {
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '0',
+                width: '100vw',
+                height: '100vh',
+                zIndex: '2147483647',
+                transform: 'none',
+                contain: 'layout style'
+            });
             modalOverlay.innerHTML = `
         <div id="studyhub-preview-modal">
             <div class="studyhub-preview-container">
@@ -197,6 +277,11 @@ if (!window.studyhubInjected) {
                             <label class="studyhub-label">🏷️ Image Reference Name</label>
                             <input type="text" id="studyhub-image-name" placeholder="e.g. Main Diagram, Figure 1..." class="studyhub-input-glass"/>
                         </div>
+
+                        <div class="studyhub-form-group" style="margin-top: 12px;">
+                            <label class="studyhub-label">🔖 Tags (comma separated)</label>
+                            <input type="text" id="studyhub-tags" placeholder="e.g. physics, formula, important..." class="studyhub-input-glass"/>
+                        </div>
                     </div>
 
                     <div class="studyhub-footer-actions">
@@ -207,16 +292,17 @@ if (!window.studyhubInjected) {
 
                 <!-- Right Panel -->
                 <div class="studyhub-right-panel">
-                    <div class="studyhub-destination-tabs">
-                        <button class="studyhub-tab active" id="studyhub-toggle-chapters">📚 Chapters</button>
-                        <button class="studyhub-tab" id="studyhub-toggle-notes">📎 Notes</button>
+                    <!-- Streamlined Header for Chapter Tracker -->
+                    <div style="margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);">
+                        <h4 style="margin: 0; color: var(--accent-emerald); font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Chapter Tracker</h4>
+                        <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);">Organize and save your research context.</p>
                     </div>
 
-                    <div class="studyhub-panel-scroll-content">
+                    <div class="studyhub-panel-scroll-content" style="margin: 0;">
                         <!-- Chapters Section -->
                         <div id="studyhub-chapters-section" class="section-animate">
                             <div class="studyhub-sub-pill-container">
-                                <button class="studyhub-sub-pill active" id="pill-new-entry">✨ New Note</button>
+                                <button class="studyhub-sub-pill active" id="pill-new-entry">✨ New Entry</button>
                                 <button class="studyhub-sub-pill" id="pill-existing-entry">🔍 Attach to Existing</button>
                             </div>
 
@@ -252,34 +338,15 @@ if (!window.studyhubInjected) {
 
                             <div id="studyhub-search-entry-fields" style="display:none;">
                                 <div class="studyhub-form-group">
-                                    <label class="studyhub-label">Search & Select Entry</label>
-                                    <input type="text" id="studyhub-entry-search" placeholder="🔍 Filter entries..." class="studyhub-input-glass" style="margin-bottom: 12px;"/>
+                                    <label class="studyhub-label">Select Chapter</label>
+                                    <input type="text" id="studyhub-entry-search" placeholder="🔍 Filter chapters..." class="studyhub-input-glass" style="margin-bottom: 12px;"/>
                                     <div id="studyhub-entry-list" class="studyhub-list-glass">
-                                        <div class="studyhub-list-item">Loading entries...</div>
+                                        <div class="studyhub-list-item">Loading chapters...</div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Learning Notes Section -->
-                        <div id="studyhub-notes-section" style="display:none;" class="section-animate">
-                            <div class="studyhub-sub-pill-container">
-                                <button class="studyhub-sub-pill active" id="pill-new-note">✨ New Note</button>
-                                <button class="studyhub-sub-pill" id="pill-existing-note">🔍 Existing Note</button>
-                            </div>
-                            <div id="studyhub-new-note-fields">
-                                <div class="studyhub-form-group">
-                                    <label class="studyhub-label">Note Title</label>
-                                    <input type="text" id="studyhub-new-note-title" placeholder="e.g. Organic Chemistry Review" class="studyhub-input-glass"/>
-                                </div>
-                            </div>
-                            <div id="studyhub-search-note-fields" style="display:none;">
-                                <div class="studyhub-form-group">
-                                    <label class="studyhub-label">Search Note</label>
-                                    <input type="text" id="studyhub-note-search" placeholder="🔍 Search notes..." class="studyhub-input-glass" style="margin-bottom: 12px;"/>
-                                    <div id="studyhub-note-list" class="studyhub-list-glass">
-                                        <div class="studyhub-list-item">Loading notes...</div>
-                                    </div>
+                                <div class="studyhub-form-group" style="margin-top: 12px;">
+                                    <label class="studyhub-label">Entry Heading</label>
+                                    <input type="text" id="studyhub-attach-entry-text" placeholder="e.g. Newton's Law, Section 2.1..." class="studyhub-input-glass"/>
                                 </div>
                             </div>
                         </div>
@@ -287,12 +354,7 @@ if (!window.studyhubInjected) {
                         <!-- Common Fields -->
                         <div class="studyhub-form-group" style="margin-top: 24px;">
                             <label class="studyhub-label">Links & References</label>
-                            <div id="studyhub-links-container">
-                                <div class="studyhub-link-item">
-                                    <input type="text" value="${window.location.href}" readonly disabled/>
-                                    <span class="studyhub-remove-link-btn">✕</span>
-                                </div>
-                            </div>
+                            <div id="studyhub-links-container"></div>
                             <button class="studyhub-add-link-btn">+ Add Reference URL</button>
                         </div>
                         <div class="studyhub-form-group">
@@ -305,14 +367,11 @@ if (!window.studyhubInjected) {
             <div id="studyhub-floating-status" style="display:none;"></div>
         </div>
     `;
-            document.body.appendChild(modalOverlay);
-
-            // Store image data for save operation
-            window.__studyhubCapturedImage = imageDataUrl;
+            document.documentElement.appendChild(modalOverlay);
 
             // --- State & Elements ---
             let targetEntryId = null;
-            let targetNoteId = null;
+            let targetChapterId = null;
 
             const els = {
                 saveBtn: document.getElementById('studyhub-save'),
@@ -326,6 +385,23 @@ if (!window.studyhubInjected) {
                 status: document.getElementById('studyhub-floating-status')
             };
 
+            // --- Cleanup function to prevent memory leaks ---
+            function cleanupModal() {
+                // Remove all tracked event listeners
+                cleanupFns.forEach(fn => { try { fn(); } catch (e) { } });
+                cleanupFns.length = 0;
+
+                // Clear closure references
+                _capturedImageData = null;
+                allChapters = [];
+                allEntries = [];
+
+                // Remove the modal
+                if (modalOverlay.parentNode) {
+                    modalOverlay.remove();
+                }
+            }
+
             // --- Logic Functions ---
 
             function showStatus(msg, type = 'loading', duration = 2000) {
@@ -338,34 +414,32 @@ if (!window.studyhubInjected) {
             }
 
             async function fetchChaptersAndEntries() {
-                chrome.runtime.sendMessage({ action: 'fetchChapters' }, (response) => {
-                    if (response && response.chapters && !response.error) {
-                        allChapters = response.chapters;
-                        allEntries = response.entries || [];
-                        console.log(`[StudyHub] Fetched ${allChapters.length} chapters and ${allEntries.length} entries.`);
-                        updateChapterDropdown();
-                        updateEntryList();
-                    } else {
-                        console.error('[StudyHub] Fetch failed:', response?.error);
-                        renderEntryList([]); // Clear loading state
-                        const errorMsg = response?.error?.includes('401') || response?.error?.includes('Unauthorized')
-                            ? '⚠️ Please login to Dashboard'
-                            : '⚠️ Failed to sync with Dashboard';
-                        showStatus(errorMsg, 'error', 5000);
-                    }
-                });
-            }
-
-            function fetchNotes() {
-                chrome.runtime.sendMessage({ action: 'fetchNotes' }, (response) => {
-                    if (response && response.notes && !response.error) {
-                        allNotes = response.notes;
-                        renderNoteList(allNotes);
-                    } else {
-                        renderNoteList([]); // Clear loading state
-                        if (response?.error) showStatus('⚠️ Failed to load notes', 'error');
-                    }
-                });
+                try {
+                    chrome.runtime.sendMessage({ action: 'fetchChapters' }, (response) => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[StudyHub] Chrome runtime error:', chrome.runtime.lastError.message);
+                            showStatus('⚠️ Extension error — try again', 'error', 5000);
+                            return;
+                        }
+                        if (response && response.chapters && !response.error) {
+                            allChapters = response.chapters;
+                            allEntries = response.entries || [];
+                            console.log(`[StudyHub] Fetched ${allChapters.length} chapters and ${allEntries.length} entries.`);
+                            updateChapterDropdown();
+                            updateEntryList();
+                        } else {
+                            console.error('[StudyHub] Fetch failed:', response?.error);
+                            renderEntryList([]); // Clear loading state
+                            const errorMsg = response?.error?.includes('401') || response?.error?.includes('Unauthorized')
+                                ? '⚠️ Please login to Dashboard'
+                                : '⚠️ Failed to sync with Dashboard';
+                            showStatus(errorMsg, 'error', 5000);
+                        }
+                    });
+                } catch (err) {
+                    console.error('[StudyHub] fetchChaptersAndEntries error:', err);
+                    showStatus('⚠️ Connection error', 'error', 5000);
+                }
             }
 
             function updateChapterDropdown() {
@@ -397,30 +471,45 @@ if (!window.studyhubInjected) {
             }
 
             function updateEntryList() {
-                const subject = els.subjectSelect.value;
-                const chapterId = els.chapterSelect.value;
+                const subject = els.subjectSelect.value.toLowerCase();
                 const term = els.entrySearch.value.toLowerCase();
                 const isExistingMode = document.getElementById('pill-existing-entry').classList.contains('active');
 
-                const filtered = allEntries.filter(e => {
-                    const ch = allChapters.find(c => c.id === e.chapter_id);
-                    if (!ch) {
-                        console.warn('[StudyHub] Entry has no matching chapter:', e.id, e.chapter_id);
-                        return false;
-                    }
+                if (isExistingMode) {
+                    // Show chapters (not entries) filtered by subject
+                    const filtered = allChapters.filter(c => {
+                        const chapterSubject = (c.subject || '').toLowerCase();
+                        const matchesSubject = chapterSubject === subject || (subject === 'math' && chapterSubject === 'mathematics');
+                        const matchesSearch = !term || (c.name && c.name.toLowerCase().includes(term));
+                        return matchesSubject && matchesSearch;
+                    });
+                    console.log(`[StudyHub] Filtering chapters for ${subject}. Found ${filtered.length} matches.`);
+                    renderChapterList(filtered);
+                } else {
+                    // New entry mode — no list needed
+                }
+            }
 
-                    const chapterSubject = (ch.subject || '').toLowerCase();
-                    const matchesSubject = chapterSubject === subject || (subject === 'math' && chapterSubject === 'mathematics');
+            function renderChapterList(chapters) {
+                els.entryList.innerHTML = '';
+                if (chapters.length === 0) {
+                    els.entryList.innerHTML = '<div class="studyhub-list-item">No chapters found for this subject</div>';
+                    return;
+                }
 
-                    // If in existing mode, show all entries for the subject regardless of chapter selection
-                    const matchesChapter = isExistingMode || (chapterId === 'NEW_CHAPTER' || e.chapter_id === chapterId);
-                    const matchesSearch = !term || (e.text && e.text.toLowerCase().includes(term));
-
-                    return matchesSubject && matchesChapter && matchesSearch;
+                chapters.forEach(ch => {
+                    const item = document.createElement('div');
+                    item.className = 'studyhub-list-item';
+                    if (targetChapterId === ch.id) item.classList.add('selected');
+                    const entryCount = allEntries.filter(e => e.chapter_id === ch.id).length;
+                    item.textContent = `${ch.name} (${entryCount} entries)`;
+                    item.onclick = () => {
+                        targetChapterId = ch.id;
+                        document.querySelectorAll('#studyhub-entry-list .studyhub-list-item').forEach(i => i.classList.remove('selected'));
+                        item.classList.add('selected');
+                    };
+                    els.entryList.appendChild(item);
                 });
-
-                console.log(`[StudyHub] Filtering entries for ${subject}. Found ${filtered.length} matches.`);
-                renderEntryList(filtered);
             }
 
             function renderEntryList(entries) {
@@ -443,142 +532,74 @@ if (!window.studyhubInjected) {
                     els.entryList.appendChild(item);
                 });
             }
-
-            function renderNoteList(notes) {
-                const listEl = document.getElementById('studyhub-note-list');
-                listEl.innerHTML = '';
-                const term = document.getElementById('studyhub-note-search').value.toLowerCase();
-
-                const filtered = notes.filter(n => !term || n.title.toLowerCase().includes(term));
-
-                if (filtered.length === 0) {
-                    listEl.innerHTML = '<div class="studyhub-list-item">No notes found</div>';
-                    return;
-                }
-
-                filtered.forEach(n => {
-                    const item = document.createElement('div');
-                    item.className = 'studyhub-list-item';
-                    if (targetNoteId === n.id) item.classList.add('selected');
-                    item.textContent = `${n.title} [${n.subject || 'General'}]`;
-                    item.onclick = () => {
-                        targetNoteId = n.id;
-                        document.querySelectorAll('#studyhub-note-list .studyhub-list-item').forEach(i => i.classList.remove('selected'));
-                        item.classList.add('selected');
-                    };
-                    listEl.appendChild(item);
-                });
-            }
-
             // --- Initialization ---
             fetchChaptersAndEntries();
 
-            // --- Events ---
-            els.subjectSelect.onchange = () => {
+            // --- Add initial link (current page URL) using the helper ---
+            const linksContainer = document.getElementById('studyhub-links-container');
+            createLinkRow(linksContainer, window.location.href, true);
+
+            // Events (all tracked for cleanup)
+            trackEvent(els.subjectSelect, 'change', () => {
                 updateChapterDropdown();
                 updateEntryList();
-            };
-            els.chapterSelect.onchange = () => {
+            });
+            trackEvent(els.chapterSelect, 'change', () => {
                 handleChapterChange();
                 updateEntryList();
-            };
-            els.entrySearch.oninput = updateEntryList;
-            document.getElementById('studyhub-note-search').oninput = () => renderNoteList(allNotes);
+            });
+            trackEvent(els.entrySearch, 'input', updateEntryList);
 
-            // Destination Toggles
-            const chaptersSection = document.getElementById('studyhub-chapters-section');
-            const notesSection = document.getElementById('studyhub-notes-section');
-
-            document.getElementById('studyhub-toggle-chapters').onclick = (e) => {
-                e.target.classList.add('active');
-                document.getElementById('studyhub-toggle-notes').classList.remove('active');
-                chaptersSection.style.display = 'block';
-                notesSection.style.display = 'none';
-            };
-            document.getElementById('studyhub-toggle-notes').onclick = (e) => {
-                e.target.classList.add('active');
-                document.getElementById('studyhub-toggle-chapters').classList.remove('active');
-                notesSection.style.display = 'block';
-                chaptersSection.style.display = 'none';
-                if (allNotes.length === 0) fetchNotes();
-            };
-
-            // Sub-pills
-            document.getElementById('pill-new-entry').onclick = (e) => {
+            trackEvent(document.getElementById('pill-new-entry'), 'click', (e) => {
                 e.target.classList.add('active');
                 document.getElementById('pill-existing-entry').classList.remove('active');
                 document.getElementById('studyhub-new-entry-fields').style.display = 'block';
                 document.getElementById('studyhub-search-entry-fields').style.display = 'none';
-            };
-            document.getElementById('pill-existing-entry').onclick = (e) => {
+            });
+            trackEvent(document.getElementById('pill-existing-entry'), 'click', (e) => {
                 e.target.classList.add('active');
                 document.getElementById('pill-new-entry').classList.remove('active');
                 document.getElementById('studyhub-new-entry-fields').style.display = 'none';
                 document.getElementById('studyhub-search-entry-fields').style.display = 'block';
                 updateEntryList();
-            };
-
-            document.getElementById('pill-new-note').onclick = (e) => {
-                e.target.classList.add('active');
-                document.getElementById('pill-existing-note').classList.remove('active');
-                document.getElementById('studyhub-new-note-fields').style.display = 'block';
-                document.getElementById('studyhub-search-note-fields').style.display = 'none';
-            };
-            document.getElementById('pill-existing-note').onclick = (e) => {
-                e.target.classList.add('active');
-                document.getElementById('pill-new-note').classList.remove('active');
-                document.getElementById('studyhub-new-note-fields').style.display = 'none';
-                document.getElementById('studyhub-search-note-fields').style.display = 'block';
-            };
+            });
 
             // Type tags
             document.querySelectorAll('.studyhub-type-tag').forEach(tag => {
-                tag.onclick = () => {
+                trackEvent(tag, 'click', () => {
                     document.querySelectorAll('.studyhub-type-tag').forEach(t => t.classList.remove('active'));
                     tag.classList.add('active');
                     selectedType = tag.dataset.type;
-                };
+                });
             });
 
-            // Link management
-            const linksContainer = document.getElementById('studyhub-links-container');
-            document.querySelector('.studyhub-add-link-btn').onclick = () => {
-                const row = document.createElement('div');
-                row.className = 'studyhub-link-item';
-                row.innerHTML = `
-            <input type="text" placeholder="Paste Reference URL..." class="studyhub-input-glass" style="border:none; background:transparent;"/>
-            <span class="studyhub-remove-link-btn">✕</span>
-        `;
-                linksContainer.appendChild(row);
-                row.querySelector('.studyhub-remove-link-btn').onclick = () => row.remove();
-            };
-
-            document.querySelectorAll('.studyhub-remove-link-btn').forEach(btn => {
-                btn.onclick = (e) => e.target.closest('.studyhub-link-item').remove();
+            // Add link button (uses helper — no duplication)
+            trackEvent(document.querySelector('.studyhub-add-link-btn'), 'click', () => {
+                createLinkRow(linksContainer);
             });
 
             // Close/Retake/Refresh
-            els.closeBtn.onclick = () => modalOverlay.remove();
-            els.retakeBtn.onclick = () => {
-                modalOverlay.remove();
+            trackEvent(els.closeBtn, 'click', cleanupModal);
+            trackEvent(els.retakeBtn, 'click', () => {
+                cleanupModal();
                 initSelection();
-            };
-            document.getElementById('studyhub-refresh').onclick = () => {
+            });
+            trackEvent(document.getElementById('studyhub-refresh'), 'click', () => {
                 showStatus('⏳ Refreshing data...', 'loading', 1000);
                 fetchChaptersAndEntries();
-                if (notesSection.style.display !== 'none') fetchNotes();
-            };
+            });
 
             // Save
-            els.saveBtn.onclick = async () => {
-                const isChapters = chaptersSection.style.display !== 'none';
-                const description = document.getElementById('studyhub-description').value.trim();
-                const imageName = document.getElementById('studyhub-image-name').value.trim();
+            trackEvent(els.saveBtn, 'click', async () => {
+                try {
+                    const description = document.getElementById('studyhub-description').value.trim();
+                    const imageName = document.getElementById('studyhub-image-name').value.trim();
+                    const tagsRaw = document.getElementById('studyhub-tags').value.trim();
+                    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-                const linkInputs = document.querySelectorAll('#studyhub-links-container input');
-                const urls = Array.from(linkInputs).map(i => i.value.trim()).filter(Boolean);
+                    // Use the deduplicated collectLinks() helper
+                    const urls = collectLinks();
 
-                if (isChapters) {
                     const isNew = document.getElementById('pill-new-entry').classList.contains('active');
                     if (isNew) {
                         const chapterId = els.chapterSelect.value;
@@ -592,7 +613,7 @@ if (!window.studyhubInjected) {
                         chrome.runtime.sendMessage({
                             action: 'saveScreenshot',
                             system: 'chapter-tracker',
-                            imageData: window.__studyhubCapturedImage,
+                            imageData: _capturedImageData,
                             chapterId: chapterId === 'NEW_CHAPTER' ? null : chapterId,
                             subject: els.subjectSelect.value,
                             chapterName: newChapterName,
@@ -601,70 +622,52 @@ if (!window.studyhubInjected) {
                             urls,
                             imageName,
                             type: selectedType,
+                            tags,
                             createNewChapter: chapterId === 'NEW_CHAPTER',
                             createNewEntry: true
                         }, handleResult);
                     } else {
-                        if (!targetEntryId) return showStatus('⚠️ Select an entry first', 'error');
-                        showStatus('⏳ Attaching to entry...', 'loading', 0);
+                        // Attach to existing chapter — create new entry inside selected chapter
+                        if (!targetChapterId) return showStatus('⚠️ Select a chapter first', 'error');
+                        const attachText = (document.getElementById('studyhub-attach-entry-text')?.value || '').trim();
+                        if (!attachText) return showStatus('⚠️ Enter an entry heading', 'error');
+                        showStatus('⏳ Saving to chapter...', 'loading', 0);
                         chrome.runtime.sendMessage({
                             action: 'saveScreenshot',
                             system: 'chapter-tracker',
-                            imageData: window.__studyhubCapturedImage,
-                            entryId: targetEntryId,
+                            imageData: _capturedImageData,
+                            chapterId: targetChapterId,
+                            subject: els.subjectSelect.value,
+                            text: attachText,
                             description,
                             urls,
-                            imageName
+                            imageName,
+                            type: 'concept',
+                            tags,
+                            createNewEntry: true
                         }, handleResult);
                     }
-                } else {
-                    // Learning Notes
-                    const isNew = document.getElementById('pill-new-note').classList.contains('active');
-                    if (isNew) {
-                        const title = document.getElementById('studyhub-new-note-title').value.trim();
-                        if (!title) return showStatus('⚠️ Missing note title', 'error');
-
-                        const linkInputs = document.querySelectorAll('#studyhub-links-container input');
-                        const urls = Array.from(linkInputs).map(i => i.value.trim()).filter(Boolean);
-
-                        showStatus('⏳ Creating note...', 'loading', 0);
-                        chrome.runtime.sendMessage({
-                            action: 'saveScreenshot',
-                            system: 'learning-notes',
-                            imageData: window.__studyhubCapturedImage,
-                            title,
-                            subject: els.subjectSelect.value,
-                            description,
-                            links: urls,
-                            imageName,
-                            createNew: true
-                        }, handleResult);
-                    } else {
-                        if (!targetNoteId) return showStatus('⚠️ Select a note first', 'error');
-                        const linkInputs = document.querySelectorAll('#studyhub-links-container input');
-                        const urls = Array.from(linkInputs).map(i => i.value.trim()).filter(Boolean);
-
-                        showStatus('⏳ Updating note...', 'loading', 0);
-                        chrome.runtime.sendMessage({
-                            action: 'saveScreenshot',
-                            system: 'learning-notes',
-                            imageData: window.__studyhubCapturedImage,
-                            noteId: targetNoteId,
-                            description,
-                            links: urls,
-                            imageName,
-                            createNew: false
-                        }, handleResult);
-                    }
+                } catch (err) {
+                    console.error('[StudyHub] Save error:', err);
+                    showStatus('❌ Unexpected error: ' + err.message, 'error');
                 }
-            };
+            });
 
             function handleResult(result) {
-                if (result && result.success) {
-                    showStatus('✅ Saved successfully!', 'success');
-                    setTimeout(() => modalOverlay.remove(), 1500);
-                } else {
-                    showStatus('❌ ' + (result?.error || 'Failed to save'), 'error');
+                try {
+                    if (chrome.runtime.lastError) {
+                        showStatus('❌ Extension error: ' + chrome.runtime.lastError.message, 'error');
+                        return;
+                    }
+                    if (result && result.success) {
+                        showStatus('✅ Saved successfully!', 'success');
+                        setTimeout(() => cleanupModal(), 1500);
+                    } else {
+                        showStatus('❌ ' + (result?.error || 'Failed to save'), 'error');
+                    }
+                } catch (err) {
+                    console.error('[StudyHub] handleResult error:', err);
+                    showStatus('❌ Unexpected error', 'error');
                 }
             }
         }

@@ -141,6 +141,61 @@ export default async function handler(req, res) {
                 if (!type || !minutes || !status) {
                     return res.status(400).json({ error: 'Missing required fields' });
                 }
+
+                // 0. IDEMPOTENCY CHECK (Deterministic ID)
+                // If we receive the same ID again, return success immediately
+                try {
+                    const [existing] = await db.execute(
+                        'SELECT id FROM pomodoro_sessions WHERE id = ?',
+                        [id]
+                    );
+                    if (existing.length > 0) {
+                        console.log('[API] Idempotent request. Session already exists:', id);
+                        return res.status(200).json({
+                            id: id,
+                            type,
+                            minutes,
+                            elapsedSeconds,
+                            status,
+                            deduplicated: true,
+                            idempotent: true
+                        });
+                    }
+                } catch (e) {
+                    console.error('[API] Idempotency check failed:', e);
+                }
+
+                // 1. DEDUPLICATION CHECK (Enterprise-grade Race Condition Fix)
+                // Look for a session with same type/minutes created in the last 30 seconds
+                // This handles cases where Extension & Webapp fire simultaneously
+                try {
+                    const [duplicates] = await db.execute(
+                        `SELECT id, created_at FROM pomodoro_sessions 
+                         WHERE type = ? 
+                         AND minutes = ? 
+                         AND status = ? 
+                         AND created_at > DATE_SUB(NOW(), INTERVAL 30 SECOND)
+                         LIMIT 1`,
+                        [type, minutes, status]
+                    );
+
+                    if (duplicates.length > 0) {
+                        console.log('[API] Deduplicated session request. Returning existing ID:', duplicates[0].id);
+                        // Return existing session as if it was just created (Idempotent 200 OK)
+                        return res.status(200).json({
+                            id: duplicates[0].id,
+                            type,
+                            minutes,
+                            elapsedSeconds,
+                            status,
+                            deduplicated: true
+                        });
+                    }
+                } catch (dedupError) {
+                    console.error('[API] Deduplication check failed:', dedupError);
+                    // Continue to insert if check fails (fail open to prevent data loss)
+                }
+
                 const newId = id || generateId();
                 await db.execute(
                     'INSERT INTO pomodoro_sessions (id, type, minutes, elapsed_seconds, status) VALUES (?, ?, ?, ?, ?)',
@@ -149,9 +204,16 @@ export default async function handler(req, res) {
                 return res.status(201).json({ id: newId, type, minutes, elapsedSeconds, status });
             }
 
-            if (req.method === 'DELETE' && action === 'all') {
-                await db.execute('DELETE FROM pomodoro_sessions');
-                return res.status(200).json({ deleted: true, all: true });
+            if (req.method === 'DELETE') {
+                if (action === 'all') {
+                    await db.execute('DELETE FROM pomodoro_sessions');
+                    return res.status(200).json({ deleted: true, all: true });
+                }
+                if (action) {
+                    await db.execute('DELETE FROM pomodoro_sessions WHERE id = ?', [action]);
+                    return res.status(200).json({ deleted: true, id: action });
+                }
+                return res.status(400).json({ error: 'Provide session id or use /all' });
             }
 
             return res.status(405).json({ error: 'Method not allowed for sessions' });
@@ -574,7 +636,7 @@ export default async function handler(req, res) {
                 await db.execute(
                     `INSERT INTO entries (id, chapter_id, text, type, images, urls, description, tags, priority) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [newEntryId, targetChapterId, text || 'Screenshot', type || 'concept', JSON.stringify([imageObject]), JSON.stringify(urls || []), description || '', tags || '', priority || 'medium']
+                    [newEntryId, targetChapterId, text || 'Screenshot', type || 'concept', JSON.stringify([imageObject]), JSON.stringify(urls || []), description || '', typeof tags === 'string' ? tags : JSON.stringify(tags || []), priority || 'medium']
                 );
                 return res.status(201).json({ success: true, message: 'New entry created', chapterId: targetChapterId, entryId: newEntryId });
             }
@@ -601,13 +663,13 @@ export default async function handler(req, res) {
                 } else if (bodyAction === 'add_entry') {
                     await db.execute(
                         `INSERT INTO entries (id, chapter_id, text, type, images, urls, description, tags, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [data.id, data.chapterId, data.text || '', data.type || 'question', JSON.stringify(data.images || []), JSON.stringify(data.urls || []), data.description || '', data.tags || '', data.priority || 'medium']
+                        [data.id, data.chapterId, data.text || '', data.type || 'question', JSON.stringify(data.images || []), JSON.stringify(data.urls || []), data.description || '', typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags || []), data.priority || 'medium']
                     );
                     return res.status(200).json({ success: true });
                 } else if (bodyAction === 'update_entry') {
                     await db.execute(
                         `UPDATE entries SET text=?, images=?, urls=?, description=?, tags=?, priority=?, updated_at=NOW() WHERE id=?`,
-                        [data.text || '', JSON.stringify(data.images || []), JSON.stringify(data.urls || []), data.description || '', data.tags || '', data.priority || 'medium', data.id]
+                        [data.text || '', JSON.stringify(data.images || []), JSON.stringify(data.urls || []), data.description || '', typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags || []), data.priority || 'medium', data.id]
                     );
                     return res.status(200).json({ success: true });
                 }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '../ui/Toast';
 import {
@@ -40,7 +40,12 @@ const TYPE_CONFIG = {
     resource: { icon: LinkIcon, color: 'cyan', label: 'Resource' },
 };
 
-const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => {
+const CONFIG = Object.freeze({
+    NOTES_PER_PAGE: 8,
+    SEARCH_DEBOUNCE_MS: 300,
+});
+
+const CompactNoteCard = React.memo(({ note, onEdit, onDelete, onViewImage, onViewPdf }) => {
     const config = TYPE_CONFIG[note.type] || TYPE_CONFIG.concept;
     const Icon = config.icon;
 
@@ -55,12 +60,9 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
 
     return (
         <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 }
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
             className={`
                 relative bg-white dark:bg-slate-800 
                 rounded-xl overflow-hidden shadow-md border-2 mb-6
@@ -83,11 +85,11 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
                         <Icon size={14} />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-tight">
+                        <h3 className="font-bold text-xl text-slate-900 dark:text-white leading-tight">
                             <MarkdownRenderer content={note.title} className="inline [&_p]:inline [&_p]:mb-0" />
                         </h3>
                         {note.topic && (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 break-words">
+                            <p className="text-base text-slate-500 dark:text-slate-400 mt-1 break-words">
                                 <MarkdownRenderer content={note.topic} className="inline [&_p]:inline [&_p]:mb-0 prose-sm" />
                             </p>
                         )}
@@ -114,8 +116,8 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
             <div className="px-3 py-4">
                 <div className={cn(
                     "leading-relaxed text-slate-700 dark:text-slate-200 break-words",
-                    note.description?.length < 100 ? "text-lg font-medium" :
-                        note.description?.length < 300 ? "text-base" : "text-sm"
+                    note.description?.length < 100 ? "text-xl font-medium" :
+                        note.description?.length < 300 ? "text-lg" : "text-base"
                 )}>
                     <MarkdownRenderer content={note.description} />
                 </div>
@@ -163,7 +165,7 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
                 {(note.links?.length > 0 || note.link) && (
                     <div className="flex flex-col gap-1.5">
                         {/* Support Legacy Single Link */}
-                        {note.link && !note.links?.includes(note.link) && (
+                        {note.link && !(Array.isArray(note.links) && note.links.includes(note.link)) && (
                             <a
                                 href={ensureAbsoluteUrl(note.link)}
                                 target="_blank"
@@ -172,11 +174,15 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
                             >
                                 <div className="flex items-center gap-1 min-w-0">
                                     {getFaviconUrl(note.link) && (
-                                        <img
-                                            src={getFaviconUrl(note.link)}
-                                            alt=""
-                                            className="w-3 h-3 rounded flex-shrink-0"
-                                        />
+                                        <>
+                                            <img
+                                                src={getFaviconUrl(note.link)}
+                                                alt=""
+                                                className="w-3 h-3 rounded flex-shrink-0 bg-transparent"
+                                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                            />
+                                            <div className="hidden text-blue-500/50"><LinkIcon size={12} /></div>
+                                        </>
                                     )}
                                     <span className="truncate">Reference Link</span>
                                 </div>
@@ -194,11 +200,15 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
                             >
                                 <div className="flex items-center gap-1 min-w-0">
                                     {getFaviconUrl(link) && (
-                                        <img
-                                            src={getFaviconUrl(link)}
-                                            alt=""
-                                            className="w-3 h-3 rounded flex-shrink-0"
-                                        />
+                                        <>
+                                            <img
+                                                src={getFaviconUrl(link)}
+                                                alt=""
+                                                className="w-3 h-3 rounded flex-shrink-0 bg-transparent"
+                                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                                            />
+                                            <div className="hidden text-blue-500/50"><LinkIcon size={12} /></div>
+                                        </>
                                     )}
                                     <span className="truncate">Resource Link {note.links.length > 1 ? idx + 1 : ''}</span>
                                 </div>
@@ -232,8 +242,29 @@ const CompactNoteCard = ({ note, onEdit, onDelete, onViewImage, onViewPdf }) => 
             </div>
         </motion.div>
     );
-};
+}, (prevProps, nextProps) => {
+    return prevProps.note.id === nextProps.note.id &&
+        prevProps.note.updated_at === nextProps.note.updated_at &&
+        prevProps.note.is_revised === nextProps.note.is_revised;
+});
 
+const NoteCardSkeleton = () => (
+    <div className="animate-pulse bg-white/80 dark:bg-slate-800/80 rounded-2xl p-5 space-y-3 border border-slate-100 dark:border-slate-700/50">
+        <div className="flex items-center gap-2">
+            <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded-full" />
+            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+        </div>
+        <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+        <div className="space-y-2">
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-5/6" />
+        </div>
+        <div className="flex gap-2 pt-2">
+            <div className="h-6 w-14 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+            <div className="h-6 w-14 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+        </div>
+    </div>
+);
 const NotesLibrary2 = () => {
     const { notes, isLoading, error, isModalOpen, editingNote } = useNotesStore();
     const { fetchNotes, deleteNote, markAsRevised, toggleModal, removeMediaLink } = useNoteActions();
@@ -242,6 +273,8 @@ const NotesLibrary2 = () => {
 
     const [activeFilter, setActiveFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef(null);
     // Default to blank page (Chapter Tracker) as requested
     const [showBlankPage, setShowBlankPage] = useState(true);
     const [selectedNote, setSelectedNote] = useState(null);
@@ -252,7 +285,21 @@ const NotesLibrary2 = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [activeSubject, setActiveSubject] = useState('physics');
-    const NOTES_PER_PAGE = 8; // Adjust based on layout
+    const [isSingleChapterView, setIsSingleChapterView] = useState(false);
+
+    // Debounce search input
+    const handleSearchChange = useCallback((value) => {
+        setSearchTerm(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => {
+            setDebouncedSearch(value);
+        }, CONFIG.SEARCH_DEBOUNCE_MS);
+    }, []);
+
+    // Cleanup debounce timer
+    useEffect(() => {
+        return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+    }, []);
 
     useEffect(() => {
         fetchNotes();
@@ -269,37 +316,37 @@ const NotesLibrary2 = () => {
             result = result.filter(n => n.type === activeFilter);
         }
 
-        if (searchTerm) {
-            const query = searchTerm.toLowerCase();
-            result = result.filter(n =>
-                n.title.toLowerCase().includes(query) ||
-                n.description?.toLowerCase().includes(query) ||
-                n.topic?.toLowerCase().includes(query)
-            );
+        if (debouncedSearch) {
+            const searchTerms = debouncedSearch.toLowerCase().split(/\s+/).filter(Boolean);
+            result = result.filter(n => {
+                const searchableText = `${n.title || ''} ${n.description || ''} ${n.topic || ''} ${n.chapterName || ''} ${n.subject || ''}`.toLowerCase();
+                // Check if all words from search query exist somewhere in the note
+                return searchTerms.every(term => searchableText.includes(term));
+            });
         }
 
         return result;
-    }, [notes, activeFilter, searchTerm]);
+    }, [notes, activeFilter, debouncedSearch]);
 
     // Pagination logic
-    const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
+    const totalPages = Math.ceil(filteredNotes.length / CONFIG.NOTES_PER_PAGE);
     const paginatedNotes = useMemo(() => {
-        const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
-        return filteredNotes.slice(startIndex, startIndex + NOTES_PER_PAGE);
-    }, [filteredNotes, currentPage, NOTES_PER_PAGE]);
+        const startIndex = (currentPage - 1) * CONFIG.NOTES_PER_PAGE;
+        return filteredNotes.slice(startIndex, startIndex + CONFIG.NOTES_PER_PAGE);
+    }, [filteredNotes, currentPage]);
 
     // Reset to page 1 when filters/search change
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeFilter, searchTerm]);
+    }, [activeFilter, debouncedSearch]);
 
-    const handleEdit = (note) => {
+    const handleEdit = useCallback((note) => {
         toggleModal(true, note);
-    };
+    }, [toggleModal]);
 
-    const handleDelete = (note) => {
+    const handleDelete = useCallback((note) => {
         setNoteToDelete(note);
-    };
+    }, []);
 
     const confirmDelete = async () => {
         if (!noteToDelete) return;
@@ -351,24 +398,34 @@ const NotesLibrary2 = () => {
         }
     };
 
-    const handleViewPdf = (pdfSrc) => {
+    const handleViewPdf = useCallback((pdfSrc) => {
         setViewingPdf(pdfSrc);
-    };
+    }, []);
 
-    // Track mouse position for the "Torch" effect
+    // Track mouse position for the "Torch" effect (RAF-throttled)
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     useEffect(() => {
+        let rafId = null;
         const handleMouseMove = (e) => {
-            setMousePos({ x: e.clientX, y: e.clientY });
+            if (rafId) return;
+            rafId = requestAnimationFrame(() => {
+                setMousePos({ x: e.clientX, y: e.clientY });
+                rafId = null;
+            });
         };
         window.addEventListener('mousemove', handleMouseMove);
-        return () => window.removeEventListener('mousemove', handleMouseMove);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
     }, []);
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+                {Array.from({ length: CONFIG.NOTES_PER_PAGE }).map((_, i) => (
+                    <NoteCardSkeleton key={i} />
+                ))}
             </div>
         );
     }
@@ -430,47 +487,49 @@ const NotesLibrary2 = () => {
             {/* Content Layer with Glassmorphism Foundation */}
             <div className="relative z-10 p-6 space-y-8 max-w-[1400px] mx-auto">
                 {/* Advanced Header with Frosted Material */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-white/5 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-emerald-500/10 rounded-xl">
-                            <BookOpen className="text-emerald-500" size={24} />
+                {(!showBlankPage || !isSingleChapterView) && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-white/5 backdrop-blur-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <BookOpen className="text-emerald-500" size={24} />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">
+                                    Notes <span className="text-emerald-500">Library</span>
+                                </h1>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5 opacity-70">
+                                    {showBlankPage ? `${activeSubject} Tracker` : (activeFilter === 'all' ? 'Knowledge Bank' : `${activeFilter} Context`)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-none">
-                                Notes <span className="text-emerald-500">Library</span>
-                            </h1>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5 opacity-70">
-                                {showBlankPage ? `${activeSubject} Tracker` : (activeFilter === 'all' ? 'Knowledge Bank' : `${activeFilter} Context`)}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {/* Integrated Search */}
-                        <div className="relative flex-1 sm:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                            <input
-                                type="text"
-                                placeholder="Find anything..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full px-4 py-2 pl-9 bg-slate-100 dark:bg-slate-800/50 
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            {/* Integrated Search */}
+                            <div className="relative flex-1 sm:w-80">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <input
+                                    type="text"
+                                    placeholder="Find anything..."
+                                    value={searchTerm}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
+                                    className="w-full px-4 py-2 pl-9 bg-slate-100 dark:bg-slate-800/50 
                                      border-2 border-transparent focus:border-emerald-500/20
                                      rounded-xl outline-none text-slate-900 dark:text-white text-sm transition-all"
-                            />
-                        </div>
-                        {/* New Blank Page Button */}
-                        <button
-                            onClick={() => setShowBlankPage(true)}
-                            className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl
+                                />
+                            </div>
+                            {/* New Blank Page Button */}
+                            <button
+                                onClick={() => setShowBlankPage(true)}
+                                className="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl
                                  shadow-lg shadow-emerald-500/25 transition-all hover:scale-105
                                  flex items-center justify-center flex-shrink-0"
-                            title="New Page"
-                        >
-                            <Plus size={18} />
-                        </button>
+                                title="New Page"
+                            >
+                                <Plus size={18} />
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Blank Page View */}
                 {showBlankPage ? (
@@ -482,71 +541,63 @@ const NotesLibrary2 = () => {
                         className="min-h-[60vh] flex flex-col"
                     >
                         {/* Back Button and Subject Tabs Row */}
-                        <div className="flex items-center justify-between mb-6">
-                            <button
-                                onClick={() => setShowBlankPage(false)}
-                                className="flex items-center gap-2 text-slate-500 dark:text-slate-400 
+                        {!isSingleChapterView && (
+                            <div className="flex items-center justify-between mb-6">
+                                <button
+                                    onClick={() => setShowBlankPage(false)}
+                                    className="flex items-center gap-2 text-slate-500 dark:text-slate-400 
                                      hover:text-emerald-500 dark:hover:text-emerald-400 
                                      transition-colors group w-fit"
-                            >
-                                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                                <span className="text-sm font-medium">Back to Notes</span>
-                            </button>
+                                >
+                                    <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                                    <span className="text-sm font-medium">Back to Notes</span>
+                                </button>
 
-                            <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-inner backdrop-blur-md animate-in fade-in zoom-in-95 duration-500">
-                                {SUBJECTS.map((sub) => {
-                                    const Icon = sub.icon;
-                                    const isActive = activeSubject === sub.key;
-                                    return (
-                                        <button
-                                            key={sub.key}
-                                            onClick={() => setActiveSubject(sub.key)}
-                                            className={`
+                                <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-inner backdrop-blur-md animate-in fade-in zoom-in-95 duration-500">
+                                    {SUBJECTS.map((sub) => {
+                                        const Icon = sub.icon;
+                                        const isActive = activeSubject === sub.key;
+                                        return (
+                                            <button
+                                                key={sub.key}
+                                                onClick={() => setActiveSubject(sub.key)}
+                                                className={`
                                                 relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300
                                                 hover:scale-[1.02] active:scale-[0.98]
                                                 ${isActive
-                                                    ? 'text-white shadow-lg'
-                                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10'
-                                                }
+                                                        ? 'text-white shadow-lg'
+                                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10'
+                                                    }
                                             `}
-                                        >
-                                            {isActive && (
-                                                <motion.div
-                                                    layoutId="activeSubjectTab"
-                                                    className={`absolute inset-0 bg-gradient-to-br ${sub.gradient} rounded-xl shadow-lg shadow-${sub.color}-500/20`}
-                                                    transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                                                />
-                                            )}
-                                            <Icon size={16} className="relative z-10" />
-                                            <span className="relative z-10 hidden sm:inline">{sub.label}</span>
-                                        </button>
-                                    );
-                                })}
+                                            >
+                                                {isActive && (
+                                                    <motion.div
+                                                        layoutId="activeSubjectTab"
+                                                        className={`absolute inset-0 bg-gradient-to-br ${sub.gradient} rounded-xl shadow-lg shadow-${sub.color}-500/20`}
+                                                        transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                                                    />
+                                                )}
+                                                <Icon size={16} className="relative z-10" />
+                                                <span className="relative z-10 hidden sm:inline">{sub.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Chapter Tracker */}
                         <ChapterTracker
                             activeSubject={activeSubject}
                             setActiveSubject={setActiveSubject}
                             searchTerm={searchTerm}
+                            onSingleViewChange={setIsSingleChapterView}
                         />
                     </motion.div>
                 ) : (
                     <>
                         {/* Notes Grid - Masonry Layout */}
-                        <motion.div
-                            initial="hidden"
-                            animate="visible"
-                            variants={{
-                                hidden: { opacity: 0 },
-                                visible: {
-                                    opacity: 1,
-                                    transition: {
-                                        staggerChildren: 0.05
-                                    }
-                                }
-                            }}
+                        <div
                             className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6"
                         >
                             {paginatedNotes.map(note => (
@@ -559,7 +610,7 @@ const NotesLibrary2 = () => {
                                     onViewPdf={handleViewPdf}
                                 />
                             ))}
-                        </motion.div>
+                        </div>
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (

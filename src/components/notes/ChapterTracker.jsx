@@ -35,6 +35,7 @@ import { useNotesStorage } from '../../hooks/useNotesStorage';
 import { getFaviconUrl, ensureAbsoluteUrl } from '../../lib/utils';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import NoteEntryModal from './NoteEntryModal';
+import MarkdownRenderer from '../ui/MarkdownRenderer';
 
 
 export const SUBJECTS = [
@@ -249,8 +250,9 @@ const EntryCard = memo(({ entry, subject, chapterId, subjectColor, onRequestDele
     return (
         <>
             <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
                 className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60
                          border border-slate-100 dark:border-slate-700/50 group space-y-2"
             >
@@ -300,7 +302,7 @@ const EntryCard = memo(({ entry, subject, chapterId, subjectColor, onRequestDele
                             </div>
                         ) : (
                             <>
-                                <p
+                                <div
                                     className={`text-sm text-slate-700 dark:text-slate-300 leading-relaxed break-words cursor-pointer
                                         hover:text-slate-900 dark:hover:text-slate-100 transition-colors
                                         ${isLongText && !isTextExpanded ? 'line-clamp-3' : ''}`}
@@ -308,8 +310,8 @@ const EntryCard = memo(({ entry, subject, chapterId, subjectColor, onRequestDele
                                     onDoubleClick={startEditing}
                                     title={isLongText ? 'Click to expand · Double-click to edit' : 'Double-click to edit'}
                                 >
-                                    {entry.text}
-                                </p>
+                                    {entry.text.includes('{') ? <MarkdownRenderer content={entry.text} /> : entry.text}
+                                </div>
                                 {isLongText && (
                                     <span
                                         className="text-[11px] text-emerald-500 font-medium mt-1 inline-block cursor-default select-none"
@@ -661,11 +663,18 @@ const ChapterTracker = ({
     const activeSubject = propActiveSubject || internalSubject;
     const setActiveSubject = propSetActiveSubject || setInternalSubject;
 
-    // Sync with DB on mount
+    // Sync with DB on mount and on tab focus (so extension saves show without reload)
     useEffect(() => {
         if (syncWithDb) {
             syncWithDb();
         }
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible' && syncWithDb) {
+                syncWithDb();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [syncWithDb]);
 
     const [newChapterName, setNewChapterName] = useState('');
@@ -693,6 +702,8 @@ const ChapterTracker = ({
         const entryData = {
             ...data,
             text: content,
+            // Map modal's 'links' (strings) to store's 'urls' so they persist correctly
+            urls: data.links || data.urls || [],
             // Optimization: If description is identical to text, store it as empty to avoid duplication/redundancy
             description: (data.description === content) ? '' : data.description
         };
@@ -792,6 +803,11 @@ const ChapterTracker = ({
         });
     };
 
+    const editModalViewContext = useMemo(() => ({
+        subject: subjectKeyToLabel(editModal.subject),
+        topic: editModal.chapterName
+    }), [editModal.subject, editModal.chapterName]);
+
     const currentSubject = SUBJECTS.find(s => s.key === activeSubject);
 
     // Filter chapters and entries based on searchTerm
@@ -874,16 +890,15 @@ const ChapterTracker = ({
                     initial="initial"
                     animate="animate"
                     variants={{
-                        initial: { opacity: 0, filter: 'blur(8px)', y: 10 },
+                        initial: { opacity: 0, y: 6 },
                         animate: {
                             opacity: 1,
-                            filter: 'blur(0px)',
                             y: 0,
                             transition: {
-                                duration: 0.5,
+                                duration: 0.25,
                                 ease: [0.22, 1, 0.36, 1],
-                                staggerChildren: 0.08,
-                                delayChildren: 0.05
+                                staggerChildren: 0.03,
+                                delayChildren: 0.02
                             }
                         }
                     }}
@@ -893,16 +908,10 @@ const ChapterTracker = ({
                         {chapters.map((chapter) => (
                             <motion.div
                                 key={chapter.id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 300,
-                                    damping: 30,
-                                    layout: { duration: 0.4 }
-                                }}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                                transition={{ duration: 0.2 }}
                             >
                                 <ChapterCard
                                     chapter={chapter}
@@ -1011,10 +1020,7 @@ const ChapterTracker = ({
                     isOpen={editModal.isOpen}
                     onClose={() => setEditModal(prev => ({ ...prev, isOpen: false, isNew: false }))}
                     editingNote={editModal.entry}
-                    currentViewContext={useMemo(() => ({
-                        subject: subjectKeyToLabel(editModal.subject),
-                        topic: editModal.chapterName
-                    }), [editModal.subject, editModal.chapterName])}
+                    currentViewContext={editModalViewContext}
                     onSave={handleSaveRichEntry}
                     onRequestDelete={() => {
                         if (editModal.entry) {

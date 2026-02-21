@@ -244,7 +244,8 @@ export function isKey(event, keys) {
  */
 export function ensureAbsoluteUrl(url) {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:')) {
+    if (url.startsWith('/')) return url; // Let internal paths or API routes stay relative
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('data:') || url.startsWith('blob:')) {
         return url;
     }
     return `https://${url}`;
@@ -260,7 +261,8 @@ export function getFaviconUrl(url) {
     try {
         // Clean URL to get domain
         let domain = url.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        // Using DuckDuckGo's favicon API as it's less frequently blocked by adblockers than Google's
+        return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
     } catch {
         return '';
     }

@@ -9,7 +9,7 @@
  * - Responsive design
  */
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 // date-fns import removed - not used
 
@@ -37,7 +37,7 @@ const ProgressSection = React.lazy(() => import('./components/tools/ProgressSect
 const ResourceCanvas = React.lazy(() => import('./components/resources/ResourceCanvas'));
 const Workstation = React.lazy(() => import('./components/workstation/Workstation'));
 const AIChat = React.lazy(() => import('./components/tools/AIChat'));
-const NotesLibrary2 = React.lazy(() => import('./components/notes/NotesLibrary2'));
+const NotesLibrary = React.lazy(() => import('./components/notes/NotesLibrary'));
 
 const AdminPanel = React.lazy(() => import('./components/tools/AdminPanel'));
 const VaultPanel = React.lazy(() => import('./components/tools/VaultPanel'));
@@ -54,8 +54,11 @@ import { StreakHeatmap, BentoDashboard } from './components/widgets';
 // Lumina OS Components
 import { LuminaOverview } from './components/lumina';
 
+// UI Components
+import DynamicBackground from './components/ui/DynamicBackground';
+
 // Store & Hooks
-import { useAppStore, useSessionStore, useTaskStore } from './store';
+import { useAppStore, useSessionStore, useTaskStore, useTheme } from './store';
 import useDashboardStore from './store/dashboardStore';
 import { calculateStreak, calculateTodayFocusMinutes } from './utils/statsUtils';
 import { useHotkey, useOnlineStatus, useDebounce } from './hooks';
@@ -234,10 +237,9 @@ function App() {
   const isOnline = useOnlineStatus();
 
   // Zustand stores
-  const isDarkMode = useAppStore(state => state.isDarkMode);
+  const { isDarkMode, themePreference, toggleTheme } = useTheme();
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
-  const toggleTheme = useAppStore(state => state.toggleTheme);
 
 
   // Session store
@@ -357,8 +359,11 @@ function App() {
 
   // Apply dark mode class to document
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-  }, [isDarkMode]);
+    // If we are using Dynamic mode, we always force dark mode for the text/UI elements
+    // since the backgrounds are deep colors. Otherwise, follow user preference.
+    const effectiveDarkMode = themePreference === 'dynamic' ? true : isDarkMode;
+    document.documentElement.classList.toggle('dark', effectiveDarkMode);
+  }, [isDarkMode, themePreference]);
 
   // Load sessions - localStorage for guest mode, API for authenticated
   useEffect(() => {
@@ -531,6 +536,80 @@ function App() {
     loadActiveTimerData();
   }, []); // Empty deps - run once on mount
 
+  // ─── Poll for external timer changes (e.g. from Chrome extension) ───
+  const lastSyncStatus = React.useRef(null);
+  useEffect(() => {
+    if (shouldUseLocalStorage()) return;
+
+    const pollTimer = async () => {
+      try {
+        const res = await fetch('/api/active-timer');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Case 1: External active timer detected while webapp is idle
+        if (data && data.status === 'active' && data.startTime && data.durationSeconds) {
+          const elapsed = Math.floor((Date.now() - Number(data.startTime)) / 1000);
+          const remaining = data.durationSeconds - elapsed;
+
+          if (remaining > 0 && !timerState.isActive) {
+            setTimerState({
+              duration: Math.floor(data.durationSeconds / 60),
+              timeLeft: remaining,
+              initialTime: data.durationSeconds,
+              startTime: Number(data.startTime),
+              isActive: true,
+              isCompleted: false,
+              isFailed: false,
+            });
+            if (lastSyncStatus.current !== 'active') {
+              toast.info('Timer Synced', `Timer started from extension — ${Math.floor(remaining / 60)}m left`);
+            }
+            lastSyncStatus.current = 'active';
+          }
+        }
+        // Case 2: Timer was paused externally while webapp shows active
+        else if (data && data.status === 'paused' && data.pausedRemaining) {
+          if (timerState.isActive || lastSyncStatus.current === 'active') {
+            setTimerState({
+              duration: Math.floor(data.durationSeconds / 60),
+              timeLeft: data.pausedRemaining,
+              initialTime: data.durationSeconds,
+              isActive: false,
+              isCompleted: false,
+              isFailed: false,
+            });
+            if (lastSyncStatus.current !== 'paused') {
+              toast.info('Timer Paused', 'Timer was paused from extension');
+            }
+            lastSyncStatus.current = 'paused';
+          }
+        }
+        // Case 3: Timer was ended/deleted externally while webapp shows active
+        else if ((!data || !data.status || data.status === 'idle') && timerState.isActive) {
+          setTimerState({
+            isActive: false,
+            isFailed: true,
+            timeLeft: 0,
+          });
+          if (lastSyncStatus.current !== 'ended') {
+            toast.info('Timer Ended', 'Timer was ended from extension');
+          }
+          lastSyncStatus.current = 'ended';
+        }
+        // Case 4: No external timer, webapp is idle — reset sync status
+        else if (!data || !data.status) {
+          lastSyncStatus.current = null;
+        }
+      } catch (err) {
+        // Silently ignore polling errors
+      }
+    };
+
+    const interval = setInterval(pollTimer, 5000);
+    return () => clearInterval(interval);
+  }, [timerState.isActive, setTimerState, toast]);
+
   // Load tasks and goals from cloud with enhanced error handling and local fallback
   useEffect(() => {
     const { loadFromCloud, loadFromLocal } = useTaskStore.getState();
@@ -562,9 +641,19 @@ function App() {
     return () => clearInterval(interval);
   }, [timerState.isActive, timerState.startTime, timerState.initialTime, setTimerState]);
 
+  // Timer completion guard
+  const completionProcessed = useRef(false);
+
   // Timer completion
   useEffect(() => {
     if (timerState.timeLeft === 0 && timerState.isActive) {
+      // strict mode/re-render guard
+      if (completionProcessed.current) {
+        console.log('[Timer] Completion already processed, skipping duplicate run.');
+        return;
+      }
+      completionProcessed.current = true;
+
       try {
         const minutes = Math.floor(timerState.initialTime / 60);
         console.log('[Timer] Completing session:', { minutes, initialTime: timerState.initialTime });
@@ -577,8 +666,14 @@ function App() {
         soundManager.playComplete();
         notifications.timerComplete(minutes);
 
+        // Deterministic ID based on start time (Idempotency Key)
+        // Ensures identical ID even if extension & webapp complete simultaneously
+        const sessionId = timerState.startTime
+          ? `session-${timerState.startTime}-${timerState.initialTime}`
+          : `session-${Date.now()}-${timerState.initialTime}`; // Fallback
+
         const newSession = {
-          id: String(Date.now()),
+          id: sessionId,
           type: building?.id || 'tent', // Fallback
           minutes,
           elapsedSeconds: timerState.initialTime,
@@ -594,7 +689,7 @@ function App() {
         localActiveTimer.clear();
 
         if (!shouldUseLocalStorage()) {
-          // Updated to use apiRequest with proper error handling
+          // Fire-and-forget save (server handles deduplication based on ID)
           apiRequest('/api/sessions', {
             method: 'POST',
             body: JSON.stringify(newSession),
@@ -603,7 +698,6 @@ function App() {
             toast,
             defaultMessage: 'Failed to save your session data'
           }).catch(err => {
-            // Error already handled by apiRequest, but log for debugging
             console.error('Session save failed:', err);
           });
 
@@ -630,6 +724,9 @@ function App() {
   const handleTimerAction = useCallback((action, payload) => {
     switch (action) {
       case 'START':
+        // Reset completion guard on new start
+        completionProcessed.current = false;
+
         soundManager.playStart();
         const now = Date.now();
         const startInitial = timerState.isCompleted || timerState.isFailed
@@ -845,9 +942,17 @@ function App() {
   return (
     <AuthProvider>
       <RouteGuard />
+
+      {/* Background Layer */}
+      <DynamicBackground themePreference={themePreference} />
+
+      {/* Main App Container */}
       <div className={cn(
         "min-h-screen transition-colors duration-500",
-        isDarkMode ? "bg-[#050508] text-white" : "bg-gray-50 text-gray-900"
+        // Only set the solid background color base if we are NOT using the dynamic mesh
+        themePreference === 'classic-obsidian'
+          ? (isDarkMode ? "bg-transparent text-white" : "bg-transparent text-gray-900")
+          : "bg-transparent text-white"
       )}>
         {/* Navigation Sidebar */}
         <Sidebar />
@@ -920,7 +1025,7 @@ function App() {
                 )}
 
                 {activeTab === 'concept' && (
-                  <NotesLibrary2 />
+                  <NotesLibrary isDarkMode={isDarkMode} />
                 )}
 
                 {activeTab === 'videos' && (

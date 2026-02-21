@@ -27,10 +27,14 @@ const BCRYPT_ROUNDS = 10;
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-    'https://personal-dashboard-alpha-gilt.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
+    'https://personal-dashboard-alpha-gilt.vercel.app'
 ];
+
+// Add localhost only in development
+if (process.env.NODE_ENV !== 'production') {
+    ALLOWED_ORIGINS.push('http://localhost:5173');
+    ALLOWED_ORIGINS.push('http://localhost:3000');
+}
 
 // =============================================================================
 // Helper Functions
@@ -158,12 +162,11 @@ export default async function handler(req, res) {
         // POST /api/auth - Login
         // =========================================================================
         if (req.method === 'POST') {
-            // TEMPORARILY DISABLED: Rate limit check
-            // TODO: Re-enable after debugging
-            // if (await isRateLimited(db, clientIP)) {
-            //     await logAudit(db, 'RATE_LIMITED', req);
-            //     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
-            // }
+            // Re-enabled rate limit check
+            if (await _isRateLimited(db, clientIP)) {
+                await logAudit(db, 'RATE_LIMITED', req);
+                return res.status(429).json({ error: 'Too many attempts. Try again later.' });
+            }
 
             const { password } = req.body;
 
@@ -171,24 +174,23 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Password required' });
             }
 
-            // Verify password
-            const storedHash = process.env.APP_PASSWORD_HASH || process.env.APP_PASSWORD_SHA256;
+            // Verify password using environment variable
+            const storedHash = (process.env.APP_PASSWORD_SHA256 || process.env.APP_PASSWORD_HASH)?.trim();
+            const extensionKey = process.env.EXTENSION_API_KEY?.trim();
 
-            // For simple setup: direct comparison with SHA256
+            if (!storedHash) {
+                console.error('[Auth] Server error: APP_PASSWORD_SHA256 not set in environment.');
+                return res.status(500).json({ error: 'Authentication serves currently misconfigured' });
+            }
+
+            // Hash the received password
             const passwordHash = createHash('sha256').update(password).digest('hex');
-            const defaultHash = createHash('sha256').update('bittu$7645').digest('hex');
-            const expectedHash = storedHash || defaultHash;
-
-            // Debug logging (will appear in Vercel function logs)
-            console.log('[Auth Debug] Using stored hash:', storedHash ? 'YES (env var)' : 'NO (using default)');
-            console.log('[Auth Debug] Expected hash starts with:', expectedHash.substring(0, 16) + '...');
-            console.log('[Auth Debug] Received hash starts with:', passwordHash.substring(0, 16) + '...');
-            console.log('[Auth Debug] Hashes match:', passwordHash === expectedHash);
 
             let isValid = false;
             try {
-                isValid = timingSafeEqual(Buffer.from(passwordHash), Buffer.from(expectedHash));
-            } catch {
+                // Timing-safe comparison to prevent timing attacks
+                isValid = timingSafeEqual(Buffer.from(passwordHash), Buffer.from(storedHash));
+            } catch (err) {
                 isValid = false;
             }
 

@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 
 /* =============================================================================
    StudyHub - Liquid Glass (Apple) Edition
@@ -11,10 +13,7 @@
 :root {
   /* Study Studio - Midnight Navy & Warm Amber (Calm Editorial) */
   --bg-color: #0c0e14;
-  --bg-mesh:
-    radial-gradient(at 100% 0%, hsla(35, 70%, 50%, 0.04) 0, transparent 40%),
-    radial-gradient(at 0% 0%, hsla(230, 40%, 15%, 0.2) 0, transparent 50%),
-    radial-gradient(at 50% 100%, hsla(230, 30%, 8%, 0.1) 0, transparent 60%);
+  --bg-mesh: transparent;
 }
 
 @layer base {
@@ -22,29 +21,23 @@
     font-family: 'Outfit', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-smoothing: grayscale;
-    background-color: var(--bg-color);
+    scroll-behavior: smooth;
   }
 
   body {
-    background-color: var(--bg-color);
-    background-image: var(--bg-mesh);
-    background-attachment: fixed;
+    background-color: transparent;
+    /* Allow DynamicBackground to show through */
     color: rgba(255, 255, 255, 0.94);
     overflow-x: hidden;
     min-height: 100vh;
     letter-spacing: -0.015em;
     position: relative;
+    scrollbar-gutter: stable;
   }
 
   body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background-image: var(--noise-pattern);
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.15;
-    /* Much smoother, calming texture */
+    /* Optional: Keep a very light global noise if desired, or let DynamicBackground handle it entirely */
+    content: none;
   }
 }
 
@@ -99,10 +92,10 @@
     @apply bg-white/10 text-white/90 border-white/10;
   }
 
-  /* Scrollbar - Invisible but functional (Apple style) */
+  /* Scrollbar - Premium Minimalist (Apple Style) */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -110,30 +103,38 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.3s;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
+    background-clip: padding-box;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    overscroll-behavior-y: contain;
+    scroll-padding-top: 1rem;
+    scroll-padding-bottom: 1rem;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
 
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(139, 92, 246, 0.3);
-    /* Purple-ish thumb */
+    background: rgba(59, 130, 246, 0.2);
+    /* Subtle blue hint */
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(139, 92, 246, 0.5);
+    background: rgba(59, 130, 246, 0.4);
   }
 
   /* HUD - Scientific Precision Aesthetic */
@@ -220,6 +221,62 @@
   .hud-terminal-text {
     @apply font-mono text-purple-400;
     text-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+  }
+
+  /* Ultra-Optimized Dynamic Background Orbs */
+  @keyframes orb-float-1 {
+
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(15vw, 10vh, 0) scale(1.05);
+    }
+  }
+
+  @keyframes orb-float-2 {
+
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(-10vw, -15vh, 0) scale(1.1);
+    }
+  }
+
+  @keyframes orb-float-3 {
+
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(0.9);
+    }
+
+    33% {
+      transform: translate3d(8vw, -8vh, 0) scale(1.02);
+    }
+
+    66% {
+      transform: translate3d(-5vw, 5vh, 0) scale(0.96);
+    }
+  }
+
+  .orb-1 {
+    animation: orb-float-1 25s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .orb-2 {
+    animation: orb-float-2 30s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  .orb-3 {
+    animation: orb-float-3 35s ease-in-out infinite;
+    will-change: transform;
   }
 }
 

@@ -62,40 +62,46 @@ const TodoHistory = ({ onDateSelect, selectedDate }) => {
         <div className="flex flex-col h-full bg-[#050508]/60 backdrop-blur-3xl rounded-[1.5rem] border border-white/5 shadow-2xl overflow-hidden relative group/calendar">
             <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 to-emerald-500/5 pointer-events-none" />
 
-            {/* Header */}
+            {/* Header Area */}
             <div className="p-4 pb-2 flex items-center justify-between relative z-10 shrink-0">
-                <div className="flex items-baseline gap-2">
-                    <h2 className="text-sm font-semibold text-white tracking-normal">{monthName}</h2>
-                    <span className="text-[8px] font-bold uppercase tracking-[0.2em] text-white/20">{yearName}</span>
+                <div className="flex flex-col">
+                    <h3 className="text-sm font-black text-white uppercase tracking-tight">
+                        {monthName}
+                    </h3>
+                    <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-0.5">
+                        {yearName}
+                    </p>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full p-0.5">
-                    {!(currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()) && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setCurrentMonth(getTodayIST()); onDateSelect(getTodayIST()); }}
-                            className="p-1 px-3 rounded-full text-[8px] font-medium uppercase tracking-wider bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500 hover:text-white transition-all active:scale-95 border border-cyan-500/20"
-                        >
-                            Today
-                        </button>
-                    )}
-                    <div className="flex gap-0.5">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); changeMonth(-1); }}
-                            className="p-1 px-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/5 transition-all active:scale-95"
-                        >
-                            <ChevronLeft size={10} strokeWidth={3} />
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); changeMonth(1); }}
-                            disabled={currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()}
-                            className={`p-1 px-1.5 rounded-full transition-all active:scale-95 ${currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()
-                                ? 'text-white/5 cursor-not-allowed'
-                                : 'text-white/40 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            <ChevronRight size={10} strokeWidth={3} />
-                        </button>
-                    </div>
+                <div className="flex items-center gap-1 bg-white/5 backdrop-blur-md rounded-lg p-1 border border-white/10">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); changeMonth(-1); }}
+                        className="p-1 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+                    >
+                        <ChevronLeft size={12} strokeWidth={3} />
+                    </button>
+
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setCurrentMonth(getTodayIST()); onDateSelect(getTodayIST()); }}
+                        className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all duration-300 transform active:scale-90 ${currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()
+                                ? 'bg-transparent text-white/10 cursor-default select-none'
+                                : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                            }`}
+                        disabled={currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()}
+                    >
+                        Today
+                    </button>
+
+                    <button
+                        onClick={(e) => { e.stopPropagation(); changeMonth(1); }}
+                        className={`p-1 rounded-md transition-all active:scale-90 ${(currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear())
+                                ? 'text-white/5 cursor-default select-none'
+                                : 'text-white/40 hover:text-white hover:bg-white/10'
+                            }`}
+                        disabled={currentMonth.getMonth() === getTodayIST().getMonth() && currentMonth.getFullYear() === getTodayIST().getFullYear()}
+                    >
+                        <ChevronRight size={12} strokeWidth={3} />
+                    </button>
                 </div>
             </div>
 

@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Plus, Save, Trash2, Calendar, Clock, BookOpen, Hash, Link as LinkIcon, Image as ImageIcon, Upload, Loader2, Calculator, BrainCircuit, Lightbulb, AlertCircle, Sparkles } from 'lucide-react';
 import { useNotesStore, useNoteActions } from '../../store/notesStore';
 import { useVault } from '../../hooks/useVault'; // Keep for legacy deletion
 import { useNotesStorage } from '../../hooks/useNotesStorage'; // New storage engine
 import MarkdownRenderer from '../ui/MarkdownRenderer';
+import { SUBJECTS as SUBJECTS_CONFIG } from './ChapterTracker';
+import { getFaviconUrl } from '../../lib/utils';
 
 const NOTE_TYPES = [
     {
@@ -70,7 +73,7 @@ const NOTE_TYPES = [
     },
 ];
 
-const SUBJECTS = ['Physics', 'Chemistry', 'Mathematics'];
+const SUBJECTS = SUBJECTS_CONFIG.map(s => s.label);
 const PRIORITIES = ['low', 'medium', 'high'];
 
 const NoteEntryModal = ({
@@ -206,14 +209,14 @@ const NoteEntryModal = ({
                     id: editingNote.id,
                     type: editingNote.type || 'concept',
                     subject: editingNote.subject || 'Physics',
-                    topic: editingNote.topic || '',
+                    topic: editingNote.chapterName || editingNote.topic || '',
                     // Support both 'title' (Notes) and 'text' (Chapter Entries)
-                    title: editingNote.title || editingNote.text || '',
+                    title: editingNote.id ? (editingNote.title || editingNote.text || '') : (editingNote.chapterName || editingNote.topic || editingNote.title || editingNote.text || ''),
                     description: editingNote.description || '',
                     tags: editingNote.tags || '',
                     priority: editingNote.priority || 'medium',
                     source: editingNote.source || '',
-                    chapterName: editingNote.topic || '',
+                    chapterName: editingNote.chapterName || editingNote.topic || '',
                     images: (editingNote.images || []).map(img =>
                         typeof img === 'string' ? { url: img, name: '' } : img
                     ).length > 0 ? (editingNote.images || []).map(img =>
@@ -225,13 +228,13 @@ const NoteEntryModal = ({
                 setFormData({
                     type: 'concept',
                     subject: currentViewContext?.subject || 'Physics',
-                    topic: currentViewContext?.topic || '',
-                    title: currentViewContext?.topic || '',
+                    topic: currentViewContext?.chapterName || currentViewContext?.topic || '',
+                    title: currentViewContext?.chapterName || currentViewContext?.topic || '',
                     description: '',
                     tags: '',
                     priority: 'medium',
                     source: '',
-                    chapterName: currentViewContext?.topic || '',
+                    chapterName: currentViewContext?.chapterName || currentViewContext?.topic || '',
                     images: [{ url: '', name: '' }],
                     links: ['']
                 });
@@ -270,6 +273,11 @@ const NoteEntryModal = ({
     const removeArrayItem = async (field, index) => {
         const itemToRemove = formData[field][index];
 
+        // Cleanup local blob if it was an unuploaded file
+        if (field === 'images' && itemToRemove?.file && itemToRemove?.url) {
+            URL.revokeObjectURL(itemToRemove.url);
+        }
+
         // If it's a MEGA link, delete it from storage immediately
         const urlToCheck = field === 'images' ? itemToRemove?.url : itemToRemove;
         if (urlToCheck && typeof urlToCheck === 'string' && urlToCheck.includes('mega.nz')) {
@@ -289,24 +297,32 @@ const NoteEntryModal = ({
         });
     };
 
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const result = await uploadFile(file);
-        if (result && result.downloadUrl) {
-            setFormData(prev => {
-                const newImages = [...prev.images];
-                // Find first empty image slot
-                const emptyIdx = newImages.findIndex(img => !img.url);
-                if (emptyIdx !== -1) {
-                    newImages[emptyIdx] = { url: result.downloadUrl, name: newImages[emptyIdx].name || '' };
-                } else {
-                    newImages.push({ url: result.downloadUrl, name: '' });
-                }
-                return { ...prev, images: newImages };
-            });
+        // Check file size limit locally before accepting
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(`File too large. Maximum allowed: ${MAX_FILE_SIZE_MB}MB`);
+            return;
         }
+
+        const localUrl = URL.createObjectURL(file);
+
+        setFormData(prev => {
+            const newImages = [...prev.images];
+            // Find first empty image slot
+            const emptyIdx = newImages.findIndex(img => !img.url);
+
+            const imageData = { url: localUrl, name: newImages[emptyIdx]?.name || file.name, file: file };
+
+            if (emptyIdx !== -1) {
+                newImages[emptyIdx] = imageData;
+            } else {
+                newImages.push(imageData);
+            }
+            return { ...prev, images: newImages };
+        });
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -319,13 +335,33 @@ const NoteEntryModal = ({
         setIsSubmitting(true);
 
         try {
+            // Process pending image uploads
+            const processedImages = [];
+            for (const img of formData.images) {
+                if (img.file) {
+                    const result = await uploadFile(img.file);
+                    if (result && result.downloadUrl) {
+                        processedImages.push({ url: result.downloadUrl, name: img.name || '' });
+                    } else {
+                        // Upload failed, abort save
+                        URL.revokeObjectURL(img.url);
+                        alert(`Failed to upload image: ${img.name || file.name}. Please try again.`);
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    URL.revokeObjectURL(img.url); // Clean up the local blob URL
+                } else if (img.url && typeof img.url === 'string' && img.url.trim() !== '') {
+                    processedImages.push(img);
+                }
+            }
+
             // Clean up empty entries before saving
             const cleanedData = {
                 ...formData,
                 transactionId, // Pass the idempotency key
                 // If controlled, we might want to map 'title' back to 'text' for Chapter Entries
                 ...(isControlled ? { text: formData.title } : {}),
-                images: formData.images.filter(img => img?.url && typeof img.url === 'string' && img.url.trim() !== ''),
+                images: processedImages,
                 links: formData.links.filter(l => l && typeof l === 'string' && l.trim() !== '')
             };
 
@@ -365,16 +401,16 @@ const NoteEntryModal = ({
 
     const activeType = NOTE_TYPES.find(t => t.value === formData.type) || NOTE_TYPES[0];
 
-    return (
+    return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
                 {/* Backdrop */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={() => toggleModal(false)}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
                 />
 
                 {/* Modal Content */}
@@ -383,11 +419,11 @@ const NoteEntryModal = ({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="relative w-full max-w-2xl transform transition-all duration-300"
+                    style={{ position: 'relative', width: '95vw', height: '90vh' }}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className={`relative flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-slate-900' : 'bg-white'} rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/50 p-8`}>
-                        <div className="flex-1 max-h-[90vh] overflow-y-auto">
+                    <div className={`relative flex flex-col md:flex-row gap-6 ${isDarkMode ? 'bg-slate-900' : 'bg-white'} rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/50 p-8`} style={{ height: '100%' }}>
+                        <div className="flex-1 overflow-y-auto">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
@@ -395,7 +431,7 @@ const NoteEntryModal = ({
                                         <activeType.icon size={20} />
                                     </div>
                                     <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                        {editingNote ? 'Refine Learning' : 'Capture Learning'}
+                                        {editingNote?.id ? 'Refine Learning' : 'Capture Learning'}
                                     </h2>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -637,25 +673,35 @@ const NoteEntryModal = ({
                                             </div>
                                             <div className="space-y-2">
                                                 {formData.links.map((link, idx) => (
-                                                    <div key={idx} className="flex gap-2">
+                                                    <div key={idx} className="flex gap-2 items-center">
+                                                        <div className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-lg border-2 relative overflow-hidden ${isDarkMode ? 'bg-slate-800/50 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                                            {link && link.includes('.') ? (
+                                                                <>
+                                                                    <img
+                                                                        src={getFaviconUrl(link)}
+                                                                        alt="icon"
+                                                                        className="w-5 h-5 z-10 bg-transparent object-contain"
+                                                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                                                    />
+                                                                    <div className="absolute inset-0 flex items-center justify-center hidden w-full h-full text-blue-500/50"><LinkIcon size={14} /></div>
+                                                                </>
+                                                            ) : (
+                                                                <LinkIcon size={14} className="text-blue-400/50" />
+                                                            )}
+                                                        </div>
                                                         <div className="relative flex-1">
                                                             <input
                                                                 value={link}
                                                                 onChange={(e) => handleArrayChange('links', idx, e.target.value)}
                                                                 placeholder="Paste web link..."
                                                                 className={`
-                                                            w-full px-3 py-1.5 text-xs rounded-lg border-2 outline-none transition-all
+                                                            w-full px-3 py-2 text-sm rounded-lg border-2 outline-none transition-all
                                                             ${isDarkMode
                                                                         ? 'bg-slate-800/30 border-slate-700/50 focus:border-blue-500 text-white'
                                                                         : 'bg-slate-100 border-slate-200 focus:border-blue-500 text-slate-900 shadow-sm'
                                                                     }
                                                         `}
                                                             />
-                                                            {link && (
-                                                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                                                                    <LinkIcon size={12} className="text-blue-400/50" />
-                                                                </div>
-                                                            )}
                                                         </div>
                                                         <button
                                                             type="button"
@@ -888,7 +934,8 @@ const NoteEntryModal = ({
                     </div>
                 </motion.div>
             </div>
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

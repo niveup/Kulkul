@@ -1711,10 +1711,6 @@ export default defineConfig({
                   size: row.size_bytes,
                   megaNodeId: row.mega_node_id,
                   downloadUrl: row.mega_download_url,
-                  name: row.filename,
-                  size: row.size_bytes,
-                  megaNodeId: row.mega_node_id,
-                  downloadUrl: row.mega_download_url,
                   createdAt: row.created_at,
                   folderId: row.folder_id
                 })),

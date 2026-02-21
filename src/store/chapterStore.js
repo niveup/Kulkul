@@ -22,7 +22,7 @@ export const useChapterStore = create(
             },
             isLoading: false,
             error: null,
-            processedTransactionIds: new Set(),
+            processedTransactionIds: [],
 
             // Sync with Database
             syncWithDb: async () => {
@@ -153,15 +153,15 @@ export const useChapterStore = create(
                 // 1. Transaction Idempotency Check (Strongest Guard)
                 const transactionId = extraFields.transactionId;
                 if (transactionId) {
-                    const processedIds = get().processedTransactionIds || new Set();
-                    if (processedIds.has(transactionId)) {
+                    const rawProcessedIds = get().processedTransactionIds;
+                    const processedIds = Array.isArray(rawProcessedIds) ? rawProcessedIds : [];
+                    if (processedIds.includes(transactionId)) {
                         console.warn(`[ChapterStore] Duplicate transaction prevented: ${transactionId}`);
                         return;
                     }
-                    // Add to processed set
-                    const newSet = new Set(processedIds);
-                    newSet.add(transactionId);
-                    set({ processedTransactionIds: newSet });
+                    // Add to processed list (capped at 100 to prevent memory leak)
+                    const updatedIds = [...processedIds, transactionId];
+                    set({ processedTransactionIds: updatedIds.length > 100 ? updatedIds.slice(-100) : updatedIds });
                 }
 
                 // 2. De-bouncing (Secondary Guard)

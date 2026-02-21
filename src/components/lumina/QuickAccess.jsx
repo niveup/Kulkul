@@ -17,6 +17,23 @@ import {
     LayoutGrid, MoreHorizontal, Edit2, Trash2, Link2, X
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { useSoundManager } from '../../utils/soundManager';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ============================================================================
 // CONFIG & UTILS
@@ -145,11 +162,17 @@ const TiltCard = React.memo(({ children, onClick, onContextMenu, className }) =>
         y.set(0);
     };
 
+    const { playHover, playClick } = useSoundManager();
+
     return (
         <motion.button
-            onClick={onClick}
+            onClick={(e) => {
+                playClick();
+                if (onClick) onClick(e);
+            }}
             onContextMenu={onContextMenu}
             onMouseMove={handleMouseMove}
+            onMouseEnter={() => playHover()}
             onMouseLeave={handleMouseLeave}
             style={{
                 rotateX,
@@ -341,17 +364,75 @@ const QuickApp = React.memo(({ title, name, icon: Icon, color, image, url, id, o
 });
 
 // ============================================================================
+// SORTABLE WRAPPER
+// ============================================================================
+
+const SortableApp = ({ app, index, onEdit, onDelete, setContextMenu }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: app.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 1,
+        opacity: isDragging ? 0.8 : 1,
+    };
+
+    return (
+        <motion.div
+            ref={setNodeRef}
+            style={style}
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+                delay: index * 0.05
+            }}
+            className={`relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            {...attributes}
+            {...listeners}
+        >
+            <div className="pointer-events-none md:pointer-events-auto">
+                <QuickApp
+                    {...app}
+                    icon={app.icon}
+                    onEdit={() => onEdit?.(app)}
+                    onDelete={() => onDelete?.(app)}
+                    setContextMenu={setContextMenu}
+                />
+            </div>
+        </motion.div>
+    );
+};
+
+// ============================================================================
 // ADD BUTTON
 // ============================================================================
 
 const AddAppButton = ({ onClick }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const { playHover, playClick } = useSoundManager();
 
     return (
         <div className="flex flex-col items-center gap-3">
             <motion.button
-                onClick={onClick}
-                onMouseEnter={() => setIsHovered(true)}
+                onClick={(e) => {
+                    playClick();
+                    if (onClick) onClick(e);
+                }}
+                onMouseEnter={() => {
+                    setIsHovered(true);
+                    playHover();
+                }}
                 onMouseLeave={() => setIsHovered(false)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -440,6 +521,64 @@ export const QuickAccess = ({ apps = [], onAddApp, onEditApp, onDeleteApp }) => 
 
     const displayApps = apps.length > 0 ? apps : defaultApps;
 
+    const [orderedApps, setOrderedApps] = useState(() => {
+        try {
+            const saved = localStorage.getItem('quick-access-order');
+            if (saved) {
+                const ids = JSON.parse(saved);
+                const sorted = [...displayApps].sort((a, b) => {
+                    const idxA = ids.indexOf(a.id);
+                    const idxB = ids.indexOf(b.id);
+                    if (idxA === -1 && idxB === -1) return 0;
+                    if (idxA === -1) return 1;
+                    if (idxB === -1) return -1;
+                    return idxA - idxB;
+                });
+                return sorted;
+            }
+        } catch (e) { }
+        return displayApps;
+    });
+
+    useEffect(() => {
+        // Sync when external apps change (add/edit/delete)
+        setOrderedApps(prev => {
+            const newOrder = [];
+            prev.forEach(pApp => {
+                const updated = displayApps.find(a => a.id === pApp.id);
+                if (updated) newOrder.push(updated);
+            });
+            displayApps.forEach(a => {
+                if (!newOrder.find(o => o.id === a.id)) newOrder.push(a);
+            });
+            return newOrder;
+        });
+    }, [displayApps]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5, // Wait 5px movement before dragging starts (allows clicks on items)
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setOrderedApps((items) => {
+                const oldIndex = items.findIndex(i => i.id === active.id);
+                const newIndex = items.findIndex(i => i.id === over.id);
+                const newArray = arrayMove(items, oldIndex, newIndex);
+                localStorage.setItem('quick-access-order', JSON.stringify(newArray.map(a => a.id)));
+                return newArray;
+            });
+        }
+    };
+
     return (
         <div className="mt-8 relative z-0 isolate"> {/* z-0 and isolate to prevent bleeding into Dock */}
             {/* Header */}
@@ -463,42 +602,40 @@ export const QuickAccess = ({ apps = [], onAddApp, onEditApp, onDeleteApp }) => 
             {/* Spotlight Grid - Study Studio Card Style */}
             <SpotlightGrid className="rounded-3xl border border-white/[0.05] bg-[#0c0e14]/40 p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-6">
-                    <AnimatePresence mode='popLayout'>
-                        {displayApps.map((app, index) => (
-                            <motion.div
-                                key={app.id || index}
-                                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 300,
-                                    damping: 25,
-                                    delay: index * 0.05
-                                }}
-                                className="relative z-10"
-                            >
-                                <QuickApp
-                                    {...app}
-                                    icon={app.icon} // Pass raw icon to let QuickApp handle normalization
-                                    onEdit={() => onEditApp?.(app)}
-                                    onDelete={() => onDeleteApp?.(app)}
-                                    setContextMenu={setContextMenu}
-                                />
-                            </motion.div>
-                        ))}
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext
+                        items={orderedApps.map(a => a.id)}
+                        strategy={rectSortingStrategy}
+                    >
+                        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-6">
+                            <AnimatePresence mode='popLayout'>
+                                {orderedApps.map((app, index) => (
+                                    <SortableApp
+                                        key={app.id}
+                                        app={app}
+                                        index={index}
+                                        onEdit={onEditApp}
+                                        onDelete={onDeleteApp}
+                                        setContextMenu={setContextMenu}
+                                    />
+                                ))}
 
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: displayApps.length * 0.05 }}
-                            className="relative z-10"
-                        >
-                            <AddAppButton onClick={onAddApp} />
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: displayApps.length * 0.05 }}
+                                    className="relative z-10"
+                                >
+                                    <AddAppButton onClick={onAddApp} />
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </SortableContext>
+                </DndContext>
             </SpotlightGrid>
 
             {/* Context Menu Portal */}
